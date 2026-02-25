@@ -192,7 +192,7 @@ export default function Home() {
     }
   }, [messages, loading, project, task]);
 
-  useEffect(scroll, [messages, banner]);
+  useEffect(() => { scroll(); }, [messages, banner]);
 
   function updateProject(id, fn) {
     setProjects(prev => prev.map(p => p.id === id ? fn(p) : p));
