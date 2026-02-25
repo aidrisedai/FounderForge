@@ -9,8 +9,13 @@ channel = "stable-25_05"
 
 [userenv.shared]
 PORT = "5000"
-NEXTAUTH_URL = "http://localhost:5000"
 HOSTNAME = "0.0.0.0"
+
+[userenv.development]
+NEXTAUTH_URL = "http://localhost:5000"
+
+[userenv.production]
+NEXTAUTH_URL = "https://f5a7bb2e-741b-43b2-9f5f-b2eb668e2aa0-00-svpl91aazrsd.worf.replit.dev"
 
 [workflows]
 runButton = "Project"
