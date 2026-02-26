@@ -2,7 +2,7 @@
   min-height: 100vh;
   background: #08080A;
   color: #fff;
-  font-family: var(--ff-b);
+  font-family: var(--ff-body);
 }
 
 .header {
@@ -22,7 +22,7 @@
 .title {
   font-size: 1.875rem;
   font-weight: 700;
-  font-family: var(--ff-d);
+  font-family: var(--ff-heading);
   background: linear-gradient(135deg, #E8553A, #BE185D);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -48,8 +48,9 @@
   border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.2s;
-  font-family: var(--ff-b);
+  font-family: var(--ff-body);
   font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .button:hover {
@@ -114,7 +115,7 @@
 .statValue {
   font-size: 2rem;
   font-weight: 700;
-  font-family: var(--ff-d);
+  font-family: var(--ff-heading);
   margin-bottom: 0.25rem;
 }
 
@@ -135,7 +136,7 @@
   font-size: 1.125rem;
   font-weight: 600;
   margin-bottom: 1rem;
-  font-family: var(--ff-d);
+  font-family: var(--ff-heading);
 }
 
 .stageItem {
