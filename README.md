@@ -31,6 +31,10 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret-here
 NEXTAUTH_SECRET=run-this-command-openssl-rand-base64-32
 NEXTAUTH_URL=http://localhost:3000
 ANTHROPIC_API_KEY=your-anthropic-api-key-here
+
+# Admin emails (comma-separated)
+ADMIN_EMAILS=your-email@example.com
+NEXT_PUBLIC_ADMIN_EMAILS=your-email@example.com
 ```
 
 Generate NEXTAUTH_SECRET:
@@ -57,23 +61,47 @@ Open [http://localhost:3000](http://localhost:3000)
    `https://your-app.vercel.app/api/auth/callback/google`
 6. Deploy!
 
+## Admin Dashboard
+
+Access the admin dashboard at `/admin` (requires admin email configuration).
+
+Features:
+- **User Analytics**: Track total users, projects, messages, and task completions
+- **User Management**: View all users, their projects, and activity levels
+- **Conversation Monitoring**: Read full conversations between users and AI mentor
+- **Progress Tracking**: See user progress through curriculum stages
+- **Deliverables Review**: Access all deliverables and outcomes from each task
+- **Data Export**: Export all platform data for analysis
+
+To enable admin access:
+1. Add your email to `ADMIN_EMAILS` and `NEXT_PUBLIC_ADMIN_EMAILS` in `.env.local`
+2. Sign in with that Google account
+3. Navigate to `/admin`
+
 ## Architecture
 
 ```
 src/
 ├── app/
 │   ├── page.js              # Main app (login + mentor chat)
-│   ├── layout.js             # Root layout with auth provider
-│   ├── globals.css            # Styles
+│   ├── admin/page.js        # Admin dashboard
+│   ├── layout.js            # Root layout with auth provider
+│   ├── globals.css          # Styles
 │   └── api/
 │       ├── auth/[...nextauth] # Google OAuth via NextAuth
-│       ├── chat/              # Proxies to Anthropic API (key stays server-side)
-│       └── projects/          # Save/load user data
+│       ├── chat/              # Proxies to Anthropic API (with activity logging)
+│       ├── projects/          # Save/load user data
+│       └── admin/            # Admin API endpoints
+│           ├── analytics/    # Platform analytics
+│           ├── users/        # User management
+│           └── conversations/ # Conversation access
 ├── components/
-│   └── Providers.js           # NextAuth session provider
+│   └── Providers.js          # NextAuth session provider
 └── lib/
-    ├── curriculum.js          # The 38-task structured curriculum
-    └── storage.js             # File-based user storage (swap for DB in prod)
+    ├── curriculum.js         # The 38-task structured curriculum
+    ├── storage.js            # File-based user storage
+    ├── admin-storage.js      # Admin activity tracking
+    └── admin-auth.js         # Admin authentication helpers
 ```
 
 ## How It Works

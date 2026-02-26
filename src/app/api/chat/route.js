@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { CURRICULUM } from "@/lib/curriculum";
+import { logUserActivity } from "@/lib/admin-storage";
 
 export async function POST(req) {
   const session = await getServerSession();
@@ -78,6 +79,20 @@ COMPLETION FORMAT (ONLY when all criteria met):
     });
 
     const data = await response.json();
+    
+    // Log user activity for admin tracking
+    const userId = session.user.email.replace(/[^a-zA-Z0-9]/g, '_');
+    await logUserActivity(userId, project?.id, {
+      type: 'message',
+      stage: stepId,
+      task: task.id,
+      taskTitle: task.title,
+      projectName: project?.name,
+      messageCount: messages.length,
+      hasDeliverable: data.content?.[0]?.text?.includes('[DELIVERABLE_START]'),
+      isComplete: data.content?.[0]?.text?.includes('[TASK_COMPLETE]')
+    });
+    
     return Response.json(data);
   } catch (e) {
     return Response.json({ error: "API call failed" }, { status: 500 });
