@@ -2,6 +2,9 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { CURRICULUM, TOTAL_TASKS } from "@/lib/curriculum";
+import PersonalityAssessment from "@/components/PersonalityAssessment";
+import MemoryDashboard from "@/components/MemoryDashboard";
+import { getPersonalitySummary, getPersonalizedEncouragement } from "@/lib/personality";
 
 // ── API helpers ──
 async function apiGet(url) {
@@ -136,6 +139,10 @@ export default function Home() {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [newName, setNewName] = useState("");
   const [showNewForm, setShowNewForm] = useState(false);
+  const [personality, setPersonality] = useState(null);
+  const [showPersonality, setShowPersonality] = useState(false);
+  const [personalityChecked, setPersonalityChecked] = useState(false);
+  const [showMemory, setShowMemory] = useState(false);
   const btmRef = useRef(null);
   const needsInitRef = useRef(false);
 
@@ -145,15 +152,24 @@ export default function Home() {
 
   const scroll = useCallback(() => setTimeout(() => btmRef.current?.scrollIntoView({ behavior:"smooth" }), 100), []);
 
-  // Load user data
+  // Load user data and personality
   useEffect(() => {
     if (status === "authenticated") {
+      // Load projects
       apiGet("/api/projects").then(data => {
         const projs = data.projects || [];
         setProjects(projs);
         if (projs.length > 0) setActiveId(projs[0].id);
         setDataLoaded(true);
       }).catch(() => setDataLoaded(true));
+      
+      // Load personality profile
+      apiGet("/api/personality").then(data => {
+        if (data.personality) {
+          setPersonality(data.personality);
+        }
+        setPersonalityChecked(true);
+      }).catch(() => setPersonalityChecked(true));
     }
   }, [status]);
 
@@ -219,7 +235,13 @@ export default function Home() {
     setLoading(true); scroll();
 
     try {
-      const data = await apiPost("/api/chat", { messages: apiMsgs, stepId: step.id, taskIdx, project });
+      const data = await apiPost("/api/chat", { 
+        messages: apiMsgs, 
+        stepId: step.id, 
+        taskIdx, 
+        project,
+        personality  // Include personality in API call
+      });
       const raw = (data.content || []).map(c => c.text || "").join("") || "Let me try again...";
 
       const delMatch = raw.match(/\[DELIVERABLE_START\]([\s\S]*?)\[DELIVERABLE_END\]/);
@@ -266,7 +288,82 @@ export default function Home() {
 
   const isRevisiting = project && task && (project.completedTasks?.[step?.id]||0) > taskIdx;
 
-  // No projects yet
+  // Show personality assessment for first-time users (no personality and checked)
+  if (!project && personalityChecked && !personality && !showPersonality) {
+    return (
+      <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:32, position:"relative", overflow:"hidden" }}>
+        <div style={{ position:"absolute", inset:0, opacity:.02, backgroundImage:"radial-gradient(rgba(255,255,255,.7) 1px,transparent 1px)", backgroundSize:"28px 28px" }} />
+        <div style={{ textAlign:"center", maxWidth:520, position:"relative", zIndex:1 }}>
+          <div style={{ width:60, height:60, borderRadius:16, margin:"0 auto 24px", background:"linear-gradient(135deg,#E8553A,#BE185D)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(232,85,58,.3)" }}>F</div>
+          <p style={{ fontSize:13, color:"rgba(255,255,255,.35)", marginBottom:8 }}>Welcome, {session.user.name}</p>
+          <h1 style={{ fontSize:32, fontFamily:"var(--ff-heading)", margin:"0 0 16px" }}>Personalize your experience</h1>
+          <p style={{ fontSize:14, lineHeight:1.7, color:"rgba(255,255,255,.45)", margin:"0 auto 32px", maxWidth:420 }}>
+            Take a quick 2-minute assessment to help me understand your work style, experience, and goals. 
+            I'll use this to personalize examples, adjust pacing, and speak your language throughout your journey.
+          </p>
+          <div style={{ display:"flex", gap:12, justifyContent:"center", flexDirection:"column", alignItems:"center" }}>
+            <button 
+              onClick={() => setShowPersonality(true)} 
+              style={{ 
+                padding:"14px 36px", 
+                borderRadius:10, 
+                border:"none", 
+                background:"linear-gradient(135deg,#E8553A,#BE185D)", 
+                color:"#fff", 
+                fontSize:13, 
+                fontWeight:700, 
+                cursor:"pointer", 
+                fontFamily:"var(--ff-body)", 
+                boxShadow:"0 4px 30px rgba(232,85,58,.3)" 
+              }}
+            >
+              Personalize My Journey →
+            </button>
+            <button 
+              onClick={() => setShowPersonality(false)} 
+              style={{ 
+                padding:"10px 20px", 
+                borderRadius:8, 
+                border:"1px solid rgba(255,255,255,.08)", 
+                background:"transparent", 
+                color:"rgba(255,255,255,.35)", 
+                fontSize:12, 
+                fontWeight:600, 
+                cursor:"pointer", 
+                fontFamily:"var(--ff-body)" 
+              }}
+            >
+              Skip for now
+            </button>
+          </div>
+          <div style={{ marginTop:32, display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap" }}>
+            {["🎯 Tailored examples", "⚡ Adaptive pacing", "💬 Your communication style"].map(benefit => (
+              <span key={benefit} style={{ fontSize:11, padding:"4px 10px", borderRadius:6, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.04)", color:"rgba(255,255,255,.25)", fontFamily:"var(--ff-body)" }}>
+                {benefit}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show personality assessment flow
+  if (showPersonality && !personality) {
+    return (
+      <div style={{ minHeight:"100vh", background:"#0A0A0B", color:"#fff" }}>
+        <PersonalityAssessment 
+          onComplete={(p) => {
+            setPersonality(p);
+            setShowPersonality(false);
+          }}
+          onSkip={() => setShowPersonality(false)}
+        />
+      </div>
+    );
+  }
+
+  // No projects yet (after personality or skip)
   if (!project) {
     return (
       <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:32, position:"relative", overflow:"hidden" }}>
@@ -274,6 +371,11 @@ export default function Home() {
         <div style={{ textAlign:"center", maxWidth:460, position:"relative", zIndex:1 }}>
           <div style={{ width:60, height:60, borderRadius:16, margin:"0 auto 24px", background:"linear-gradient(135deg,#E8553A,#BE185D)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(232,85,58,.3)" }}>F</div>
           <p style={{ fontSize:13, color:"rgba(255,255,255,.35)", marginBottom:4 }}>Welcome, {session.user.name}</p>
+          {personality && (
+            <p style={{ fontSize:10, color:"rgba(232,85,58,.6)", marginBottom:12, fontFamily:"var(--ff-body)", fontWeight:600 }}>
+              {getPersonalitySummary(personality)}
+            </p>
+          )}
           <h1 style={{ fontSize:32, fontFamily:"var(--ff-heading)", margin:"0 0 24px" }}>Start your first project</h1>
           {showNewForm ? (
             <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
@@ -301,7 +403,48 @@ export default function Home() {
             <div style={{ fontSize:18, fontFamily:"var(--ff-heading)" }}>Founder<span style={{ color:"#E8553A" }}>Forge</span></div>
             <button onClick={() => signOut()} style={{ fontSize:10, padding:"4px 8px", borderRadius:4, border:"1px solid rgba(255,255,255,.08)", background:"transparent", color:"rgba(255,255,255,.25)", cursor:"pointer", fontFamily:"var(--ff-body)", fontWeight:600 }}>Sign out</button>
           </div>
-          <div style={{ fontSize:11, color:"rgba(255,255,255,.3)", marginBottom:8, fontFamily:"var(--ff-body)" }}>{session.user.name}</div>
+          <div style={{ fontSize:11, color:"rgba(255,255,255,.3)", marginBottom:4, fontFamily:"var(--ff-body)" }}>{session.user.name}</div>
+          {personality && (
+            <button 
+              onClick={() => setShowPersonality(true)}
+              style={{ 
+                fontSize:9, 
+                padding:"3px 6px", 
+                borderRadius:4, 
+                border:"1px solid rgba(232,85,58,.2)", 
+                background:"rgba(232,85,58,.05)", 
+                color:"rgba(232,85,58,.7)", 
+                cursor:"pointer", 
+                fontFamily:"var(--ff-body)", 
+                fontWeight:600,
+                marginBottom:12,
+                width:"100%",
+                textAlign:"left"
+              }}
+            >
+              ✨ {getPersonalitySummary(personality).split(" • ").slice(0, 2).join(" • ")}
+            </button>
+          )}
+          {!personality && personalityChecked && (
+            <button 
+              onClick={() => setShowPersonality(true)}
+              style={{ 
+                fontSize:9, 
+                padding:"3px 6px", 
+                borderRadius:4, 
+                border:"1px dashed rgba(255,255,255,.1)", 
+                background:"transparent", 
+                color:"rgba(255,255,255,.25)", 
+                cursor:"pointer", 
+                fontFamily:"var(--ff-body)", 
+                fontWeight:600,
+                marginBottom:12,
+                width:"100%"
+              }}
+            >
+              + Add personality profile
+            </button>
+          )}
           <div style={{ fontSize:9, fontWeight:700, letterSpacing:".1em", color:"rgba(255,255,255,.15)", fontFamily:"var(--ff-body)", fontWeight:600, marginBottom:6 }}>PROJECTS</div>
           {projects.map(p => (
             <div key={p.id} onClick={() => setActiveId(p.id)} style={{ padding:"6px 10px", borderRadius:6, cursor:"pointer", marginBottom:2, background:p.id===activeId?"rgba(255,255,255,.05)":"transparent", border:p.id===activeId?"1px solid rgba(255,255,255,.08)":"1px solid transparent", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -326,6 +469,26 @@ export default function Home() {
               <div style={{ fontSize:14, fontFamily:"var(--ff-heading)", color:"rgba(255,255,255,.9)" }}>{task.title}</div>
             </div>
           </div>
+          <button
+            onClick={() => setShowMemory(true)}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 6,
+              border: "1px solid rgba(255,255,255,.08)",
+              background: "rgba(255,255,255,.02)",
+              color: "rgba(255,255,255,.4)",
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: "var(--ff-body)",
+              display: "flex",
+              alignItems: "center",
+              gap: 6
+            }}
+          >
+            <span style={{ fontSize: 14 }}>🧠</span>
+            Memory & Insights
+          </button>
         </div>
         <div style={{ padding:"8px 20px", borderBottom:"1px solid rgba(255,255,255,.03)" }}>
           <div style={{ maxWidth:660, margin:"0 auto", display:"flex", gap:6, flexWrap:"wrap" }}>
@@ -356,6 +519,14 @@ export default function Home() {
           </div>
         </div>
       </div>
+      
+      {/* Memory Dashboard Modal */}
+      {showMemory && (
+        <MemoryDashboard 
+          userId={session?.user?.email}
+          onClose={() => setShowMemory(false)}
+        />
+      )}
     </div>
   );
 }

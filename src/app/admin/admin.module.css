@@ -446,3 +446,461 @@
   background: #08080A;
   color: #fff;
 }
+
+/* Login Styles */
+.loginContainer {
+  min-height: 100vh;
+  background: #08080A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.loginBox {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 3rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.loginHeader {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.loginTitle {
+  font-size: 2rem;
+  font-family: var(--ff-heading);
+  margin: 0 0 0.5rem;
+  background: linear-gradient(135deg, #e8553a, #be185d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.loginSubtitle {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.9rem;
+}
+
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.input {
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.input:focus {
+  border-color: #e8553a;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.loginButton {
+  padding: 0.875rem;
+  background: linear-gradient(135deg, #e8553a, #be185d);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.loginButton:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.loginButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.errorMessage {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.loginFooter {
+  text-align: center;
+  margin-top: 2rem;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Admin Dashboard Enhancements */
+.logoutButton {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logoutButton:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.mainContent {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+  height: calc(100vh - 250px);
+}
+
+.sidebar {
+  width: 320px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.sidebarTitle {
+  font-size: 1.1rem;
+  margin: 0 0 1.5rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.userList {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.userItem {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.userItem:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.userItemActive {
+  background: rgba(232, 85, 58, 0.1);
+  border-color: rgba(232, 85, 58, 0.3);
+}
+
+.userEmail {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.5rem;
+}
+
+.userMeta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.userProjects {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.userProgress {
+  color: #059669;
+}
+
+.personalityBadge {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  background: rgba(232, 85, 58, 0.1);
+  border-radius: 4px;
+  color: #e8553a;
+  margin-top: 0.5rem;
+}
+
+.memorySummary {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.contentArea {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 1.1rem;
+}
+
+.userHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.userHeader h2 {
+  margin: 0;
+  color: #e8553a;
+}
+
+.exportButton {
+  padding: 0.5rem 1rem;
+  background: rgba(232, 85, 58, 0.1);
+  border: 1px solid rgba(232, 85, 58, 0.3);
+  border-radius: 6px;
+  color: #e8553a;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.exportButton:hover {
+  background: rgba(232, 85, 58, 0.2);
+}
+
+.tabContent {
+  padding: 1rem 0;
+}
+
+.overview h3,
+.memory h3,
+.personality h3 {
+  margin: 0 0 1rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.overviewStats {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.memoryOverview {
+  margin-top: 2rem;
+}
+
+.memoryOverview h4 {
+  margin: 0 0 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+}
+
+.conversations {
+  padding: 1rem 0;
+}
+
+.conversation {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.convHeader h4 {
+  margin: 0 0 0.5rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.convMeta {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.completedBadge {
+  display: inline-block;
+  margin-left: 1rem;
+  padding: 0.2rem 0.5rem;
+  background: rgba(5, 150, 105, 0.2);
+  color: #059669;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.deliverable {
+  padding: 1rem;
+  background: rgba(232, 85, 58, 0.05);
+  border: 1px solid rgba(232, 85, 58, 0.1);
+  border-radius: 6px;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.userMessage,
+.assistantMessage {
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.userMessage {
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid #3b82f6;
+}
+
+.assistantMessage {
+  background: rgba(5, 150, 105, 0.1);
+  border-left: 3px solid #059669;
+}
+
+.projects {
+  padding: 1rem 0;
+}
+
+.project {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.project h3 {
+  margin: 0 0 0.5rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.projectProgress {
+  margin: 1.5rem 0;
+}
+
+.projectProgress h4 {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.stageProgress {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.progressBar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #e8553a, #be185d);
+  transition: width 0.3s;
+}
+
+.memorySection {
+  margin-bottom: 2rem;
+}
+
+.insight,
+.milestone,
+.pattern {
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.insightMeta,
+.milestoneMeta {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.highImportance {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.3rem;
+  background: rgba(232, 85, 58, 0.2);
+  color: #e8553a;
+  border-radius: 3px;
+}
+
+.personalityTraits {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.trait {
+  font-size: 0.9rem;
+}
+
+.trait strong {
+  color: rgba(255, 255, 255, 0.6);
+  margin-right: 0.5rem;
+}
+
+.personalityMeta {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.error {
+  padding: 2rem;
+  text-align: center;
+  color: #ef4444;
+}
