@@ -143,6 +143,8 @@ export default function Home() {
   const [showPersonality, setShowPersonality] = useState(false);
   const [personalityChecked, setPersonalityChecked] = useState(false);
   const [showMemory, setShowMemory] = useState(false);
+  const [showSidebarNewProject, setShowSidebarNewProject] = useState(false);
+  const [sidebarProjectName, setSidebarProjectName] = useState("");
   const btmRef = useRef(null);
   const needsInitRef = useRef(false);
 
@@ -453,8 +455,91 @@ export default function Home() {
                 style={{ background:"none", border:"none", color:"rgba(255,255,255,.1)", cursor:"pointer", fontSize:13, padding:2 }}>×</button>
             </div>
           ))}
-          <button onClick={() => { const n = "Project " + (projects.length+1); createProject(n); }}
-            style={{ width:"100%", padding:"6px", borderRadius:5, border:"1px dashed rgba(255,255,255,.08)", background:"transparent", color:"rgba(255,255,255,.2)", fontSize:10, cursor:"pointer", fontFamily:"var(--ff-body)", fontWeight:600, marginTop:4 }}>+ New Project</button>
+          {showSidebarNewProject ? (
+            <div style={{ marginTop:4, padding:"8px", borderRadius:6, background:"rgba(255,255,255,.03)", border:"1px solid rgba(255,255,255,.08)" }}>
+              <input 
+                value={sidebarProjectName} 
+                onChange={e => setSidebarProjectName(e.target.value)} 
+                autoFocus
+                onKeyDown={e => { 
+                  if (e.key==="Enter" && sidebarProjectName.trim()) { 
+                    createProject(sidebarProjectName.trim()); 
+                    setSidebarProjectName(""); 
+                    setShowSidebarNewProject(false); 
+                  } else if (e.key==="Escape") {
+                    setSidebarProjectName("");
+                    setShowSidebarNewProject(false);
+                  }
+                }}
+                onBlur={() => {
+                  if (!sidebarProjectName.trim()) {
+                    setSidebarProjectName("");
+                    setShowSidebarNewProject(false);
+                  }
+                }}
+                placeholder="Project name..."
+                style={{ 
+                  width:"100%", 
+                  padding:"6px 8px", 
+                  borderRadius:4, 
+                  border:"1px solid rgba(255,255,255,.1)", 
+                  background:"rgba(255,255,255,.02)", 
+                  color:"#fff", 
+                  fontSize:11, 
+                  outline:"none", 
+                  fontFamily:"var(--ff-body)",
+                  marginBottom:4
+                }} 
+              />
+              <div style={{ display:"flex", gap:4 }}>
+                <button 
+                  onClick={() => { 
+                    if (sidebarProjectName.trim()) { 
+                      createProject(sidebarProjectName.trim()); 
+                      setSidebarProjectName(""); 
+                      setShowSidebarNewProject(false); 
+                    } 
+                  }} 
+                  disabled={!sidebarProjectName.trim()}
+                  style={{ 
+                    flex:1, 
+                    padding:"4px 8px", 
+                    borderRadius:3, 
+                    border:"none", 
+                    background:sidebarProjectName.trim()?"#E8553A":"rgba(255,255,255,.05)", 
+                    color:sidebarProjectName.trim()?"#fff":"rgba(255,255,255,.2)", 
+                    fontSize:10, 
+                    fontWeight:600, 
+                    cursor:sidebarProjectName.trim()?"pointer":"not-allowed", 
+                    fontFamily:"var(--ff-body)" 
+                  }}
+                >
+                  Create
+                </button>
+                <button 
+                  onClick={() => { 
+                    setSidebarProjectName(""); 
+                    setShowSidebarNewProject(false); 
+                  }}
+                  style={{ 
+                    padding:"4px 8px", 
+                    borderRadius:3, 
+                    border:"1px solid rgba(255,255,255,.08)", 
+                    background:"transparent", 
+                    color:"rgba(255,255,255,.3)", 
+                    fontSize:10, 
+                    cursor:"pointer", 
+                    fontFamily:"var(--ff-body)" 
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setShowSidebarNewProject(true)}
+              style={{ width:"100%", padding:"6px", borderRadius:5, border:"1px dashed rgba(255,255,255,.08)", background:"transparent", color:"rgba(255,255,255,.2)", fontSize:10, cursor:"pointer", fontFamily:"var(--ff-body)", fontWeight:600, marginTop:4 }}>+ New Project</button>
+          )}
         </div>
         <Timeline steps={CURRICULUM} project={project} activeStepId={step.id} activeTaskIdx={taskIdx} onNav={(si,ti) => { setStepIdx(si); setTaskIdx(ti); }} />
       </div>
