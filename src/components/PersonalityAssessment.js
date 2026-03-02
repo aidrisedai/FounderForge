@@ -164,7 +164,13 @@ export default function PersonalityAssessment({ onComplete, onSkip }) {
         borderTop: "1px solid rgba(255,255,255,.05)"
       }}>
         <button
-          onClick={currentTrait > 0 ? handleBack : onSkip}
+          onClick={() => {
+            if (currentTrait > 0) {
+              handleBack();
+            } else if (onSkip) {
+              onSkip();
+            }
+          }}
           style={{
             padding: "10px 20px",
             borderRadius: 8,
