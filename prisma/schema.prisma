@@ -1,0 +1,224 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User model - linked to NextAuth
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  projects      Project[]
+  personality   Personality?
+  memory        Memory?
+  activities    Activity[]
+  
+  @@index([email])
+}
+
+// Project model - user's startup projects
+model Project {
+  id              String   @id @default(cuid())
+  name            String
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  completedTasks  Json     @default("{}") // {stepId: completedCount}
+  deliverables    Json     @default("{}") // {taskId: deliverableText}
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  conversations   Conversation[]
+  
+  @@index([userId])
+}
+
+// Conversation model - task-specific message threads
+model Conversation {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId      String   // e.g., "1.1", "2.3"
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  messages    Message[]
+  
+  @@unique([projectId, taskId])
+  @@index([projectId])
+}
+
+// Message model - individual messages in conversations
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  role           String       // "user" or "assistant"
+  content        String       @db.Text
+  
+  createdAt      DateTime     @default(now())
+  
+  @@index([conversationId])
+}
+
+// Personality model - user's personality assessment
+model Personality {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  workStyle   String?  // methodical, iterative, creative, analytical
+  experience  String?  // first-timer, side-hustler, serial, corporate
+  motivation  String?  // problem-solver, freedom-seeker, impact-driven, wealth-builder
+  learning    String?  // by-doing, by-example, by-theory, by-discussion
+  pace        String?  // sprint, marathon, bursts, deliberate
+  
+  completed   Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Memory model - user's memory and context
+model Memory {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  profile     Json     @default("{}") // {goals: [], challenges: [], strengths: [], preferences: [], background: null}
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastActive  DateTime @default(now())
+  
+  // Relations
+  insights    Insight[]
+  milestones  Milestone[]
+  decisions   Decision[]
+  patterns    Pattern[]
+  sessions    Session[]
+}
+
+// Insight model - captured insights
+model Insight {
+  id         String   @id @default(cuid())
+  memoryId   String
+  memory     Memory   @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  
+  content    String   @db.Text
+  context    Json?    // {task, projectId, importance}
+  importance String   @default("normal") // normal, high
+  
+  createdAt  DateTime @default(now())
+  
+  @@index([memoryId])
+}
+
+// Milestone model - achievements
+model Milestone {
+  id         String   @id @default(cuid())
+  memoryId   String
+  memory     Memory   @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  
+  milestone  String
+  projectId  String?
+  celebrated Boolean  @default(false)
+  
+  createdAt  DateTime @default(now())
+  
+  @@index([memoryId])
+}
+
+// Decision model - key decisions made
+model Decision {
+  id         String   @id @default(cuid())
+  memoryId   String
+  memory     Memory   @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  
+  decision   String   @db.Text
+  reasoning  String   @db.Text
+  projectId  String?
+  outcome    String?  @db.Text
+  
+  createdAt  DateTime @default(now())
+  
+  @@index([memoryId])
+}
+
+// Pattern model - recurring patterns
+model Pattern {
+  id         String   @id @default(cuid())
+  memoryId   String
+  memory     Memory   @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  
+  type       String   // stickingPoints, successPatterns, commonQuestions
+  pattern    String   @db.Text
+  frequency  Int      @default(1)
+  
+  firstSeen  DateTime @default(now())
+  lastSeen   DateTime @default(now())
+  
+  @@index([memoryId, type])
+}
+
+// Session model - session summaries
+model Session {
+  id            String   @id @default(cuid())
+  memoryId      String
+  memory        Memory   @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  
+  duration      Int?     // in minutes
+  tasksCompleted Json    @default("[]")
+  keyPoints     Json     @default("[]")
+  nextSteps     Json     @default("[]")
+  mood          String?  // productive, struggling, confident, etc.
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([memoryId])
+}
+
+// Activity model - user activity tracking for admin
+model Activity {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type       String   // message, task_complete, project_created, etc.
+  projectId  String?
+  stage      Int?
+  task       String?
+  details    Json?
+  
+  createdAt  DateTime @default(now())
+  
+  @@index([userId, createdAt])
+  @@index([type])
+}
+
+// AdminSession model - admin authentication sessions
+model AdminSession {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  
+  @@index([token])
+}

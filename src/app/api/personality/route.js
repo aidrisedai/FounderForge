@@ -1,23 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import * as fs from "fs/promises";
-import * as path from "path";
-
-const DATA_DIR = path.join(process.cwd(), "data", "personalities");
-
-async function ensureDataDir() {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-  } catch (error) {
-    console.error("Error creating personality data directory:", error);
-  }
-}
-
-async function getUserPersonalityFile(email) {
-  await ensureDataDir();
-  const sanitized = email.replace(/[^a-zA-Z0-9.-]/g, "_");
-  return path.join(DATA_DIR, `${sanitized}.json`);
-}
+import prisma from "@/lib/prisma";
 
 // GET - Retrieve user's personality profile
 export async function GET(request) {
@@ -27,16 +10,29 @@ export async function GET(request) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const filePath = await getUserPersonalityFile(session.user.email);
-    
-    try {
-      const data = await fs.readFile(filePath, "utf-8");
-      const personality = JSON.parse(data);
-      return Response.json({ personality });
-    } catch (error) {
-      // No personality profile yet
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: { personality: true },
+    });
+
+    if (!user) {
+      return Response.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (!user.personality) {
       return Response.json({ personality: null });
     }
+
+    return Response.json({
+      personality: {
+        workStyle: user.personality.workStyle,
+        experience: user.personality.experience,
+        motivation: user.personality.motivation,
+        learning: user.personality.learning,
+        pace: user.personality.pace,
+        completed: user.personality.completed,
+      },
+    });
   } catch (error) {
     console.error("Error fetching personality:", error);
     return Response.json({ error: "Failed to fetch personality" }, { status: 500 });
@@ -57,19 +53,46 @@ export async function POST(request) {
       return Response.json({ error: "No personality data provided" }, { status: 400 });
     }
 
-    const filePath = await getUserPersonalityFile(session.user.email);
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user) {
+      return Response.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const updatedPersonality = await prisma.personality.upsert({
+      where: { userId: user.id },
+      update: {
+        workStyle: personality.workStyle || null,
+        experience: personality.experience || null,
+        motivation: personality.motivation || null,
+        learning: personality.learning || null,
+        pace: personality.pace || null,
+        completed: completed || false,
+      },
+      create: {
+        userId: user.id,
+        workStyle: personality.workStyle || null,
+        experience: personality.experience || null,
+        motivation: personality.motivation || null,
+        learning: personality.learning || null,
+        pace: personality.pace || null,
+        completed: completed || false,
+      },
+    });
     
-    const data = {
-      personality,
-      completed: completed || false,
-      updatedAt: new Date().toISOString(),
-      userEmail: session.user.email,
-      userName: session.user.name
-    };
-    
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2));
-    
-    return Response.json({ success: true, personality: data.personality });
+    return Response.json({ 
+      success: true, 
+      personality: {
+        workStyle: updatedPersonality.workStyle,
+        experience: updatedPersonality.experience,
+        motivation: updatedPersonality.motivation,
+        learning: updatedPersonality.learning,
+        pace: updatedPersonality.pace,
+        completed: updatedPersonality.completed,
+      },
+    });
   } catch (error) {
     console.error("Error saving personality:", error);
     return Response.json({ error: "Failed to save personality" }, { status: 500 });
@@ -84,16 +107,24 @@ export async function DELETE(request) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const filePath = await getUserPersonalityFile(session.user.email);
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user) {
+      return Response.json({ error: "User not found" }, { status: 404 });
+    }
+
+    await prisma.personality.delete({
+      where: { userId: user.id },
+    });
     
-    try {
-      await fs.unlink(filePath);
-      return Response.json({ success: true });
-    } catch (error) {
-      // File doesn't exist, that's okay
+    return Response.json({ success: true });
+  } catch (error) {
+    // Personality doesn't exist, that's okay
+    if (error.code === 'P2025') {
       return Response.json({ success: true });
     }
-  } catch (error) {
     console.error("Error deleting personality:", error);
     return Response.json({ error: "Failed to delete personality" }, { status: 500 });
   }

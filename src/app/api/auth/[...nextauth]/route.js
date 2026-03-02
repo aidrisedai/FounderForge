@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import prisma from "@/lib/prisma";
 
 export const authOptions = {
   providers: [
@@ -15,11 +16,41 @@ export const authOptions = {
     async jwt({ token, account, profile }) {
       if (account) {
         token.id = profile.sub;
+        
+        // Create or update user in database
+        try {
+          await prisma.user.upsert({
+            where: { email: profile.email },
+            update: {
+              name: profile.name,
+              image: profile.picture,
+            },
+            create: {
+              email: profile.email,
+              name: profile.name,
+              image: profile.picture,
+            },
+          });
+        } catch (error) {
+          console.error("Error upserting user:", error);
+        }
       }
       return token;
     },
     async session({ session, token }) {
-      session.user.id = token.id || token.sub;
+      if (session.user?.email) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: session.user.email },
+          });
+          if (dbUser) {
+            session.user.id = dbUser.id;
+          }
+        } catch (error) {
+          console.error("Error fetching user:", error);
+          session.user.id = token.id || token.sub;
+        }
+      }
       return session;
     },
   },
