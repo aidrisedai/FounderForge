@@ -387,24 +387,26 @@ export default function AdminDashboard() {
                     <h3>Personality Profile</h3>
                     <div className={styles.personalityTraits}>
                       <div className={styles.trait}>
-                        <strong>Work Style:</strong> {userDetails.personality.personality?.workStyle}
+                        <strong>Work Style:</strong> {userDetails.personality.workStyle || "—"}
                       </div>
                       <div className={styles.trait}>
-                        <strong>Experience:</strong> {userDetails.personality.personality?.experience}
+                        <strong>Experience:</strong> {userDetails.personality.experience || "—"}
                       </div>
                       <div className={styles.trait}>
-                        <strong>Motivation:</strong> {userDetails.personality.personality?.motivation}
+                        <strong>Motivation:</strong> {userDetails.personality.motivation || "—"}
                       </div>
                       <div className={styles.trait}>
-                        <strong>Learning:</strong> {userDetails.personality.personality?.learning}
+                        <strong>Learning:</strong> {userDetails.personality.learning || "—"}
                       </div>
                       <div className={styles.trait}>
-                        <strong>Pace:</strong> {userDetails.personality.personality?.pace}
+                        <strong>Pace:</strong> {userDetails.personality.pace || "—"}
                       </div>
                     </div>
                     <div className={styles.personalityMeta}>
                       <div>Completed: {userDetails.personality.completed ? "Yes" : "No"}</div>
-                      <div>Updated: {new Date(userDetails.personality.updatedAt).toLocaleString()}</div>
+                      {userDetails.personality.updatedAt && (
+                        <div>Updated: {new Date(userDetails.personality.updatedAt).toLocaleString()}</div>
+                      )}
                     </div>
                   </div>
                 )}
