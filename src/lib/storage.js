@@ -1,89 +1,104 @@
-import prisma from "@/lib/prisma";
+import prisma from "./prisma";
 
-export async function getUserData(userEmail) {
-  try {
-    // Get user with their projects
-    const user = await prisma.user.findUnique({
-      where: { email: userEmail },
-      include: {
-        projects: {
-          orderBy: { createdAt: 'desc' },
+export async function getUserData(email) {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    include: {
+      projects: {
+        include: {
+          conversations: {
+            include: { messages: { orderBy: { createdAt: "asc" } } },
+          },
         },
       },
-    });
+    },
+  });
 
-    if (!user) {
-      return { projects: [] };
+  if (!user) return { projects: [] };
+
+  const projects = user.projects.map((p) => {
+    const taskMessages = {};
+    for (const conv of p.conversations) {
+      taskMessages[conv.taskId] = conv.messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
     }
-
-    // Transform to match the existing format
     return {
-      projects: user.projects.map(project => ({
-        id: project.id,
-        name: project.name,
-        completedTasks: project.completedTasks,
-        deliverables: project.deliverables,
-      })),
+      id: p.id,
+      name: p.name,
+      completedTasks: p.completedTasks,
+      deliverables: p.deliverables,
+      taskMessages,
     };
-  } catch (error) {
-    console.error("Error fetching user data:", error);
-    return { projects: [] };
-  }
+  });
+
+  return { projects };
 }
 
-export async function setUserData(userEmail, data) {
-  try {
-    // First ensure the user exists
-    const user = await prisma.user.findUnique({
-      where: { email: userEmail },
-    });
+export async function setUserData(email, data) {
+  const user = await prisma.user.upsert({
+    where: { email },
+    update: {},
+    create: { email },
+  });
 
-    if (!user) {
-      throw new Error("User not found");
-    }
+  const incomingProjects = data.projects || [];
 
-    // Update or create projects
-    for (const project of data.projects) {
-      if (project.id) {
-        // Update existing project
-        await prisma.project.upsert({
-          where: { id: project.id },
-          update: {
-            name: project.name,
-            completedTasks: project.completedTasks || {},
-            deliverables: project.deliverables || {},
-          },
-          create: {
-            id: project.id,
-            name: project.name,
-            userId: user.id,
-            completedTasks: project.completedTasks || {},
-            deliverables: project.deliverables || {},
-          },
-        });
-      } else {
-        // Create new project
-        await prisma.project.create({
-          data: {
-            name: project.name,
-            userId: user.id,
-            completedTasks: project.completedTasks || {},
-            deliverables: project.deliverables || {},
-          },
-        });
-      }
-    }
-
-    // Delete projects that are no longer in the list
-    const projectIds = data.projects.filter(p => p.id).map(p => p.id);
-    await prisma.project.deleteMany({
-      where: {
+  for (const p of incomingProjects) {
+    const project = await prisma.project.upsert({
+      where: { id: p.id },
+      update: {
+        name: p.name,
+        completedTasks: p.completedTasks || {},
+        deliverables: p.deliverables || {},
+      },
+      create: {
+        id: p.id,
+        name: p.name,
         userId: user.id,
-        id: { notIn: projectIds },
+        completedTasks: p.completedTasks || {},
+        deliverables: p.deliverables || {},
       },
     });
-  } catch (error) {
-    console.error("Error saving user data:", error);
-    throw error;
+
+    if (p.taskMessages) {
+      for (const [taskId, messages] of Object.entries(p.taskMessages)) {
+        const conv = await prisma.conversation.upsert({
+          where: { projectId_taskId: { projectId: project.id, taskId } },
+          update: {},
+          create: { projectId: project.id, taskId },
+        });
+
+        const existingCount = await prisma.message.count({
+          where: { conversationId: conv.id },
+        });
+
+        if (messages.length > existingCount) {
+          const newMessages = messages.slice(existingCount);
+          await prisma.message.createMany({
+            data: newMessages.map((m) => ({
+              conversationId: conv.id,
+              role: m.role,
+              content: m.content,
+            })),
+          });
+        }
+      }
+    }
+  }
+
+  const existingIds = (
+    await prisma.project.findMany({
+      where: { userId: user.id },
+      select: { id: true },
+    })
+  ).map((p) => p.id);
+
+  const incomingIds = incomingProjects.map((p) => p.id);
+  const toDelete = existingIds.filter((id) => !incomingIds.includes(id));
+
+  if (toDelete.length > 0) {
+    await prisma.project.deleteMany({ where: { id: { in: toDelete } } });
   }
 }
