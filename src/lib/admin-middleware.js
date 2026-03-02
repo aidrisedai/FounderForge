@@ -8,14 +8,22 @@ export async function verifyAdmin() {
 
     if (!token) return false;
 
-    const session = await prisma.adminSession.findUnique({ where: { token: token.value } });
+    // Try database first
+    try {
+      const session = await prisma.adminSession.findUnique({ where: { token: token.value } });
 
-    if (!session || session.expiresAt < new Date()) {
-      if (session) await prisma.adminSession.delete({ where: { token: token.value } });
-      return false;
+      if (!session || session.expiresAt < new Date()) {
+        if (session) await prisma.adminSession.delete({ where: { token: token.value } });
+        return false;
+      }
+
+      return true;
+    } catch (dbError) {
+      // If database fails, fall back to in-memory tokens
+      console.log("Database not available for admin verification, using in-memory tokens");
+      global.adminTokens = global.adminTokens || new Set();
+      return global.adminTokens.has(token.value);
     }
-
-    return true;
   } catch (error) {
     console.error("Admin verification error:", error);
     return false;

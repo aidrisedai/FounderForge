@@ -1,17 +1,13 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/route";
+import { requireAdmin } from "@/lib/admin-middleware";
 import prisma from "@/lib/prisma";
 import { CURRICULUM } from "@/lib/curriculum";
 
-const ADMIN_EMAILS = process.env.ADMIN_EMAILS?.split(',') || [];
 const TOTAL_TASKS = CURRICULUM.reduce((sum, s) => sum + s.tasks.length, 0);
 
 export async function GET(request) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.email || !ADMIN_EMAILS.includes(session.user.email)) {
-    return Response.json({ error: "Unauthorized - Admin access required" }, { status: 401 });
-  }
+  // Check admin authentication using admin tokens
+  const authError = await requireAdmin();
+  if (authError) return authError;
 
   try {
     const dbUsers = await prisma.user.findMany({

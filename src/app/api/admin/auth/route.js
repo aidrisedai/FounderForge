@@ -20,7 +20,14 @@ export async function POST(request) {
     const token = generateToken();
     const expiresAt = new Date(Date.now() + 86400 * 1000);
 
-    await prisma.adminSession.create({ data: { token, expiresAt } });
+    // Try to save to database, fall back to in-memory if it fails
+    try {
+      await prisma.adminSession.create({ data: { token, expiresAt } });
+    } catch (dbError) {
+      console.log("Database not available, storing token in memory");
+      global.adminTokens = global.adminTokens || new Set();
+      global.adminTokens.add(token);
+    }
 
     const cookieStore = cookies();
     cookieStore.set("admin_token", token, {
@@ -45,14 +52,23 @@ export async function GET(request) {
 
     if (!token) return Response.json({ authenticated: false });
 
-    const session = await prisma.adminSession.findUnique({ where: { token: token.value } });
+    // Try database first, fall back to in-memory
+    let isValid = false;
+    try {
+      const session = await prisma.adminSession.findUnique({ where: { token: token.value } });
 
-    if (!session || session.expiresAt < new Date()) {
-      if (session) await prisma.adminSession.delete({ where: { token: token.value } });
-      return Response.json({ authenticated: false });
+      if (session && session.expiresAt > new Date()) {
+        isValid = true;
+      } else if (session) {
+        await prisma.adminSession.delete({ where: { token: token.value } });
+      }
+    } catch (dbError) {
+      console.log("Database not available, checking in-memory tokens");
+      global.adminTokens = global.adminTokens || new Set();
+      isValid = global.adminTokens.has(token.value);
     }
 
-    return Response.json({ authenticated: true, username: ADMIN_USERNAME });
+    return Response.json({ authenticated: isValid, username: isValid ? ADMIN_USERNAME : null });
   } catch (error) {
     console.error("Auth check error:", error);
     return Response.json({ authenticated: false });
@@ -65,7 +81,17 @@ export async function DELETE(request) {
     const token = cookieStore.get("admin_token");
 
     if (token) {
-      await prisma.adminSession.deleteMany({ where: { token: token.value } });
+      // Try to delete from database, also clear from memory
+      try {
+        await prisma.adminSession.deleteMany({ where: { token: token.value } });
+      } catch (dbError) {
+        console.log("Database not available for logout");
+      }
+      
+      // Always clear from in-memory as well
+      global.adminTokens = global.adminTokens || new Set();
+      global.adminTokens.delete(token.value);
+      
       cookieStore.delete("admin_token");
     }
 
