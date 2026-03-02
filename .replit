@@ -15,7 +15,7 @@ HOSTNAME = "0.0.0.0"
 NEXTAUTH_URL = "https://f5a7bb2e-741b-43b2-9f5f-b2eb668e2aa0-00-svpl91aazrsd.worf.replit.dev"
 
 [userenv.production]
-NEXTAUTH_URL = "https://forgeflow.replit.app"
+NEXTAUTH_URL = "https://founderforge.replit.app"
 
 [workflows]
 runButton = "Project"
