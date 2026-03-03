@@ -4,6 +4,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { CURRICULUM, TOTAL_TASKS } from "@/lib/curriculum";
 import PersonalityAssessment from "@/components/PersonalityAssessment";
 import MemoryDashboard from "@/components/MemoryDashboard";
+import UserProfile from "@/components/UserProfile";
+import LeaderboardWidget from "@/components/LeaderboardWidget";
+import AchievementNotification, { LevelUpNotification, XPNotification } from "@/components/AchievementNotification";
 import { getPersonalitySummary, getPersonalizedEncouragement } from "@/lib/personality";
 
 // ── API helpers ──
@@ -143,6 +146,10 @@ export default function Home() {
   const [showPersonality, setShowPersonality] = useState(false);
   const [personalityChecked, setPersonalityChecked] = useState(false);
   const [showMemory, setShowMemory] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(true);
+  const [notifications, setNotifications] = useState([]);
+  const [taskStartTime, setTaskStartTime] = useState(null);
   const [showSidebarNewProject, setShowSidebarNewProject] = useState(false);
   const [sidebarProjectName, setSidebarProjectName] = useState("");
   const btmRef = useRef(null);
@@ -200,6 +207,10 @@ export default function Home() {
     const saved = (project.taskMessages || {})[task.id] || [];
     setMessages(saved);
     needsInitRef.current = saved.length === 0;
+    // Set task start time for gamification
+    if (saved.length === 0) {
+      setTaskStartTime(Date.now());
+    }
   }, [activeId, stepIdx, taskIdx]);
 
   // Init new task
@@ -242,7 +253,8 @@ export default function Home() {
         stepId: step.id, 
         taskIdx, 
         project,
-        personality  // Include personality in API call
+        personality,  // Include personality in API call
+        taskStartTime: taskStartTime || Date.now()
       });
       const raw = (data.content || []).map(c => c.text || "").join("") || "Let me try again...";
 
@@ -262,10 +274,61 @@ export default function Home() {
           return { ...p, deliverables: nd, completedTasks: nc };
         });
         setBanner(task.title);
+        
+        // Handle gamification data
+        if (data.gamification) {
+          const { xpEarned, leveledUp, newLevel, achievements } = data.gamification;
+          
+          // Show XP notification
+          if (xpEarned) {
+            setNotifications(prev => [...prev, {
+              type: 'xp',
+              data: { xpEarned, reason: `Completed: ${task.title}` },
+              id: Date.now()
+            }]);
+          }
+          
+          // Show level up notification
+          if (leveledUp && newLevel) {
+            setTimeout(() => {
+              setNotifications(prev => [...prev, {
+                type: 'levelup',
+                data: { newLevel },
+                id: Date.now() + 1
+              }]);
+            }, 500);
+          }
+          
+          // Show achievement notifications
+          if (achievements && achievements.length > 0) {
+            achievements.forEach((ach, idx) => {
+              setTimeout(() => {
+                setNotifications(prev => [...prev, {
+                  type: 'achievement',
+                  data: { 
+                    achievement: ach.achievement,
+                    xpEarned: ach.achievement.xpReward
+                  },
+                  id: Date.now() + 100 + idx
+                }]);
+              }, 1000 + (idx * 1500));
+            });
+          }
+        }
+        
+        // Reset task start time for next task
+        setTaskStartTime(null);
+        
         setTimeout(() => {
           setBanner(null);
-          if (taskIdx < step.tasks.length-1) setTaskIdx(taskIdx+1);
-          else if (stepIdx < CURRICULUM.length-1) { setStepIdx(stepIdx+1); setTaskIdx(0); }
+          if (taskIdx < step.tasks.length-1) {
+            setTaskIdx(taskIdx+1);
+            setTaskStartTime(Date.now()); // Set start time for new task
+          } else if (stepIdx < CURRICULUM.length-1) { 
+            setStepIdx(stepIdx+1); 
+            setTaskIdx(0);
+            setTaskStartTime(Date.now()); // Set start time for new task
+          }
         }, 2200);
       }
     } catch (e) {
@@ -554,26 +617,48 @@ export default function Home() {
               <div style={{ fontSize:14, fontFamily:"var(--ff-heading)", color:"rgba(255,255,255,.9)" }}>{task.title}</div>
             </div>
           </div>
-          <button
-            onClick={() => setShowMemory(true)}
-            style={{
-              padding: "6px 12px",
-              borderRadius: 6,
-              border: "1px solid rgba(255,255,255,.08)",
-              background: "rgba(255,255,255,.02)",
-              color: "rgba(255,255,255,.4)",
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "var(--ff-body)",
-              display: "flex",
-              alignItems: "center",
-              gap: 6
-            }}
-          >
-            <span style={{ fontSize: 14 }}>🧠</span>
-            Memory & Insights
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => setShowMemory(true)}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 6,
+                border: "1px solid rgba(255,255,255,.08)",
+                background: "rgba(255,255,255,.02)",
+                color: "rgba(255,255,255,.4)",
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "var(--ff-body)",
+                display: "flex",
+                alignItems: "center",
+                gap: 6
+              }}
+            >
+              <span style={{ fontSize: 14 }}>🧠</span>
+              Memory & Insights
+            </button>
+            <button
+              onClick={() => setShowProfile(true)}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 6,
+                border: "1px solid rgba(255,255,255,.08)",
+                background: "rgba(255,255,255,.02)",
+                color: "rgba(255,255,255,.4)",
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "var(--ff-body)",
+                display: "flex",
+                alignItems: "center",
+                gap: 6
+              }}
+            >
+              <span style={{ fontSize: 14 }}>🏆</span>
+              Profile & Stats
+            </button>
+          </div>
         </div>
         <div style={{ padding:"8px 20px", borderBottom:"1px solid rgba(255,255,255,.03)" }}>
           <div style={{ maxWidth:660, margin:"0 auto", display:"flex", gap:6, flexWrap:"wrap" }}>
@@ -612,6 +697,48 @@ export default function Home() {
           onClose={() => setShowMemory(false)}
         />
       )}
+      
+      {/* User Profile Modal */}
+      {showProfile && (
+        <UserProfile onClose={() => setShowProfile(false)} />
+      )}
+      
+      {/* Leaderboard Widget */}
+      {showLeaderboard && <LeaderboardWidget />}
+      
+      {/* Notifications */}
+      <div style={{ position: "fixed", top: 20, right: 20, zIndex: 2000 }}>
+        {notifications.map((notif) => {
+          if (notif.type === "achievement") {
+            return (
+              <AchievementNotification
+                key={notif.id}
+                achievement={notif.data.achievement}
+                xpEarned={notif.data.xpEarned}
+                onClose={() => setNotifications(prev => prev.filter(n => n.id !== notif.id))}
+              />
+            );
+          } else if (notif.type === "levelup") {
+            return (
+              <LevelUpNotification
+                key={notif.id}
+                newLevel={notif.data.newLevel}
+                onClose={() => setNotifications(prev => prev.filter(n => n.id !== notif.id))}
+              />
+            );
+          } else if (notif.type === "xp") {
+            return (
+              <XPNotification
+                key={notif.id}
+                xpEarned={notif.data.xpEarned}
+                reason={notif.data.reason}
+                onClose={() => setNotifications(prev => prev.filter(n => n.id !== notif.id))}
+              />
+            );
+          }
+          return null;
+        })}
+      </div>
     </div>
   );
 }

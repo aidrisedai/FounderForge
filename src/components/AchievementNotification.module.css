@@ -1,0 +1,241 @@
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 2000;
+  overflow: hidden;
+  transform: translateX(400px);
+  transition: transform 0.3s ease;
+  max-width: 400px;
+}
+
+.notification.visible {
+  transform: translateX(0);
+}
+
+.content {
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  color: white;
+}
+
+.icon {
+  font-size: 48px;
+  animation: bounce 0.5s ease;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.info {
+  flex: 1;
+}
+
+.title {
+  font-family: var(--ff-heading);
+  font-size: 14px;
+  margin: 0 0 4px 0;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.name {
+  font-size: 20px;
+  font-weight: bold;
+  margin: 0 0 4px 0;
+}
+
+.description {
+  font-size: 14px;
+  margin: 0 0 8px 0;
+  opacity: 0.9;
+}
+
+.xp {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.3);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  width: 32px;
+  height: 32px;
+}
+
+.closeButton:hover {
+  opacity: 1;
+}
+
+.progressBar {
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.progress {
+  height: 100%;
+  background: white;
+  animation: progressFill 5s linear;
+}
+
+@keyframes progressFill {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+/* Level Up Notification */
+.levelUp {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(255, 215, 0, 0.4);
+  z-index: 2001;
+  transition: transform 0.3s ease;
+  padding: 30px;
+  min-width: 350px;
+}
+
+.levelUp.visible {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.levelUpContent {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  color: #333;
+}
+
+.levelUpAnimation {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.levelNumber {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 48px;
+  font-weight: bold;
+  font-family: var(--ff-heading);
+  animation: pulse 1s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.levelStars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  font-size: 40px;
+  animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.levelInfo {
+  flex: 1;
+}
+
+.levelUpTitle {
+  font-family: var(--ff-heading);
+  font-size: 28px;
+  margin: 0 0 8px 0;
+  color: #333;
+}
+
+.levelName {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.levelRange {
+  font-size: 14px;
+  opacity: 0.8;
+  margin: 0;
+}
+
+/* XP Notification */
+.xpNotification {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(50px);
+  background: var(--color-bg);
+  border: 2px solid var(--color-primary);
+  border-radius: 8px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1999;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.xpNotification.visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.xpAmount {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--color-primary);
+}
+
+.xpReason {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .notification {
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+  
+  .levelUp {
+    width: 90%;
+    min-width: auto;
+    padding: 20px;
+  }
+  
+  .levelUpContent {
+    flex-direction: column;
+    text-align: center;
+  }
+}

@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // User model - linked to NextAuth
@@ -20,10 +19,13 @@ model User {
   updatedAt     DateTime  @updatedAt
   
   // Relations
-  projects      Project[]
-  personality   Personality?
-  memory        Memory?
-  activities    Activity[]
+  projects           Project[]
+  personality        Personality?
+  memory             Memory?
+  activities         Activity[]
+  stats              UserStats?
+  achievements       UserAchievement[]
+  leaderboardEntries LeaderboardEntry[]
   
   @@index([email])
 }
@@ -211,6 +213,77 @@ model Activity {
   
   @@index([userId, createdAt])
   @@index([type])
+}
+
+// UserStats model - gamification statistics
+model UserStats {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  xp              Int      @default(0)
+  level           Int      @default(1)
+  points          Int      @default(0)
+  streak          Int      @default(0)
+  lastActiveDate  DateTime @default(now())
+  
+  tasksCompleted  Int      @default(0)
+  totalTimeSpent  Int      @default(0) // in minutes
+  averageSpeed    Float    @default(0)
+  perfectDays     Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([xp])
+  @@index([level])
+}
+
+// Achievement model - available achievements
+model Achievement {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  icon        String
+  category    String   // speed, consistency, quality, milestone
+  requirement Json     // {type: "tasks", value: 10} or {type: "streak", value: 7}
+  xpReward    Int      @default(50)
+  
+  users       UserAchievement[]
+  
+  createdAt   DateTime @default(now())
+}
+
+// UserAchievement model - achievements earned by users
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  
+  earnedAt      DateTime    @default(now())
+  celebrated    Boolean     @default(false)
+  
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+// LeaderboardEntry model - weekly/monthly leaderboard snapshots
+model LeaderboardEntry {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  period     String   // "week_2024_01" or "month_2024_01"
+  xpEarned   Int
+  rank       Int
+  
+  createdAt  DateTime @default(now())
+  
+  @@unique([userId, period])
+  @@index([period, rank])
+  @@index([userId])
 }
 
 // AdminSession model - admin authentication sessions

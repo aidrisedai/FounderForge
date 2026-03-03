@@ -17,6 +17,14 @@ import {
   addMilestone,
   extractMemoriesForMentor
 } from "@/lib/memory";
+import {
+  calculateTaskXP,
+  awardXP,
+  updateStreak,
+  checkAchievements,
+  getUserStats,
+  updateUserStats
+} from "@/lib/gamification";
 
 export async function POST(req) {
   const session = await getServerSession();
@@ -24,7 +32,7 @@ export async function POST(req) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { messages, stepId, taskIdx, project, personality } = await req.json();
+  const { messages, stepId, taskIdx, project, personality, taskStartTime } = await req.json();
 
   const step = CURRICULUM.find(s => s.id === stepId);
   if (!step) return Response.json({ error: "Invalid step" }, { status: 400 });
@@ -156,7 +164,8 @@ COMPLETION FORMAT (ONLY when all criteria met):
       }
     }
     
-    // Add milestone if task completed
+    // Add milestone and gamification if task completed
+    let gamificationData = null;
     if (isComplete) {
       memory = addMilestone(memory, `Completed: ${task.title}`, project?.id);
       
@@ -169,6 +178,48 @@ COMPLETION FORMAT (ONLY when all criteria met):
           [step.id]: taskIdx + 1
         }
       });
+      
+      // Calculate time spent on task (in minutes)
+      const timeSpent = taskStartTime ? Math.floor((Date.now() - taskStartTime) / 60000) : 60;
+      
+      // Determine task complexity
+      const taskComplexity = task.difficulty || "moderate";
+      
+      // Calculate and award XP
+      const xpEarned = calculateTaskXP(taskComplexity, timeSpent, true);
+      const xpResult = await awardXP(userId, xpEarned, `Completed: ${task.title}`);
+      
+      // Update streak
+      const newStreak = await updateStreak(userId);
+      
+      // Update stats
+      const stats = await getUserStats(userId);
+      await updateUserStats(userId, {
+        tasksCompleted: stats.tasksCompleted + 1,
+        totalTimeSpent: stats.totalTimeSpent + timeSpent,
+        averageSpeed: (stats.totalTimeSpent + timeSpent) / (stats.tasksCompleted + 1)
+      });
+      
+      // Check for achievements
+      const context = {
+        taskTime: timeSpent,
+        dailyTaskCount: 1, // Simplified for now
+        stageCompleted: (taskIdx + 1) >= step.tasks.length,
+        totalDeliverables: Object.keys(project?.deliverables || {}).length + 1,
+        projectCount: 1, // Simplified for now
+        curriculumProgress: ((stepId - 1) * 10 + taskIdx + 1) / 60 * 100 // Rough estimate
+      };
+      
+      const newAchievements = await checkAchievements(userId, context);
+      
+      gamificationData = {
+        xpEarned,
+        leveledUp: xpResult.leveledUp,
+        newLevel: xpResult.newLevel,
+        currentStats: xpResult.stats,
+        newStreak,
+        achievements: newAchievements
+      };
     }
     
     // Look for insights in the conversation
@@ -199,6 +250,14 @@ COMPLETION FORMAT (ONLY when all criteria met):
       hasDeliverable,
       isComplete
     });
+    
+    // Include gamification data in response if task was completed
+    if (gamificationData) {
+      return Response.json({
+        ...data,
+        gamification: gamificationData
+      });
+    }
     
     return Response.json(data);
   } catch (e) {
