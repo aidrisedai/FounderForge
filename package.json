@@ -16,15 +16,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@supabase/supabase-js": "^2.98.0",
     "next": "^14.2.35",
     "next-auth": "^4.24.13",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@prisma/client": "^7.4.2",
+    "@prisma/client": "^5.22.0",
     "dotenv": "^17.3.1",
-    "prisma": "^7.4.2"
+    "prisma": "^5.22.0"
   }
 }
