@@ -1,0 +1,66 @@
+--> npm install
+
+
+added 83 packages, changed 7 packages, and audited 141 packages in 7s
+
+19 packages are looking for funding
+  run `npm fund` for details
+
+
+9 vulnerabilities (8 moderate, 1 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.11.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.11.0
+npm notice To update run: npm install -g npm@11.11.0
+npm notice
+
+2026-03-04T01:21:49Z info: Starting Build
+
+> founderforge@1.0.0 build
+> next build
+
+
+  ▲ Next.js 14.2.35
+
+  - Environments: .env.local
+
+
+   Creating an optimized production build ...
+
+ ✓ Compiled successfully
+
+   Linting and checking validity of types ...
+
+   Collecting page data ...
+
+Error: Cannot find module '/home/runner/workspace/node_modules/@prisma/client/runtime/library.js'
+    at createEsmNotFoundErr (node:internal/modules/cjs/loader:1244:15)
+    at finalizeEsmResolution (node:internal/modules/cjs/loader:1232:15)
+    at resolveExports (node:internal/modules/cjs/loader:638:14)
+    at Module._findPath (node:internal/modules/cjs/loader:711:31)
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1193:27)
+    at /home/runner/workspace/node_modules/next/dist/server/require-hook.js:55:36
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at mod.require (/home/runner/workspace/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:182:18) {
+  code: 'MODULE_NOT_FOUND',
+  path: '/home/runner/workspace/node_modules/@prisma/client/package.json'
+}
+
+> Build error occurred
+
+Error: Failed to collect page data for /api/admin/conversations
+    at /home/runner/workspace/node_modules/next/dist/build/utils.js:1269:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  type: 'Error'
+}
