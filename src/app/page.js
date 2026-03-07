@@ -113,7 +113,7 @@ function LoginScreen() {
         <div style={{ width:60, height:60, borderRadius:16, margin:"0 auto 24px", background:"linear-gradient(135deg,#E8553A,#BE185D)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(232,85,58,.3)" }}>F</div>
         <div style={{ fontSize:10, fontWeight:700, letterSpacing:".3em", color:"rgba(255,255,255,.18)", marginBottom:14, fontFamily:"var(--ff-body)", fontWeight:600 }}>AI STARTUP MENTOR</div>
         <h1 style={{ fontSize:"clamp(34px,5vw,48px)", fontWeight:400, lineHeight:1.1, margin:"0 0 14px", fontFamily:"var(--ff-heading)", letterSpacing:"-.02em" }}>Founder<span style={{ color:"#E8553A" }}>Forge</span></h1>
-        <p style={{ fontSize:15, lineHeight:1.7, color:"rgba(255,255,255,.4)", margin:"0 auto 36px", maxWidth:380 }}>From idea to revenue in 6 steps. Sign in to start your journey.</p>
+        <p style={{ fontSize:15, lineHeight:1.7, color:"rgba(255,255,255,.4)", margin:"0 auto 36px", maxWidth:380 }}>From idea to revenue in {CURRICULUM.length} steps. Sign in to start your journey.</p>
         <button onClick={() => signIn("google")} style={{ padding:"14px 32px", borderRadius:10, border:"1px solid rgba(255,255,255,.12)", background:"rgba(255,255,255,.04)", color:"#fff", fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"inline-flex", alignItems:"center", gap:10, transition:"all .2s" }}
           onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,.08)"}
           onMouseOut={e => e.currentTarget.style.background = "rgba(255,255,255,.04)"}>

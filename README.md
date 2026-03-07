@@ -1,6 +1,6 @@
 # FounderForge — AI Startup Mentor
 
-A structured 6-step platform that guides founders from idea to revenue with an AI mentor. Google Sign-In, persistent progress, multi-project support.
+A structured 7-step platform that guides founders from idea to revenue with an AI mentor. Google Sign-In, persistent progress, multi-project support.
 
 ## Quick Setup (10 minutes)
 
@@ -98,7 +98,7 @@ src/
 ├── components/
 │   └── Providers.js          # NextAuth session provider
 └── lib/
-    ├── curriculum.js         # The 38-task structured curriculum
+    ├── curriculum.js         # The structured multi-step curriculum
     ├── storage.js            # File-based user storage
     ├── admin-storage.js      # Admin activity tracking
     └── admin-auth.js         # Admin authentication helpers

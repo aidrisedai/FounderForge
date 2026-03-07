@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth";
-import { CURRICULUM } from "@/lib/curriculum";
+import { CURRICULUM, TOTAL_TASKS } from "@/lib/curriculum";
 import { logUserActivity } from "@/lib/admin-storage";
 import { 
   getPersonalizedExample, 
@@ -91,7 +91,7 @@ PERSONALITY: Direct, warm, punchy. 2-4 paragraphs MAX. Real examples. Push back 
 
 PROJECT: "${project?.name || "Untitled"}"
 User: ${session.user.name || session.user.email}
-POSITION: Step ${step.id}/6 "${step.title}" → Task ${taskIdx + 1}/${step.tasks.length} "${task.title}"
+POSITION: Step ${step.id}/${CURRICULUM.length} "${step.title}" → Task ${taskIdx + 1}/${step.tasks.length} "${task.title}"
 ${personalitySection}
 ━━━ CURRICULUM ━━━
 Step overview: ${step.overview}
@@ -201,13 +201,19 @@ COMPLETION FORMAT (ONLY when all criteria met):
       });
       
       // Check for achievements
+      const completedTasksBefore = CURRICULUM.reduce((sum, s) => {
+        return sum + (project?.completedTasks?.[s.id] || 0);
+      }, 0);
+
       const context = {
         taskTime: timeSpent,
         dailyTaskCount: 1, // Simplified for now
         stageCompleted: (taskIdx + 1) >= step.tasks.length,
         totalDeliverables: Object.keys(project?.deliverables || {}).length + 1,
         projectCount: 1, // Simplified for now
-        curriculumProgress: ((stepId - 1) * 10 + taskIdx + 1) / 60 * 100 // Rough estimate
+        curriculumProgress: TOTAL_TASKS > 0
+          ? (Math.min(completedTasksBefore + 1, TOTAL_TASKS) / TOTAL_TASKS) * 100
+          : 0
       };
       
       const newAchievements = await checkAchievements(userId, context);
