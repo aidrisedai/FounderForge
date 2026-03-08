@@ -152,7 +152,38 @@ function PreSignInExperience() {
   const activePart = HYPOTHESIS_PARTS[partIdx];
   const isComplete = partIdx >= HYPOTHESIS_PARTS.length;
   const progress = Math.round((Object.values(answers).filter(Boolean).length / HYPOTHESIS_PARTS.length) * 100);
-  const hypothesis = `"${answers.audience || "[Specific audience]"} struggles with ${answers.problem || "[specific problem]"} because ${answers.cause || "[root cause]"}. Currently they handle it by ${answers.workaround || "[current workaround]"}, which costs them ${answers.cost || "[time/money/pain]"}."`;
+
+  function normalizeAnswer(text, type) {
+    if (!text) return "";
+    let normalized = text
+      .replace(/\n+/g, " ")
+      .replace(/\s+/g, " ")
+      .replace(/^["']+|["']+$/g, "")
+      .replace(/a measurable rewrite:\s*/ig, "")
+      .replace(/clarified rewrite:\s*/ig, "")
+      .replace(/example rewrite:\s*/ig, "")
+      .replace(/suggested rewrite of your answer:\s*/ig, "")
+      .replace(/\s*,?\s*based on repeated patterns seen in recent conversations or workflow/ig, "")
+      .replace(/\s*,?\s*so the same problem keeps repeating/ig, "")
+      .trim();
+
+    if (type === "cause") {
+      normalized = normalized.replace(/^(because|due to)\s+/i, "").trim();
+    }
+    if (type === "cost") {
+      normalized = normalized.replace(/^(this means|this costs?|costs?)\s+/i, "").trim();
+    }
+
+    return normalized.replace(/[.?!]+$/, "").trim();
+  }
+
+  const audienceText = normalizeAnswer(answers.audience, "audience") || "[Specific audience]";
+  const problemText = normalizeAnswer(answers.problem, "problem") || "[specific problem]";
+  const causeText = normalizeAnswer(answers.cause, "cause") || "[root cause]";
+  const workaroundText = normalizeAnswer(answers.workaround, "workaround") || "[current workaround]";
+  const costText = normalizeAnswer(answers.cost, "cost") || "[time/money/pain]";
+
+  const hypothesis = `"${audienceText} struggle with ${problemText} because ${causeText}. Currently they handle it by ${workaroundText}, which costs them ${costText}."`;
 
   useEffect(() => {
     if (!isComplete) {
@@ -232,9 +263,6 @@ function PreSignInExperience() {
         if (!/\b(observed|seen|noticed|calls|inbox|workflow|analytics)\b/i.test(draft)) {
           draft = `${draft}, based on repeated patterns seen in recent conversations or workflow`;
         }
-        if (!/\bso\b/i.test(draft)) {
-          draft = `${draft}, so the same problem keeps repeating`;
-        }
         return `${capitalize(draft)}.`;
       }
 
@@ -254,10 +282,10 @@ function PreSignInExperience() {
           return "This currently costs about 5+ hours/week and meaningful financial impact each month.";
         }
         if (!/\d/.test(cleaned)) {
-          return `${capitalize(cleaned)}. A measurable rewrite: this currently costs around 5+ hours/week and meaningful financial impact each month.`;
+          return `${capitalize(cleaned)}, which translates to about 5+ hours/week and clear monthly financial impact.`;
         }
         if (!/\b(hour|hr|week|month|\$|percent|%|deal|lead|conversion|revenue)\b/i.test(cleaned)) {
-          return `${capitalize(cleaned)}. Clarified rewrite: this translates into clear weekly time loss and monthly impact.`;
+          return `${capitalize(cleaned)}, with clear weekly time loss and monthly impact.`;
         }
         return `${capitalize(cleaned)}.`;
       }
