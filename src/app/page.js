@@ -192,9 +192,17 @@ function PreSignInExperience() {
         "If exact numbers are unknown, give a conservative estimate and label it.",
       ],
     };
+    const examples = {
+      audience: "Solo consultants in the US doing $5k-$20k/month who get most leads from LinkedIn DMs.",
+      problem: "In the last 2 weeks, 4 warm leads went cold because follow-up happened after 48+ hours.",
+      cause: "Because lead notes are split across DMs, email, and Sheets, there is no single follow-up queue, so reminders get missed.",
+      workaround: "They check DMs every evening, copy names into a Google Sheet, and set manual phone reminders to follow up.",
+      cost: "This costs about 6 hours/week and roughly $2,000/month in missed deals.",
+    };
 
     const partTips = suggestions[partKey] || ["Be more specific and evidence-backed."];
-    return `${issue}\n\nI currently read: "${snippet}"\n\nUpgrade it with:\n1. ${partTips[0]}\n2. ${partTips[1]}\n3. ${partTips[2]}`;
+    const partExample = examples[partKey] || "Be specific, evidence-backed, and measurable.";
+    return `${issue}\n\nI currently read: "${snippet}"\n\nUpgrade it with:\n1. ${partTips[0]}\n2. ${partTips[1]}\n3. ${partTips[2]}\n\nExample you can model:\n"${partExample}"`;
   }
 
   function validatePart(partKey, value) {
