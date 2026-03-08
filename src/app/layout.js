@@ -3,7 +3,7 @@ import { Providers } from "@/components/Providers";
 
 export const metadata = {
   title: "FounderForge — AI Startup Mentor",
-  description: "From idea to revenue with a structured AI mentor journey.",
+  description: "Get a validated startup hypothesis in 5 minutes, then execute with a structured AI mentor journey.",
 };
 
 export default function RootLayout({ children }) {

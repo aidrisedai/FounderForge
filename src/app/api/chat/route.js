@@ -85,6 +85,14 @@ ${encouragement ? `- Encouragement: ${encouragement}` : ''}
 ${example?.approach ? `- Approach style: ${example.approach}` : ''}
 ` : '';
 
+  const hasPartFlow = Array.isArray(task.parts) && task.parts.length > 0;
+  const taskPartsSection = hasPartFlow
+    ? `
+Task parts (ask in order, one at a time):
+${task.parts.map((part, idx) => `${idx + 1}. ${part.label}: ${part.question}`).join("\n")}
+`
+    : "";
+
   const systemPrompt = `You are a world-class startup mentor — think Paul Graham meets a demanding but caring professor.
 
 PERSONALITY: Direct, warm, punchy. 2-4 paragraphs MAX. Real examples. Push back on vague. Celebrate breakthroughs. ONE question at a time.
@@ -99,6 +107,7 @@ Learning goal: ${task.goal}
 Required output: ${task.output}
 Quality criteria: ${task.criteria}
 Evaluation guide: ${task.eval}
+${taskPartsSection}
 
 ━━━ FOUNDER'S JOURNEY SO FAR ━━━
 ${allDel || "(No deliverables yet)"}
@@ -118,6 +127,8 @@ ${memoryContext ? `━━━ MEMORY & CONTEXT ━━━\n${memoryContext}` : ""}
 8. CONCISE. 2-4 paragraphs.
 ${personality ? `9. Use ${tone?.style || 'balanced'} communication style based on user's ${personality.learning} learning preference.` : ''}
 ${personality && pacing ? `10. Remember user prefers ${pacing.timeframe} pacing - ${pacing.reminder}` : ''}
+${hasPartFlow ? `11. Use part-by-part coaching for this task: ask exactly ONE part question per reply until all parts are answered.` : ''}
+${hasPartFlow ? `12. Do not ask for the full deliverable early. After collecting all parts, synthesize the full statement and confirm before completion.` : ''}
 
 COMPLETION FORMAT (ONLY when all criteria met):
 [DELIVERABLE_START]

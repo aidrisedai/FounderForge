@@ -103,25 +103,169 @@ function Timeline({ steps, project, activeStepId, activeTaskIdx, onNav }) {
   );
 }
 
-// ── Login Screen ──
-function LoginScreen() {
+const HYPOTHESIS_PARTS = [
+  {
+    key: "audience",
+    label: "Audience",
+    prompt: "Who is the specific audience you want to serve?",
+    placeholder: "e.g. Solo consultants doing $5k-$20k/month",
+  },
+  {
+    key: "problem",
+    label: "Problem",
+    prompt: "What exact painful problem do they have?",
+    placeholder: "e.g. They lose leads because follow-up is inconsistent",
+  },
+  {
+    key: "cause",
+    label: "Root Cause",
+    prompt: "Why does this problem keep happening?",
+    placeholder: "e.g. Their process lives across DMs, notes, and spreadsheets",
+  },
+  {
+    key: "workaround",
+    label: "Current Workaround",
+    prompt: "How are they handling this problem today?",
+    placeholder: "e.g. Manual reminders and ad-hoc copy/paste templates",
+  },
+  {
+    key: "cost",
+    label: "Cost",
+    prompt: "What does this cost them in time, money, or stress?",
+    placeholder: "e.g. 6+ hours/week and ~$2,000/month in missed deals",
+  },
+];
+
+// ── Pre Sign-in Experience ──
+function PreSignInExperience() {
+  const [partIdx, setPartIdx] = useState(0);
+  const [draft, setDraft] = useState("");
+  const [answers, setAnswers] = useState({
+    audience: "",
+    problem: "",
+    cause: "",
+    workaround: "",
+    cost: "",
+  });
+
+  const activePart = HYPOTHESIS_PARTS[partIdx];
+  const isComplete = partIdx >= HYPOTHESIS_PARTS.length;
+  const progress = Math.round((Object.values(answers).filter(Boolean).length / HYPOTHESIS_PARTS.length) * 100);
+  const hypothesis = `"${answers.audience || "[Specific audience]"} struggles with ${answers.problem || "[specific problem]"} because ${answers.cause || "[root cause]"}. Currently they handle it by ${answers.workaround || "[current workaround]"}, which costs them ${answers.cost || "[time/money/pain]"}."`;
+
+  useEffect(() => {
+    if (!isComplete) {
+      setDraft(answers[activePart.key] || "");
+    }
+  }, [partIdx]);
+
+  function savePart() {
+    if (isComplete || !draft.trim()) return;
+    setAnswers(prev => ({ ...prev, [activePart.key]: draft.trim() }));
+    if (partIdx === HYPOTHESIS_PARTS.length - 1) {
+      setPartIdx(HYPOTHESIS_PARTS.length);
+    } else {
+      setPartIdx(partIdx + 1);
+    }
+  }
+
+  function goBack() {
+    if (partIdx === 0) return;
+    if (isComplete) {
+      const prevIdx = HYPOTHESIS_PARTS.length - 1;
+      setPartIdx(prevIdx);
+      setDraft(answers[HYPOTHESIS_PARTS[prevIdx].key] || "");
+      return;
+    }
+    const prevIdx = partIdx - 1;
+    setPartIdx(prevIdx);
+    setDraft(answers[HYPOTHESIS_PARTS[prevIdx].key] || "");
+  }
+
   return (
     <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:32, position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", inset:0, opacity:.02, backgroundImage:"radial-gradient(rgba(255,255,255,.7) 1px,transparent 1px)", backgroundSize:"28px 28px" }} />
       <div style={{ position:"absolute", top:"-25%", right:"-10%", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,rgba(232,85,58,.06) 0%,transparent 70%)", filter:"blur(80px)" }} />
-      <div style={{ textAlign:"center", maxWidth:460, position:"relative", zIndex:1 }}>
-        <div style={{ width:60, height:60, borderRadius:16, margin:"0 auto 24px", background:"linear-gradient(135deg,#E8553A,#BE185D)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(232,85,58,.3)" }}>F</div>
-        <div style={{ fontSize:10, fontWeight:700, letterSpacing:".3em", color:"rgba(255,255,255,.18)", marginBottom:14, fontFamily:"var(--ff-body)", fontWeight:600 }}>AI STARTUP MENTOR</div>
-        <h1 style={{ fontSize:"clamp(34px,5vw,48px)", fontWeight:400, lineHeight:1.1, margin:"0 0 14px", fontFamily:"var(--ff-heading)", letterSpacing:"-.02em" }}>Founder<span style={{ color:"#E8553A" }}>Forge</span></h1>
-        <p style={{ fontSize:15, lineHeight:1.7, color:"rgba(255,255,255,.4)", margin:"0 auto 36px", maxWidth:380 }}>From idea to revenue in {CURRICULUM.length} steps. Sign in to start your journey.</p>
-        <button onClick={() => signIn("google")} style={{ padding:"14px 32px", borderRadius:10, border:"1px solid rgba(255,255,255,.12)", background:"rgba(255,255,255,.04)", color:"#fff", fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"inline-flex", alignItems:"center", gap:10, transition:"all .2s" }}
-          onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,.08)"}
-          onMouseOut={e => e.currentTarget.style.background = "rgba(255,255,255,.04)"}>
-          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          Continue with Google
-        </button>
-        <div style={{ marginTop:40, display:"flex", gap:6, justifyContent:"center", flexWrap:"wrap" }}>
-          {CURRICULUM.map(s => <span key={s.id} style={{ fontSize:9, padding:"3px 8px", borderRadius:4, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.03)", color:"rgba(255,255,255,.18)", fontFamily:"var(--ff-body)", fontWeight:600 }}>{s.icon} {s.title}</span>)}
+      <div style={{ width:"100%", maxWidth:980, display:"grid", gap:24, gridTemplateColumns:"repeat(auto-fit,minmax(320px,1fr))", position:"relative", zIndex:1 }}>
+        <div style={{ padding:28, borderRadius:18, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.06)" }}>
+          <div style={{ width:56, height:56, borderRadius:14, marginBottom:18, background:"linear-gradient(135deg,#E8553A,#BE185D)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(232,85,58,.3)" }}>F</div>
+          <div style={{ fontSize:10, fontWeight:700, letterSpacing:".3em", color:"rgba(255,255,255,.18)", marginBottom:12, fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>AI Startup Mentor</div>
+          <h1 style={{ fontSize:"clamp(32px,5vw,46px)", fontWeight:400, lineHeight:1.05, margin:"0 0 12px", fontFamily:"var(--ff-heading)", letterSpacing:"-.02em" }}>Founder<span style={{ color:"#E8553A" }}>Forge</span></h1>
+          <p style={{ fontSize:20, lineHeight:1.35, color:"#fff", margin:"0 0 12px", fontFamily:"var(--ff-heading)" }}>Get a validated startup hypothesis in 5 minutes.</p>
+          <p style={{ fontSize:14, lineHeight:1.7, color:"rgba(255,255,255,.45)", margin:"0 0 20px" }}>
+            Try the first task before signup. You will see exactly how the workflow feels before creating an account.
+          </p>
+          <div style={{ display:"grid", gap:8, marginBottom:20 }}>
+            {[
+              "Step-by-step startup guidance (one focused question at a time)",
+              "A concrete deliverable saved at every task",
+              "A campaign and execution plan you can follow daily",
+            ].map(item => (
+              <div key={item} style={{ fontSize:12.5, color:"rgba(255,255,255,.55)", padding:"8px 10px", borderRadius:8, border:"1px solid rgba(255,255,255,.06)", background:"rgba(255,255,255,.015)" }}>
+                {item}
+              </div>
+            ))}
+          </div>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+            {CURRICULUM.map(s => <span key={s.id} style={{ fontSize:9, padding:"3px 8px", borderRadius:4, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.03)", color:"rgba(255,255,255,.18)", fontFamily:"var(--ff-body)", fontWeight:600 }}>{s.icon} {s.title}</span>)}
+          </div>
+        </div>
+
+        <div style={{ padding:24, borderRadius:18, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.06)" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+            <div style={{ fontSize:10, letterSpacing:".12em", textTransform:"uppercase", color:"rgba(255,255,255,.26)", fontWeight:700 }}>Step 1 Preview</div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,.35)" }}>{progress}% complete</div>
+          </div>
+          <div style={{ height:5, borderRadius:3, background:"rgba(255,255,255,.06)", overflow:"hidden", marginBottom:16 }}>
+            <div style={{ width:`${progress}%`, height:"100%", background:"linear-gradient(90deg,#E8553A,#BE185D)", transition:"width .3s ease" }} />
+          </div>
+
+          {!isComplete ? (
+            <>
+              <div style={{ fontSize:11, color:"#E8553A", fontWeight:700, letterSpacing:".08em", textTransform:"uppercase", marginBottom:6 }}>
+                Part {partIdx + 1} of {HYPOTHESIS_PARTS.length} · {activePart.label}
+              </div>
+              <div style={{ fontSize:16, color:"rgba(255,255,255,.92)", lineHeight:1.5, marginBottom:12 }}>
+                {activePart.prompt}
+              </div>
+              <textarea
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) savePart(); }}
+                placeholder={activePart.placeholder}
+                rows={4}
+                style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:"1px solid rgba(255,255,255,.12)", background:"rgba(255,255,255,.02)", color:"#fff", fontSize:13.5, lineHeight:1.6, resize:"vertical", outline:"none", fontFamily:"var(--ff-body)", marginBottom:12 }}
+              />
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={goBack} disabled={partIdx===0} style={{ padding:"9px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,.09)", background:"transparent", color:partIdx===0?"rgba(255,255,255,.2)":"rgba(255,255,255,.55)", cursor:partIdx===0?"not-allowed":"pointer", fontSize:12, fontWeight:600 }}>
+                  Back
+                </button>
+                <button onClick={savePart} disabled={!draft.trim()} style={{ padding:"9px 14px", borderRadius:8, border:"none", background:draft.trim()?"linear-gradient(135deg,#E8553A,#BE185D)":"rgba(255,255,255,.06)", color:draft.trim()?"#fff":"rgba(255,255,255,.3)", cursor:draft.trim()?"pointer":"not-allowed", fontSize:12, fontWeight:700 }}>
+                  {partIdx === HYPOTHESIS_PARTS.length - 1 ? "Generate hypothesis" : "Next question"}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize:11, color:"#10B981", fontWeight:700, letterSpacing:".08em", textTransform:"uppercase", marginBottom:8 }}>
+                Draft Ready
+              </div>
+              <div style={{ fontSize:13.5, lineHeight:1.7, color:"rgba(255,255,255,.88)", padding:"12px 14px", borderRadius:10, border:"1px solid rgba(16,185,129,.25)", background:"rgba(16,185,129,.06)", marginBottom:14 }}>
+                {hypothesis}
+              </div>
+              <p style={{ margin:"0 0 12px", fontSize:12, color:"rgba(255,255,255,.42)" }}>
+                Sign in to save this draft and continue the full founder journey.
+              </p>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                <button onClick={goBack} style={{ padding:"9px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,.09)", background:"transparent", color:"rgba(255,255,255,.55)", cursor:"pointer", fontSize:12, fontWeight:600 }}>
+                  Edit answers
+                </button>
+                <button onClick={() => signIn("google")} style={{ padding:"9px 14px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#E8553A,#BE185D)", color:"#fff", cursor:"pointer", fontSize:12, fontWeight:700 }}>
+                  Save & Continue with Google
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -348,7 +492,7 @@ export default function Home() {
 
   // Auth states
   if (status === "loading") return <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}><TypingDots /></div>;
-  if (status === "unauthenticated") return <LoginScreen />;
+  if (status === "unauthenticated") return <PreSignInExperience />;
   if (!dataLoaded) return <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}><TypingDots /></div>;
 
   const isRevisiting = project && task && (project.completedTasks?.[step?.id]||0) > taskIdx;
