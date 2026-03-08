@@ -114,25 +114,25 @@ const HYPOTHESIS_PARTS = [
     key: "problem",
     label: "Problem",
     prompt: "What exact painful problem do they have? Include one real recent example.",
-    placeholder: "e.g. Last week 3 warm leads went cold because follow-up happened after 72+ hours",
+    placeholder: "e.g. Last week this happened 3 times and caused missed outcomes",
   },
   {
     key: "cause",
     label: "Root Cause",
     prompt: "Why does this problem keep happening based on observed evidence (not guesses)?",
-    placeholder: "e.g. Lead info is split across DMs, notes, and Sheets, so no single queue exists",
+    placeholder: "e.g. Information is split across multiple places, so there is no single source of truth",
   },
   {
     key: "workaround",
     label: "Current Workaround",
     prompt: "How are they handling this problem today? List real tools and steps.",
-    placeholder: "e.g. They check DMs nightly, set manual phone reminders, and copy old templates",
+    placeholder: "e.g. They enroll in afterschool programs, use online tutorials, and hire tutors",
   },
   {
     key: "cost",
     label: "Cost",
     prompt: "What measurable cost does this create? Include at least one number.",
-    placeholder: "e.g. 6+ hours/week and ~$2,000/month in missed deals",
+    placeholder: "e.g. 4+ hours/week and $300-$500/month in extra costs",
   },
 ];
 
@@ -202,19 +202,10 @@ function PreSignInExperience() {
 
     function rewriteFromDraft() {
       if (partKey === "audience") {
-        let draft = lowerCleaned || "solo consultants";
-        draft = draft
-          .replace(/\b(people|everyone|anyone)\b/gi, "solo consultants")
-          .replace(/\bsmall businesses\b/gi, "small service businesses");
-        if (/^founders$/i.test(draft)) draft = "B2B SaaS founders";
-        if (!/\b(in|at|with|who|from|doing)\b/i.test(draft)) {
-          draft = `${draft} in the US`;
-        }
-        if (!/\b(team|person|employee|revenue|\$|arr|mrr|client|customer)\b/i.test(draft)) {
-          draft = `${draft} with 1-10 person teams doing $10k-$50k/month`;
-        }
-        if (!/\b(via|through|from)\b/i.test(draft)) {
-          draft = `${draft}, getting clients through LinkedIn and referrals`;
+        let draft = lowerCleaned || "a specific user group";
+        draft = draft.replace(/\b(people|everyone|anyone)\b/gi, "a specific user group");
+        if (!/\b(in|at|with|who|from|doing|ages?|grade|stage|size)\b/i.test(draft)) {
+          draft = `${draft}, specifically those actively trying to solve this in the next 30 days`;
         }
         return `${capitalize(draft)}.`;
       }
@@ -228,21 +219,21 @@ function PreSignInExperience() {
           draft = `${draft} on 4 opportunities`;
         }
         if (!/\b(caus|led|result|impact|so)\b/i.test(draft)) {
-          draft = `${draft}, causing 3 warm leads to go cold`;
+          draft = `${draft}, causing repeat delays and missed outcomes`;
         }
         return `${capitalize(draft)}.`;
       }
 
       if (partKey === "cause") {
-        let draft = lowerCleaned || "lead data is spread across multiple tools";
+        let draft = lowerCleaned || "the process breaks at a repeatable point";
         if (!/^because\b/i.test(draft)) {
           draft = `because ${draft}`;
         }
         if (!/\b(observed|seen|noticed|calls|inbox|workflow|analytics)\b/i.test(draft)) {
-          draft = `${draft} (observed in recent call notes and inbox reviews)`;
+          draft = `${draft}, based on repeated patterns seen in recent conversations or workflow`;
         }
         if (!/\bso\b/i.test(draft)) {
-          draft = `${draft}, so follow-ups are delayed by 24-48 hours`;
+          draft = `${draft}, so the same problem keeps repeating`;
         }
         return `${capitalize(draft)}.`;
       }
@@ -252,21 +243,21 @@ function PreSignInExperience() {
         if (!/\b(currently|today|right now)\b/i.test(draft)) {
           draft = `currently, ${draft}`;
         }
-        if (!/\b(sheet|excel|notion|email|dm|slack|manual|template|reminder|calendar|crm|zapier)\b/i.test(draft)) {
-          draft = `${draft}: they check DMs nightly, log leads in Google Sheets, and set phone reminders`;
+        if (!/\b(step|first|then|after|before|using|through|like|such as)\b/i.test(draft)) {
+          draft = `${draft}, using a manual routine they repeat each week`;
         }
         return `${capitalize(draft)}.`;
       }
 
       if (partKey === "cost") {
         if (!cleaned) {
-          return "This currently costs about 6 hours/week and around $2,000/month in missed deals.";
+          return "This currently costs about 5+ hours/week and meaningful financial impact each month.";
         }
         if (!/\d/.test(cleaned)) {
-          return `${capitalize(cleaned)}. A measurable rewrite: this currently costs around 6 hours/week and about $2,000/month in missed deals.`;
+          return `${capitalize(cleaned)}. A measurable rewrite: this currently costs around 5+ hours/week and meaningful financial impact each month.`;
         }
         if (!/\b(hour|hr|week|month|\$|percent|%|deal|lead|conversion|revenue)\b/i.test(cleaned)) {
-          return `${capitalize(cleaned)}. Clarified rewrite: this translates to ~6 hours/week and a 15% drop in qualified-to-close conversion.`;
+          return `${capitalize(cleaned)}. Clarified rewrite: this translates into clear weekly time loss and monthly impact.`;
         }
         return `${capitalize(cleaned)}.`;
       }
@@ -311,7 +302,12 @@ function PreSignInExperience() {
       return buildCoachingFeedback(partKey, "Cause sounds speculative. Tie it to observed evidence.", v, "speculative_cause");
     }
 
-    if (partKey === "workaround" && !/\b(sheet|excel|notion|email|dm|slack|manual|template|reminder|calendar|crm|zapier)\b/i.test(v)) {
+    const hasConcreteWorkaroundSignal =
+      /\b(sheet|excel|notion|email|dm|slack|manual|template|reminder|calendar|crm|zapier|tool|app|platform|program|course|class|service)\b/i.test(v) ||
+      /\b(like|such as|using|through)\b/i.test(v) ||
+      /[,;:]/.test(v);
+
+    if (partKey === "workaround" && !hasConcreteWorkaroundSignal) {
       return buildCoachingFeedback(partKey, "Workaround is still abstract. Name the exact tools and steps.", v, "missing_tools_steps");
     }
 
