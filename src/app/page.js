@@ -161,34 +161,70 @@ function PreSignInExperience() {
     }
   }, [partIdx]);
 
+  function buildCoachingFeedback(partKey, issue, rawValue) {
+    const value = rawValue.trim().replace(/\s+/g, " ");
+    const snippet = value.length > 90 ? `${value.slice(0, 90)}...` : value;
+
+    const suggestions = {
+      audience: [
+        'Use this format: "[role] at [company type] in [geo] doing [stage/size]."',
+        "Add one filter: revenue band, team size, channel, or market.",
+        "Make sure this is a group you can directly reach this week.",
+      ],
+      problem: [
+        'Anchor it in reality: "In the last [timeframe], [what failed] happened [how often]."',
+        "Describe the consequence (lost leads, delays, churn, rework, stress).",
+        "Use one concrete incident, not a broad statement.",
+      ],
+      cause: [
+        'Write cause as observed chain: "Because [process/tool gap], [problem] keeps happening."',
+        "Point to evidence you have seen (calls, inbox, workflow, analytics).",
+        "Avoid guesses like 'probably' or 'might'.",
+      ],
+      workaround: [
+        "List the real current process as steps (Step 1, Step 2, Step 3).",
+        "Name tools explicitly (Sheets, Notion, DMs, reminders, CRM, etc).",
+        "Show that this workaround is happening today, not ideal future behavior.",
+      ],
+      cost: [
+        "Add at least one hard number (hours/week, $/month, missed deals, conversion drop).",
+        'Use this format: "[X] hours/week + [$Y]/month impact".',
+        "If exact numbers are unknown, give a conservative estimate and label it.",
+      ],
+    };
+
+    const partTips = suggestions[partKey] || ["Be more specific and evidence-backed."];
+    return `${issue}\n\nI currently read: "${snippet}"\n\nUpgrade it with:\n1. ${partTips[0]}\n2. ${partTips[1]}\n3. ${partTips[2]}`;
+  }
+
   function validatePart(partKey, value) {
     const v = value.trim();
     if (v.length < 18) {
-      return "Too vague. Add more concrete detail.";
+      return buildCoachingFeedback(partKey, "This is still too thin.", v);
     }
 
     const isGeneric = /^(people|everyone|anyone|founders|business owners|small businesses)\.?$/i.test(v);
     if (partKey === "audience" && isGeneric) {
-      return "Audience is too broad. Narrow by role, context, or size.";
+      return buildCoachingFeedback(partKey, "Audience is too broad.", v);
     }
     if (partKey === "audience" && !/\b(in|with|at|who|from|doing)\b/i.test(v)) {
-      return "Add segmentation context (who exactly, where, or what stage/size).";
+      return buildCoachingFeedback(partKey, "Add segmentation context (who exactly, where, or what stage/size).", v);
     }
 
     if (partKey === "problem" && !/\b(last|week|month|today|yesterday|recent|example|lead|lost|delay|churn|miss)\b/i.test(v)) {
-      return "Add one recent concrete example of the pain.";
+      return buildCoachingFeedback(partKey, "I need a recent concrete proof point for this pain.", v);
     }
 
     if (partKey === "cause" && !/\b(because|due to|caused|since|observed|seen|noticed)\b/i.test(v)) {
-      return "State evidence-backed cause (what you observed, not a guess).";
+      return buildCoachingFeedback(partKey, "Cause sounds speculative. Tie it to observed evidence.", v);
     }
 
     if (partKey === "workaround" && !/\b(sheet|excel|notion|email|dm|slack|manual|template|reminder|calendar|crm|zapier)\b/i.test(v)) {
-      return "Name the exact workaround tools/steps they use today.";
+      return buildCoachingFeedback(partKey, "Workaround is still abstract. Name the exact tools and steps.", v);
     }
 
     if (partKey === "cost" && !/\d/.test(v)) {
-      return "Cost needs at least one measurable number (time, money, frequency, or conversion impact).";
+      return buildCoachingFeedback(partKey, "Cost is not measurable yet. Add at least one number.", v);
     }
 
     return null;
@@ -278,7 +314,7 @@ function PreSignInExperience() {
                 style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:"1px solid rgba(255,255,255,.12)", background:"rgba(255,255,255,.02)", color:"#fff", fontSize:13.5, lineHeight:1.6, resize:"vertical", outline:"none", fontFamily:"var(--ff-body)", marginBottom:12 }}
               />
               {validationError && (
-                <div style={{ marginBottom:12, fontSize:12, lineHeight:1.5, color:"#FCA5A5", padding:"8px 10px", borderRadius:8, border:"1px solid rgba(239,68,68,.35)", background:"rgba(239,68,68,.08)" }}>
+                <div style={{ marginBottom:12, fontSize:12, lineHeight:1.5, color:"#FCA5A5", padding:"8px 10px", borderRadius:8, border:"1px solid rgba(239,68,68,.35)", background:"rgba(239,68,68,.08)", whiteSpace:"pre-wrap" }}>
                   {validationError}
                 </div>
               )}
