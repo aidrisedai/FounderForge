@@ -163,69 +163,130 @@ function PreSignInExperience() {
 
   function buildCoachingFeedback(partKey, issue, rawValue, reasonCode = "generic") {
     const value = rawValue.trim().replace(/\s+/g, " ");
-    const snippet = value.length > 90 ? `${value.slice(0, 90)}...` : value;
+    const snippet = value.length > 120 ? `${value.slice(0, 120)}...` : value;
     const cleaned = value.replace(/[.?!]+$/, "");
-    const safeSnippet = snippet.replace(/"/g, "'");
     const lowerCleaned = cleaned ? cleaned.charAt(0).toLowerCase() + cleaned.slice(1) : "";
-    const genericSeed = "freelancers";
+
+    function capitalize(text) {
+      if (!text) return text;
+      return text.charAt(0).toUpperCase() + text.slice(1);
+    }
 
     const suggestions = {
       audience: [
-        'Use this format: "[role] at [company type] in [geo] doing [stage/size]."',
-        "Add one filter: revenue band, team size, channel, or market.",
-        "Make sure this is a group you can directly reach this week.",
+        "Specify role + segment + location.",
+        "Add size or stage filter (team size, revenue band, or channel).",
+        "Keep this audience reachable this week.",
       ],
       problem: [
-        'Anchor it in reality: "In the last [timeframe], [what failed] happened [how often]."',
-        "Describe the consequence (lost leads, delays, churn, rework, stress).",
-        "Use one concrete incident, not a broad statement.",
+        "Anchor it to a recent timeframe.",
+        "Add frequency or count.",
+        "State the concrete consequence.",
       ],
       cause: [
-        'Write cause as observed chain: "Because [process/tool gap], [problem] keeps happening."',
-        "Point to evidence you have seen (calls, inbox, workflow, analytics).",
-        "Avoid guesses like 'probably' or 'might'.",
+        "Use an observed cause, not a guess.",
+        "Point to evidence source (calls, inbox, workflow, analytics).",
+        "Explain how this cause creates repeat failure.",
       ],
       workaround: [
-        "List the real current process as steps (Step 1, Step 2, Step 3).",
-        "Name tools explicitly (Sheets, Notion, DMs, reminders, CRM, etc).",
-        "Show that this workaround is happening today, not ideal future behavior.",
+        "Describe the current process in steps.",
+        "Name exact tools they use now.",
+        "Keep it current reality, not ideal behavior.",
       ],
       cost: [
-        "Add at least one hard number (hours/week, $/month, missed deals, conversion drop).",
-        'Use this format: "[X] hours/week + [$Y]/month impact".',
-        "If exact numbers are unknown, give a conservative estimate and label it.",
+        "Include at least one hard number.",
+        "Tie cost to time, money, or conversion impact.",
+        "If exact data is missing, add a conservative estimate.",
       ],
     };
 
-    const exampleBuilders = {
-      audience: () => {
-        const seed = cleaned || genericSeed;
-        return `${seed} in [specific location] with [clear size/context]. Example rewrite: "${seed} in the US with 2-10 person teams doing $10k-$50k/month."`;
-      },
-      problem: () => {
-        const seed = lowerCleaned || "follow-up gets missed";
-        return `In the last 14 days, ${seed} happened [N] times, causing [specific consequence]. Example rewrite: "In the last 2 weeks, ${seed} happened 4 times, causing 3 warm leads to go cold."`;
-      },
-      cause: () => {
-        const seed = lowerCleaned || "work is split across multiple tools";
-        return `Because ${seed}, the problem repeats when [trigger]. Example rewrite: "Because ${seed}, reps miss follow-ups whenever leads arrive after business hours."`;
-      },
-      workaround: () => {
-        const seed = lowerCleaned || "they patch it manually";
-        return `Today they handle it by ${seed}. Example rewrite: "Today they handle it by checking DMs nightly, logging leads in Sheets, and setting manual phone reminders."`;
-      },
-      cost: () => {
-        const seed = cleaned || "this creates real drag";
-        return `${seed}. Example rewrite: "This costs ~6 hours/week and about $2,000/month in missed deals."`;
-      },
-    };
+    function rewriteFromDraft() {
+      if (partKey === "audience") {
+        let draft = lowerCleaned || "solo consultants";
+        draft = draft
+          .replace(/\b(people|everyone|anyone)\b/gi, "solo consultants")
+          .replace(/\bsmall businesses\b/gi, "small service businesses");
+        if (/^founders$/i.test(draft)) draft = "B2B SaaS founders";
+        if (!/\b(in|at|with|who|from|doing)\b/i.test(draft)) {
+          draft = `${draft} in the US`;
+        }
+        if (!/\b(team|person|employee|revenue|\$|arr|mrr|client|customer)\b/i.test(draft)) {
+          draft = `${draft} with 1-10 person teams doing $10k-$50k/month`;
+        }
+        if (!/\b(via|through|from)\b/i.test(draft)) {
+          draft = `${draft}, getting clients through LinkedIn and referrals`;
+        }
+        return `${capitalize(draft)}.`;
+      }
+
+      if (partKey === "problem") {
+        let draft = lowerCleaned || "follow-up is inconsistent";
+        if (!/\b(last|week|month|today|yesterday|recent)\b/i.test(draft)) {
+          draft = `in the last 2 weeks, ${draft}`;
+        }
+        if (!/\b\d+\b/.test(draft)) {
+          draft = `${draft} on 4 opportunities`;
+        }
+        if (!/\b(caus|led|result|impact|so)\b/i.test(draft)) {
+          draft = `${draft}, causing 3 warm leads to go cold`;
+        }
+        return `${capitalize(draft)}.`;
+      }
+
+      if (partKey === "cause") {
+        let draft = lowerCleaned || "lead data is spread across multiple tools";
+        if (!/^because\b/i.test(draft)) {
+          draft = `because ${draft}`;
+        }
+        if (!/\b(observed|seen|noticed|calls|inbox|workflow|analytics)\b/i.test(draft)) {
+          draft = `${draft} (observed in recent call notes and inbox reviews)`;
+        }
+        if (!/\bso\b/i.test(draft)) {
+          draft = `${draft}, so follow-ups are delayed by 24-48 hours`;
+        }
+        return `${capitalize(draft)}.`;
+      }
+
+      if (partKey === "workaround") {
+        let draft = lowerCleaned || "they patch it manually";
+        if (!/\b(currently|today|right now)\b/i.test(draft)) {
+          draft = `currently, ${draft}`;
+        }
+        if (!/\b(sheet|excel|notion|email|dm|slack|manual|template|reminder|calendar|crm|zapier)\b/i.test(draft)) {
+          draft = `${draft}: they check DMs nightly, log leads in Google Sheets, and set phone reminders`;
+        }
+        return `${capitalize(draft)}.`;
+      }
+
+      if (partKey === "cost") {
+        if (!cleaned) {
+          return "This currently costs about 6 hours/week and around $2,000/month in missed deals.";
+        }
+        if (!/\d/.test(cleaned)) {
+          return `${capitalize(cleaned)}. A measurable rewrite: this currently costs around 6 hours/week and about $2,000/month in missed deals.`;
+        }
+        if (!/\b(hour|hr|week|month|\$|percent|%|deal|lead|conversion|revenue)\b/i.test(cleaned)) {
+          return `${capitalize(cleaned)}. Clarified rewrite: this translates to ~6 hours/week and a 15% drop in qualified-to-close conversion.`;
+        }
+        return `${capitalize(cleaned)}.`;
+      }
+
+      return `${capitalize(cleaned || "Be specific, evidence-backed, and measurable")}.`;
+    }
 
     const partTips = suggestions[partKey] || ["Be more specific and evidence-backed."];
-    const partExample = (exampleBuilders[partKey] ? exampleBuilders[partKey]() : "Be specific, evidence-backed, and measurable.").replace(/"/g, '"');
-    const reasonLine = reasonCode === "generic"
-      ? "This is still too broad."
-      : `Issue detected: ${reasonCode}.`;
-    return `${issue}\n${reasonLine}\n\nI currently read: "${safeSnippet}"\n\nUpgrade it with:\n1. ${partTips[0]}\n2. ${partTips[1]}\n3. ${partTips[2]}\n\nExample based on your draft:\n${partExample}`;
+    const reasonLabel = {
+      not_enough_detail: "Needs more detail",
+      audience_too_broad: "Audience is too broad",
+      missing_segmentation: "Missing segmentation",
+      missing_recent_evidence: "Missing recent evidence",
+      speculative_cause: "Cause is still speculative",
+      missing_tools_steps: "Missing concrete tools/steps",
+      missing_numbers: "Missing measurable numbers",
+      generic: "Needs sharpening",
+    }[reasonCode] || "Needs sharpening";
+
+    return `${issue}\n\nWhy this is blocked: ${reasonLabel}\n\nYour current answer:\n"${snippet}"\n\nSuggested rewrite of your answer:\n"${rewriteFromDraft()}"\n\nQuick checklist:\n1. ${partTips[0]}\n2. ${partTips[1]}\n3. ${partTips[2]}`;
   }
 
   function validatePart(partKey, value) {
