@@ -107,31 +107,31 @@ const HYPOTHESIS_PARTS = [
   {
     key: "audience",
     label: "Audience",
-    prompt: "Who is the specific audience you want to serve?",
-    placeholder: "e.g. Solo consultants doing $5k-$20k/month",
+    prompt: "Who is the specific audience you want to serve? Name role + context, not generic labels.",
+    placeholder: "e.g. Solo consultants in the US doing $5k-$20k/month and selling via LinkedIn",
   },
   {
     key: "problem",
     label: "Problem",
-    prompt: "What exact painful problem do they have?",
-    placeholder: "e.g. They lose leads because follow-up is inconsistent",
+    prompt: "What exact painful problem do they have? Include one real recent example.",
+    placeholder: "e.g. Last week 3 warm leads went cold because follow-up happened after 72+ hours",
   },
   {
     key: "cause",
     label: "Root Cause",
-    prompt: "Why does this problem keep happening?",
-    placeholder: "e.g. Their process lives across DMs, notes, and spreadsheets",
+    prompt: "Why does this problem keep happening based on observed evidence (not guesses)?",
+    placeholder: "e.g. Lead info is split across DMs, notes, and Sheets, so no single queue exists",
   },
   {
     key: "workaround",
     label: "Current Workaround",
-    prompt: "How are they handling this problem today?",
-    placeholder: "e.g. Manual reminders and ad-hoc copy/paste templates",
+    prompt: "How are they handling this problem today? List real tools and steps.",
+    placeholder: "e.g. They check DMs nightly, set manual phone reminders, and copy old templates",
   },
   {
     key: "cost",
     label: "Cost",
-    prompt: "What does this cost them in time, money, or stress?",
+    prompt: "What measurable cost does this create? Include at least one number.",
     placeholder: "e.g. 6+ hours/week and ~$2,000/month in missed deals",
   },
 ];
@@ -147,6 +147,7 @@ function PreSignInExperience() {
     workaround: "",
     cost: "",
   });
+  const [validationError, setValidationError] = useState("");
 
   const activePart = HYPOTHESIS_PARTS[partIdx];
   const isComplete = partIdx >= HYPOTHESIS_PARTS.length;
@@ -156,11 +157,51 @@ function PreSignInExperience() {
   useEffect(() => {
     if (!isComplete) {
       setDraft(answers[activePart.key] || "");
+      setValidationError("");
     }
   }, [partIdx]);
 
+  function validatePart(partKey, value) {
+    const v = value.trim();
+    if (v.length < 18) {
+      return "Too vague. Add more concrete detail.";
+    }
+
+    const isGeneric = /^(people|everyone|anyone|founders|business owners|small businesses)\.?$/i.test(v);
+    if (partKey === "audience" && isGeneric) {
+      return "Audience is too broad. Narrow by role, context, or size.";
+    }
+    if (partKey === "audience" && !/\b(in|with|at|who|from|doing)\b/i.test(v)) {
+      return "Add segmentation context (who exactly, where, or what stage/size).";
+    }
+
+    if (partKey === "problem" && !/\b(last|week|month|today|yesterday|recent|example|lead|lost|delay|churn|miss)\b/i.test(v)) {
+      return "Add one recent concrete example of the pain.";
+    }
+
+    if (partKey === "cause" && !/\b(because|due to|caused|since|observed|seen|noticed)\b/i.test(v)) {
+      return "State evidence-backed cause (what you observed, not a guess).";
+    }
+
+    if (partKey === "workaround" && !/\b(sheet|excel|notion|email|dm|slack|manual|template|reminder|calendar|crm|zapier)\b/i.test(v)) {
+      return "Name the exact workaround tools/steps they use today.";
+    }
+
+    if (partKey === "cost" && !/\d/.test(v)) {
+      return "Cost needs at least one measurable number (time, money, frequency, or conversion impact).";
+    }
+
+    return null;
+  }
+
   function savePart() {
     if (isComplete || !draft.trim()) return;
+    const validation = validatePart(activePart.key, draft);
+    if (validation) {
+      setValidationError(validation);
+      return;
+    }
+    setValidationError("");
     setAnswers(prev => ({ ...prev, [activePart.key]: draft.trim() }));
     if (partIdx === HYPOTHESIS_PARTS.length - 1) {
       setPartIdx(HYPOTHESIS_PARTS.length);
@@ -236,6 +277,11 @@ function PreSignInExperience() {
                 rows={4}
                 style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:"1px solid rgba(255,255,255,.12)", background:"rgba(255,255,255,.02)", color:"#fff", fontSize:13.5, lineHeight:1.6, resize:"vertical", outline:"none", fontFamily:"var(--ff-body)", marginBottom:12 }}
               />
+              {validationError && (
+                <div style={{ marginBottom:12, fontSize:12, lineHeight:1.5, color:"#FCA5A5", padding:"8px 10px", borderRadius:8, border:"1px solid rgba(239,68,68,.35)", background:"rgba(239,68,68,.08)" }}>
+                  {validationError}
+                </div>
+              )}
               <div style={{ display:"flex", gap:8 }}>
                 <button onClick={goBack} disabled={partIdx===0} style={{ padding:"9px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,.09)", background:"transparent", color:partIdx===0?"rgba(255,255,255,.2)":"rgba(255,255,255,.55)", cursor:partIdx===0?"not-allowed":"pointer", fontSize:12, fontWeight:600 }}>
                   Back

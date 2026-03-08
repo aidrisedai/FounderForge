@@ -86,10 +86,34 @@ ${example?.approach ? `- Approach style: ${example.approach}` : ''}
 ` : '';
 
   const hasPartFlow = Array.isArray(task.parts) && task.parts.length > 0;
+  const isHypothesisTask = task.id === "1.1";
   const taskPartsSection = hasPartFlow
     ? `
 Task parts (ask in order, one at a time):
 ${task.parts.map((part, idx) => `${idx + 1}. ${part.label}: ${part.question}`).join("\n")}
+`
+    : "";
+  const antiGamingSection = isHypothesisTask
+    ? `
+TASK 1.1 STRICT COACHING MODE (ANTI-GAMING):
+- Your job is to pressure-test every answer. Do NOT accept polished but unsupported claims.
+- For EACH part, require concrete evidence from real world behavior (calls, DMs, invoices, tickets, analytics, calendar events, observed workflow).
+- If answer is vague, hypothetical, or buzzword-heavy, challenge it and stay on the SAME part.
+- Use direct pushback. Ask for proof with specifics: who, when, what happened, and one measurable signal.
+- Reject generic audience labels like "people", "everyone", "founders", "small businesses" without segmentation.
+- Reject problem statements that are not tied to a real consequence.
+- Reject root causes framed as guesses without observed evidence.
+- Reject workaround answers without exact tools/steps currently used.
+- Reject cost answers without at least one number (time, money, frequency, conversion loss, etc).
+- Maintain urgency: help user produce a tangible, evidence-backed hypothesis fast.
+
+Before completing Task 1.1, run this checklist internally:
+1) Audience is specific and reachable
+2) Problem is concrete and painful
+3) Cause is evidence-based
+4) Workaround is currently used in reality
+5) Cost includes measurable impact
+If any item fails, do NOT output completion tags.
 `
     : "";
 
@@ -108,6 +132,7 @@ Required output: ${task.output}
 Quality criteria: ${task.criteria}
 Evaluation guide: ${task.eval}
 ${taskPartsSection}
+${antiGamingSection}
 
 ━━━ FOUNDER'S JOURNEY SO FAR ━━━
 ${allDel || "(No deliverables yet)"}
