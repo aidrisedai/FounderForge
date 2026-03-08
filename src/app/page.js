@@ -148,6 +148,8 @@ function PreSignInExperience() {
     cost: "",
   });
   const [validationError, setValidationError] = useState("");
+  const [aiHypothesis, setAiHypothesis] = useState(null);
+  const [generatingHypothesis, setGeneratingHypothesis] = useState(false);
 
   const activePart = HYPOTHESIS_PARTS[partIdx];
   const isComplete = partIdx >= HYPOTHESIS_PARTS.length;
@@ -346,6 +348,23 @@ function PreSignInExperience() {
     return null;
   }
 
+  async function generateHypothesis(finalAnswers) {
+    setGeneratingHypothesis(true);
+    try {
+      const res = await fetch("/api/hypothesis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(finalAnswers),
+      });
+      const data = await res.json();
+      if (data.hypothesis) setAiHypothesis(data.hypothesis);
+    } catch (e) {
+      // Falls back to template string silently
+    } finally {
+      setGeneratingHypothesis(false);
+    }
+  }
+
   function savePart() {
     if (isComplete || !draft.trim()) return;
     const validation = validatePart(activePart.key, draft);
@@ -354,9 +373,11 @@ function PreSignInExperience() {
       return;
     }
     setValidationError("");
-    setAnswers(prev => ({ ...prev, [activePart.key]: draft.trim() }));
+    const updated = { ...answers, [activePart.key]: draft.trim() };
+    setAnswers(updated);
     if (partIdx === HYPOTHESIS_PARTS.length - 1) {
       setPartIdx(HYPOTHESIS_PARTS.length);
+      generateHypothesis(updated);
     } else {
       setPartIdx(partIdx + 1);
     }
@@ -460,19 +481,30 @@ function PreSignInExperience() {
           ) : (
             <>
               <div style={{ fontSize:11, color:"#10B981", fontWeight:700, letterSpacing:".08em", textTransform:"uppercase", marginBottom:8 }}>
-                Draft Ready
+                {generatingHypothesis ? "Generating your hypothesis…" : "Draft Ready"}
               </div>
-              <div style={{ fontSize:13.5, lineHeight:1.7, color:"rgba(255,255,255,.88)", padding:"12px 14px", borderRadius:10, border:"1px solid rgba(16,185,129,.25)", background:"rgba(16,185,129,.06)", marginBottom:14 }}>
-                {hypothesis}
-              </div>
+              {generatingHypothesis ? (
+                <div style={{ padding:"20px 14px", borderRadius:10, border:"1px solid rgba(255,255,255,.06)", background:"rgba(255,255,255,.02)", marginBottom:14, display:"flex", alignItems:"center", gap:10 }}>
+                  <div style={{ display:"flex", gap:5 }}>
+                    {[0,1,2].map(i => (
+                      <div key={i} style={{ width:6, height:6, borderRadius:"50%", background:"#E8553A", animation:`ffBounce 1.4s ${i*.15}s infinite` }} />
+                    ))}
+                  </div>
+                  <span style={{ fontSize:12, color:"rgba(255,255,255,.35)" }}>Claude is polishing your hypothesis…</span>
+                </div>
+              ) : (
+                <div style={{ fontSize:13.5, lineHeight:1.7, color:"rgba(255,255,255,.88)", padding:"12px 14px", borderRadius:10, border:"1px solid rgba(16,185,129,.25)", background:"rgba(16,185,129,.06)", marginBottom:14 }}>
+                  {aiHypothesis || hypothesis}
+                </div>
+              )}
               <p style={{ margin:"0 0 12px", fontSize:12, color:"rgba(255,255,255,.42)" }}>
                 Sign in to save this draft and continue the full founder journey.
               </p>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                <button onClick={goBack} style={{ padding:"9px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,.09)", background:"transparent", color:"rgba(255,255,255,.55)", cursor:"pointer", fontSize:12, fontWeight:600 }}>
+                <button onClick={goBack} disabled={generatingHypothesis} style={{ padding:"9px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,.09)", background:"transparent", color:generatingHypothesis?"rgba(255,255,255,.2)":"rgba(255,255,255,.55)", cursor:generatingHypothesis?"not-allowed":"pointer", fontSize:12, fontWeight:600 }}>
                   Edit answers
                 </button>
-                <button onClick={() => signIn("google")} style={{ padding:"9px 14px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#E8553A,#BE185D)", color:"#fff", cursor:"pointer", fontSize:12, fontWeight:700 }}>
+                <button onClick={() => signIn("google")} disabled={generatingHypothesis} style={{ padding:"9px 14px", borderRadius:8, border:"none", background:generatingHypothesis?"rgba(255,255,255,.06)":"linear-gradient(135deg,#E8553A,#BE185D)", color:generatingHypothesis?"rgba(255,255,255,.3)":"#fff", cursor:generatingHypothesis?"not-allowed":"pointer", fontSize:12, fontWeight:700 }}>
                   Save & Continue with Google
                 </button>
               </div>
