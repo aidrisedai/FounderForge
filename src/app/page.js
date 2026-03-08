@@ -161,9 +161,13 @@ function PreSignInExperience() {
     }
   }, [partIdx]);
 
-  function buildCoachingFeedback(partKey, issue, rawValue) {
+  function buildCoachingFeedback(partKey, issue, rawValue, reasonCode = "generic") {
     const value = rawValue.trim().replace(/\s+/g, " ");
     const snippet = value.length > 90 ? `${value.slice(0, 90)}...` : value;
+    const cleaned = value.replace(/[.?!]+$/, "");
+    const safeSnippet = snippet.replace(/"/g, "'");
+    const lowerCleaned = cleaned ? cleaned.charAt(0).toLowerCase() + cleaned.slice(1) : "";
+    const genericSeed = "freelancers";
 
     const suggestions = {
       audience: [
@@ -192,47 +196,66 @@ function PreSignInExperience() {
         "If exact numbers are unknown, give a conservative estimate and label it.",
       ],
     };
-    const examples = {
-      audience: "Solo consultants in the US doing $5k-$20k/month who get most leads from LinkedIn DMs.",
-      problem: "In the last 2 weeks, 4 warm leads went cold because follow-up happened after 48+ hours.",
-      cause: "Because lead notes are split across DMs, email, and Sheets, there is no single follow-up queue, so reminders get missed.",
-      workaround: "They check DMs every evening, copy names into a Google Sheet, and set manual phone reminders to follow up.",
-      cost: "This costs about 6 hours/week and roughly $2,000/month in missed deals.",
+
+    const exampleBuilders = {
+      audience: () => {
+        const seed = cleaned || genericSeed;
+        return `${seed} in [specific location] with [clear size/context]. Example rewrite: "${seed} in the US with 2-10 person teams doing $10k-$50k/month."`;
+      },
+      problem: () => {
+        const seed = lowerCleaned || "follow-up gets missed";
+        return `In the last 14 days, ${seed} happened [N] times, causing [specific consequence]. Example rewrite: "In the last 2 weeks, ${seed} happened 4 times, causing 3 warm leads to go cold."`;
+      },
+      cause: () => {
+        const seed = lowerCleaned || "work is split across multiple tools";
+        return `Because ${seed}, the problem repeats when [trigger]. Example rewrite: "Because ${seed}, reps miss follow-ups whenever leads arrive after business hours."`;
+      },
+      workaround: () => {
+        const seed = lowerCleaned || "they patch it manually";
+        return `Today they handle it by ${seed}. Example rewrite: "Today they handle it by checking DMs nightly, logging leads in Sheets, and setting manual phone reminders."`;
+      },
+      cost: () => {
+        const seed = cleaned || "this creates real drag";
+        return `${seed}. Example rewrite: "This costs ~6 hours/week and about $2,000/month in missed deals."`;
+      },
     };
 
     const partTips = suggestions[partKey] || ["Be more specific and evidence-backed."];
-    const partExample = examples[partKey] || "Be specific, evidence-backed, and measurable.";
-    return `${issue}\n\nI currently read: "${snippet}"\n\nUpgrade it with:\n1. ${partTips[0]}\n2. ${partTips[1]}\n3. ${partTips[2]}\n\nExample you can model:\n"${partExample}"`;
+    const partExample = (exampleBuilders[partKey] ? exampleBuilders[partKey]() : "Be specific, evidence-backed, and measurable.").replace(/"/g, '"');
+    const reasonLine = reasonCode === "generic"
+      ? "This is still too broad."
+      : `Issue detected: ${reasonCode}.`;
+    return `${issue}\n${reasonLine}\n\nI currently read: "${safeSnippet}"\n\nUpgrade it with:\n1. ${partTips[0]}\n2. ${partTips[1]}\n3. ${partTips[2]}\n\nExample based on your draft:\n${partExample}`;
   }
 
   function validatePart(partKey, value) {
     const v = value.trim();
     if (v.length < 18) {
-      return buildCoachingFeedback(partKey, "This is still too thin.", v);
+      return buildCoachingFeedback(partKey, "This is still too thin.", v, "not_enough_detail");
     }
 
     const isGeneric = /^(people|everyone|anyone|founders|business owners|small businesses)\.?$/i.test(v);
     if (partKey === "audience" && isGeneric) {
-      return buildCoachingFeedback(partKey, "Audience is too broad.", v);
+      return buildCoachingFeedback(partKey, "Audience is too broad.", v, "audience_too_broad");
     }
     if (partKey === "audience" && !/\b(in|with|at|who|from|doing)\b/i.test(v)) {
-      return buildCoachingFeedback(partKey, "Add segmentation context (who exactly, where, or what stage/size).", v);
+      return buildCoachingFeedback(partKey, "Add segmentation context (who exactly, where, or what stage/size).", v, "missing_segmentation");
     }
 
     if (partKey === "problem" && !/\b(last|week|month|today|yesterday|recent|example|lead|lost|delay|churn|miss)\b/i.test(v)) {
-      return buildCoachingFeedback(partKey, "I need a recent concrete proof point for this pain.", v);
+      return buildCoachingFeedback(partKey, "I need a recent concrete proof point for this pain.", v, "missing_recent_evidence");
     }
 
     if (partKey === "cause" && !/\b(because|due to|caused|since|observed|seen|noticed)\b/i.test(v)) {
-      return buildCoachingFeedback(partKey, "Cause sounds speculative. Tie it to observed evidence.", v);
+      return buildCoachingFeedback(partKey, "Cause sounds speculative. Tie it to observed evidence.", v, "speculative_cause");
     }
 
     if (partKey === "workaround" && !/\b(sheet|excel|notion|email|dm|slack|manual|template|reminder|calendar|crm|zapier)\b/i.test(v)) {
-      return buildCoachingFeedback(partKey, "Workaround is still abstract. Name the exact tools and steps.", v);
+      return buildCoachingFeedback(partKey, "Workaround is still abstract. Name the exact tools and steps.", v, "missing_tools_steps");
     }
 
     if (partKey === "cost" && !/\d/.test(v)) {
-      return buildCoachingFeedback(partKey, "Cost is not measurable yet. Add at least one number.", v);
+      return buildCoachingFeedback(partKey, "Cost is not measurable yet. Add at least one number.", v, "missing_numbers");
     }
 
     return null;
