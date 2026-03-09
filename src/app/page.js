@@ -388,6 +388,17 @@ function PreSignInExperience() {
           <p style={{ fontSize:14, lineHeight:1.7, color:"rgba(255,255,255,.45)", margin:"0 0 20px" }}>
             Try the first task before signup. You will see exactly how the workflow feels before creating an account.
           </p>
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:18 }}>
+            <button
+              onClick={() => signIn("google")}
+              style={{ padding:"9px 14px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#E8553A,#BE185D)", color:"#fff", cursor:"pointer", fontSize:12, fontWeight:700 }}
+            >
+              Sign in with Google now
+            </button>
+            <span style={{ fontSize:12, color:"rgba(255,255,255,.4)", alignSelf:"center" }}>
+              or use the 5-question preview first
+            </span>
+          </div>
           <div style={{ display:"grid", gap:8, marginBottom:20 }}>
             {[
               "Step-by-step startup guidance (one focused question at a time)",
@@ -434,12 +445,15 @@ function PreSignInExperience() {
                   {validationError}
                 </div>
               )}
-              <div style={{ display:"flex", gap:8 }}>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                 <button onClick={goBack} disabled={partIdx===0} style={{ padding:"9px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,.09)", background:"transparent", color:partIdx===0?"rgba(255,255,255,.2)":"rgba(255,255,255,.55)", cursor:partIdx===0?"not-allowed":"pointer", fontSize:12, fontWeight:600 }}>
                   Back
                 </button>
                 <button onClick={savePart} disabled={!draft.trim()} style={{ padding:"9px 14px", borderRadius:8, border:"none", background:draft.trim()?"linear-gradient(135deg,#E8553A,#BE185D)":"rgba(255,255,255,.06)", color:draft.trim()?"#fff":"rgba(255,255,255,.3)", cursor:draft.trim()?"pointer":"not-allowed", fontSize:12, fontWeight:700 }}>
                   {partIdx === HYPOTHESIS_PARTS.length - 1 ? "Generate hypothesis" : "Next question"}
+                </button>
+                <button onClick={() => signIn("google")} style={{ padding:"9px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,.1)", background:"rgba(255,255,255,.02)", color:"rgba(255,255,255,.65)", cursor:"pointer", fontSize:12, fontWeight:600 }}>
+                  Sign in now
                 </button>
               </div>
             </>
