@@ -138,293 +138,94 @@ const HYPOTHESIS_PARTS = [
 
 // ── Pre Sign-in Experience ──
 function PreSignInExperience() {
-  const [partIdx, setPartIdx] = useState(0);
-  const [draft, setDraft] = useState("");
-  const [answers, setAnswers] = useState({
-    audience: "",
-    problem: "",
-    cause: "",
-    workaround: "",
-    cost: "",
-  });
-  const [validationError, setValidationError] = useState("");
-  const [aiHypothesis, setAiHypothesis] = useState(null);
-  const [generatingHypothesis, setGeneratingHypothesis] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+  const btmRef = useRef(null);
+  const initRef = useRef(false);
 
-  const activePart = HYPOTHESIS_PARTS[partIdx];
-  const isComplete = partIdx >= HYPOTHESIS_PARTS.length;
-  const progress = Math.round((Object.values(answers).filter(Boolean).length / HYPOTHESIS_PARTS.length) * 100);
-
-  function normalizeAnswer(text, type) {
-    if (!text) return "";
-    let normalized = text
-      .replace(/\n+/g, " ")
-      .replace(/\s+/g, " ")
-      .replace(/^["']+|["']+$/g, "")
-      .replace(/a measurable rewrite:\s*/ig, "")
-      .replace(/clarified rewrite:\s*/ig, "")
-      .replace(/example rewrite:\s*/ig, "")
-      .replace(/suggested rewrite of your answer:\s*/ig, "")
-      .replace(/\s*,?\s*based on repeated patterns seen in recent conversations or workflow/ig, "")
-      .replace(/\s*,?\s*so the same problem keeps repeating/ig, "")
-      .trim();
-
-    if (type === "cause") {
-      normalized = normalized.replace(/^(because|due to)\s+/i, "").trim();
-    }
-    if (type === "cost") {
-      normalized = normalized.replace(/^(this means|this costs?|costs?)\s+/i, "").trim();
-    }
-
-    return normalized.replace(/[.?!]+$/, "").trim();
-  }
-
-  const audienceText = normalizeAnswer(answers.audience, "audience") || "[Specific audience]";
-  const problemText = normalizeAnswer(answers.problem, "problem") || "[specific problem]";
-  const causeText = normalizeAnswer(answers.cause, "cause") || "[root cause]";
-  const workaroundText = normalizeAnswer(answers.workaround, "workaround") || "[current workaround]";
-  const costText = normalizeAnswer(answers.cost, "cost") || "[time/money/pain]";
-
-  const hypothesis = `"${audienceText} struggle with ${problemText} because ${causeText}. Currently they handle it by ${workaroundText}, which costs them ${costText}."`;
+  const scroll = useCallback(() => {
+    setTimeout(() => btmRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
+  }, []);
 
   useEffect(() => {
-    if (!isComplete) {
-      setDraft(answers[activePart.key] || "");
-      setValidationError("");
-    }
-  }, [partIdx]);
+    if (initRef.current) return;
+    initRef.current = true;
+    callPreview(null, true);
+  }, []);
 
-  function buildCoachingFeedback(partKey, issue, rawValue, reasonCode = "generic") {
-    const value = rawValue.trim().replace(/\s+/g, " ");
-    const snippet = value.length > 120 ? `${value.slice(0, 120)}...` : value;
-    const cleaned = value.replace(/[.?!]+$/, "");
-    const lowerCleaned = cleaned ? cleaned.charAt(0).toLowerCase() + cleaned.slice(1) : "";
+  useEffect(() => { scroll(); }, [messages, loading]);
 
-    function capitalize(text) {
-      if (!text) return text;
-      return text.charAt(0).toUpperCase() + text.slice(1);
-    }
+  async function callPreview(userText, isInit) {
+    let apiMsgs;
+    let displayMsgs;
 
-    const suggestions = {
-      audience: [
-        "Specify role + segment + location.",
-        "Add size or stage filter (team size, revenue band, or channel).",
-        "Keep this audience reachable this week.",
-      ],
-      problem: [
-        "Anchor it to a recent timeframe.",
-        "Add frequency or count.",
-        "State the concrete consequence.",
-      ],
-      cause: [
-        "Use an observed cause, not a guess.",
-        "Point to evidence source (calls, inbox, workflow, analytics).",
-        "Explain how this cause creates repeat failure.",
-      ],
-      workaround: [
-        "Describe the current process in steps.",
-        "Name exact tools they use now.",
-        "Keep it current reality, not ideal behavior.",
-      ],
-      cost: [
-        "Include at least one hard number.",
-        "Tie cost to time, money, or conversion impact.",
-        "If exact data is missing, add a conservative estimate.",
-      ],
-    };
-
-    function rewriteFromDraft() {
-      if (partKey === "audience") {
-        let draft = lowerCleaned || "a specific user group";
-        draft = draft.replace(/\b(people|everyone|anyone)\b/gi, "a specific user group");
-        if (!/\b(in|at|with|who|from|doing|ages?|grade|stage|size)\b/i.test(draft)) {
-          draft = `${draft}, specifically those actively trying to solve this in the next 30 days`;
-        }
-        return `${capitalize(draft)}.`;
-      }
-
-      if (partKey === "problem") {
-        let draft = lowerCleaned || "follow-up is inconsistent";
-        if (!/\b(last|week|month|today|yesterday|recent)\b/i.test(draft)) {
-          draft = `in the last 2 weeks, ${draft}`;
-        }
-        if (!/\b\d+\b/.test(draft)) {
-          draft = `${draft} on 4 opportunities`;
-        }
-        if (!/\b(caus|led|result|impact|so)\b/i.test(draft)) {
-          draft = `${draft}, causing repeat delays and missed outcomes`;
-        }
-        return `${capitalize(draft)}.`;
-      }
-
-      if (partKey === "cause") {
-        let draft = lowerCleaned || "the process breaks at a repeatable point";
-        if (!/^because\b/i.test(draft)) {
-          draft = `because ${draft}`;
-        }
-        if (!/\b(observed|seen|noticed|calls|inbox|workflow|analytics)\b/i.test(draft)) {
-          draft = `${draft}, based on repeated patterns seen in recent conversations or workflow`;
-        }
-        return `${capitalize(draft)}.`;
-      }
-
-      if (partKey === "workaround") {
-        let draft = lowerCleaned || "they patch it manually";
-        if (!/\b(currently|today|right now)\b/i.test(draft)) {
-          draft = `currently, ${draft}`;
-        }
-        if (!/\b(step|first|then|after|before|using|through|like|such as)\b/i.test(draft)) {
-          draft = `${draft}, using a manual routine they repeat each week`;
-        }
-        return `${capitalize(draft)}.`;
-      }
-
-      if (partKey === "cost") {
-        if (!cleaned) {
-          return "This currently costs about 5+ hours/week and meaningful financial impact each month.";
-        }
-        if (!/\d/.test(cleaned)) {
-          return `${capitalize(cleaned)}, which translates to about 5+ hours/week and clear monthly financial impact.`;
-        }
-        if (!/\b(hour|hr|week|month|\$|percent|%|deal|lead|conversion|revenue)\b/i.test(cleaned)) {
-          return `${capitalize(cleaned)}, with clear weekly time loss and monthly impact.`;
-        }
-        return `${capitalize(cleaned)}.`;
-      }
-
-      return `${capitalize(cleaned || "Be specific, evidence-backed, and measurable")}.`;
+    if (isInit) {
+      apiMsgs = [{ role: "user", content: "Ready. Guide me." }];
+      displayMsgs = [];
+    } else {
+      displayMsgs = [...messages, { role: "user", content: userText }];
+      apiMsgs = displayMsgs.filter(m => m.role === "user" || m.role === "assistant");
+      setMessages(displayMsgs);
     }
 
-    const partTips = suggestions[partKey] || ["Be more specific and evidence-backed."];
-    const reasonLabel = {
-      not_enough_detail: "Needs more detail",
-      audience_too_broad: "Audience is too broad",
-      missing_segmentation: "Missing segmentation",
-      missing_recent_evidence: "Missing recent evidence",
-      speculative_cause: "Cause is still speculative",
-      missing_tools_steps: "Missing concrete tools/steps",
-      missing_numbers: "Missing measurable numbers",
-      generic: "Needs sharpening",
-    }[reasonCode] || "Needs sharpening";
+    setLoading(true);
+    scroll();
 
-    return `${issue}\n\nWhy this is blocked: ${reasonLabel}\n\nYour current answer:\n"${snippet}"\n\nSuggested rewrite of your answer:\n"${rewriteFromDraft()}"\n\nQuick checklist:\n1. ${partTips[0]}\n2. ${partTips[1]}\n3. ${partTips[2]}`;
-  }
-
-  function validatePart(partKey, value) {
-    const v = value.trim();
-    if (v.length < 18) {
-      return buildCoachingFeedback(partKey, "This is still too thin.", v, "not_enough_detail");
-    }
-
-    const isGeneric = /^(people|everyone|anyone|founders|business owners|small businesses)\.?$/i.test(v);
-    if (partKey === "audience" && isGeneric) {
-      return buildCoachingFeedback(partKey, "Audience is too broad.", v, "audience_too_broad");
-    }
-    if (partKey === "audience" && !/\b(in|with|at|who|from|doing)\b/i.test(v)) {
-      return buildCoachingFeedback(partKey, "Add segmentation context (who exactly, where, or what stage/size).", v, "missing_segmentation");
-    }
-
-    if (partKey === "problem" && !/\b(last|week|month|today|yesterday|recent|example|lead|lost|delay|churn|miss)\b/i.test(v)) {
-      return buildCoachingFeedback(partKey, "I need a recent concrete proof point for this pain.", v, "missing_recent_evidence");
-    }
-
-    if (partKey === "cause" && !/\b(because|due to|caused|since|observed|seen|noticed)\b/i.test(v)) {
-      return buildCoachingFeedback(partKey, "Cause sounds speculative. Tie it to observed evidence.", v, "speculative_cause");
-    }
-
-    const hasConcreteWorkaroundSignal =
-      /\b(sheet|excel|notion|email|dm|slack|manual|template|reminder|calendar|crm|zapier|tool|app|platform|program|course|class|service)\b/i.test(v) ||
-      /\b(like|such as|using|through)\b/i.test(v) ||
-      /[,;:]/.test(v);
-
-    if (partKey === "workaround" && !hasConcreteWorkaroundSignal) {
-      return buildCoachingFeedback(partKey, "Workaround is still abstract. Name the exact tools and steps.", v, "missing_tools_steps");
-    }
-
-    if (partKey === "cost" && !/\d/.test(v)) {
-      return buildCoachingFeedback(partKey, "Cost is not measurable yet. Add at least one number.", v, "missing_numbers");
-    }
-
-    return null;
-  }
-
-  async function generateHypothesis(finalAnswers) {
-    setGeneratingHypothesis(true);
     try {
-      const res = await fetch("/api/hypothesis", {
+      const res = await fetch("/api/chat-preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(finalAnswers),
+        body: JSON.stringify({ messages: apiMsgs }),
       });
       const data = await res.json();
-      if (data.hypothesis) setAiHypothesis(data.hypothesis);
+      const raw = (data.content || []).map(c => c.text || "").join("") || "Something went wrong — please refresh.";
+
+      const done = raw.includes("[TASK_COMPLETE]");
+      const clean = raw
+        .replace(/\[DELIVERABLE_START\][\s\S]*?\[DELIVERABLE_END\]/g, "")
+        .replace(/\[TASK_COMPLETE\]/g, "")
+        .trim();
+
+      const next = [...(isInit ? [] : displayMsgs), { role: "assistant", content: clean }];
+      setMessages(next);
+      if (done) setIsComplete(true);
     } catch (e) {
-      // Falls back to template string silently
+      const err = [...(isInit ? [] : displayMsgs), { role: "assistant", content: "Something went wrong. Please refresh and try again." }];
+      setMessages(err);
     } finally {
-      setGeneratingHypothesis(false);
+      setLoading(false);
     }
   }
 
-  function savePart() {
-    if (isComplete || !draft.trim()) return;
-    const validation = validatePart(activePart.key, draft);
-    if (validation) {
-      setValidationError(validation);
-      return;
-    }
-    setValidationError("");
-    const updated = { ...answers, [activePart.key]: draft.trim() };
-    setAnswers(updated);
-    if (partIdx === HYPOTHESIS_PARTS.length - 1) {
-      setPartIdx(HYPOTHESIS_PARTS.length);
-      generateHypothesis(updated);
-    } else {
-      setPartIdx(partIdx + 1);
-    }
-  }
-
-  function goBack() {
-    if (partIdx === 0) return;
-    if (isComplete) {
-      const prevIdx = HYPOTHESIS_PARTS.length - 1;
-      setPartIdx(prevIdx);
-      setDraft(answers[HYPOTHESIS_PARTS[prevIdx].key] || "");
-      return;
-    }
-    const prevIdx = partIdx - 1;
-    setPartIdx(prevIdx);
-    setDraft(answers[HYPOTHESIS_PARTS[prevIdx].key] || "");
+  function send() {
+    const text = input.trim();
+    if (!text || loading || isComplete) return;
+    setInput("");
+    callPreview(text, false);
   }
 
   return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:32, position:"relative", overflow:"hidden" }}>
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:"32px 24px", position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", inset:0, opacity:.02, backgroundImage:"radial-gradient(rgba(255,255,255,.7) 1px,transparent 1px)", backgroundSize:"28px 28px" }} />
       <div style={{ position:"absolute", top:"-25%", right:"-10%", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,rgba(232,85,58,.06) 0%,transparent 70%)", filter:"blur(80px)" }} />
-      <div style={{ width:"100%", maxWidth:980, display:"grid", gap:24, gridTemplateColumns:"repeat(auto-fit,minmax(320px,1fr))", position:"relative", zIndex:1 }}>
+      <div style={{ width:"100%", maxWidth:1020, display:"grid", gap:24, gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))", position:"relative", zIndex:1, alignItems:"start" }}>
+
+        {/* LEFT: Branding */}
         <div style={{ padding:28, borderRadius:18, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.06)" }}>
           <div style={{ width:56, height:56, borderRadius:14, marginBottom:18, background:"linear-gradient(135deg,#E8553A,#BE185D)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(232,85,58,.3)" }}>F</div>
           <div style={{ fontSize:10, fontWeight:700, letterSpacing:".3em", color:"rgba(255,255,255,.18)", marginBottom:12, fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>AI Startup Mentor</div>
-          <h1 style={{ fontSize:"clamp(32px,5vw,46px)", fontWeight:400, lineHeight:1.05, margin:"0 0 12px", fontFamily:"var(--ff-heading)", letterSpacing:"-.02em" }}>Founder<span style={{ color:"#E8553A" }}>Forge</span></h1>
-          <p style={{ fontSize:20, lineHeight:1.35, color:"#fff", margin:"0 0 12px", fontFamily:"var(--ff-heading)" }}>Get a validated startup hypothesis in 5 minutes.</p>
-          <p style={{ fontSize:14, lineHeight:1.7, color:"rgba(255,255,255,.45)", margin:"0 0 20px" }}>
-            Try the first task before signup. You will see exactly how the workflow feels before creating an account.
+          <h1 style={{ fontSize:"clamp(28px,4vw,42px)", fontWeight:400, lineHeight:1.05, margin:"0 0 12px", fontFamily:"var(--ff-heading)", letterSpacing:"-.02em" }}>Founder<span style={{ color:"#E8553A" }}>Forge</span></h1>
+          <p style={{ fontSize:18, lineHeight:1.35, color:"#fff", margin:"0 0 10px", fontFamily:"var(--ff-heading)" }}>Get a validated startup hypothesis in minutes.</p>
+          <p style={{ fontSize:13.5, lineHeight:1.7, color:"rgba(255,255,255,.45)", margin:"0 0 20px" }}>
+            Talk to the real AI mentor — no signup needed. Finish this task, then sign in to save your work and continue the full 6-step journey.
           </p>
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:18 }}>
-            <button
-              onClick={() => signIn("google")}
-              style={{ padding:"9px 14px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#E8553A,#BE185D)", color:"#fff", cursor:"pointer", fontSize:12, fontWeight:700 }}
-            >
-              Sign in with Google now
-            </button>
-            <span style={{ fontSize:12, color:"rgba(255,255,255,.4)", alignSelf:"center" }}>
-              or use the 5-question preview first
-            </span>
-          </div>
           <div style={{ display:"grid", gap:8, marginBottom:20 }}>
             {[
-              "Step-by-step startup guidance (one focused question at a time)",
+              "Real AI coaching — one focused question at a time",
               "A concrete deliverable saved at every task",
-              "A campaign and execution plan you can follow daily",
+              "6 steps from idea to revenue",
             ].map(item => (
               <div key={item} style={{ fontSize:12.5, color:"rgba(255,255,255,.55)", padding:"8px 10px", borderRadius:8, border:"1px solid rgba(255,255,255,.06)", background:"rgba(255,255,255,.015)" }}>
                 {item}
@@ -436,76 +237,66 @@ function PreSignInExperience() {
           </div>
         </div>
 
-        <div style={{ padding:24, borderRadius:18, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.06)" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-            <div style={{ fontSize:10, letterSpacing:".12em", textTransform:"uppercase", color:"rgba(255,255,255,.26)", fontWeight:700 }}>Step 1 Preview</div>
-            <div style={{ fontSize:11, color:"rgba(255,255,255,.35)" }}>{progress}% complete</div>
-          </div>
-          <div style={{ height:5, borderRadius:3, background:"rgba(255,255,255,.06)", overflow:"hidden", marginBottom:16 }}>
-            <div style={{ width:`${progress}%`, height:"100%", background:"linear-gradient(90deg,#E8553A,#BE185D)", transition:"width .3s ease" }} />
+        {/* RIGHT: Chat */}
+        <div style={{ display:"flex", flexDirection:"column", borderRadius:18, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.06)", overflow:"hidden", minHeight:480 }}>
+          {/* Header */}
+          <div style={{ padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,.05)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ width:7, height:7, borderRadius:"50%", background:"#10B981" }} />
+              <span style={{ fontSize:10, color:"rgba(255,255,255,.3)", fontFamily:"var(--ff-body)", fontWeight:700, letterSpacing:".08em", textTransform:"uppercase" }}>Step 1 · Problem Hypothesis · Live Preview</span>
+            </div>
+            <button onClick={() => signIn("google")} style={{ fontSize:11, color:"rgba(255,255,255,.35)", background:"none", border:"1px solid rgba(255,255,255,.08)", borderRadius:6, padding:"4px 10px", cursor:"pointer", fontFamily:"var(--ff-body)" }}>
+              Sign in
+            </button>
           </div>
 
-          {!isComplete ? (
-            <>
-              <div style={{ fontSize:11, color:"#E8553A", fontWeight:700, letterSpacing:".08em", textTransform:"uppercase", marginBottom:6 }}>
-                Part {partIdx + 1} of {HYPOTHESIS_PARTS.length} · {activePart.label}
+          {/* Messages */}
+          <div style={{ flex:1, overflowY:"auto", padding:"16px 20px", display:"flex", flexDirection:"column", gap:4, minHeight:320, maxHeight:440 }}>
+            {messages.length === 0 && loading && <TypingDots />}
+            {messages.map((m, i) => <ChatBubble key={i} role={m.role} content={m.content} />)}
+            {messages.length > 0 && loading && <TypingDots />}
+            <div ref={btmRef} />
+          </div>
+
+          {/* Input or Sign-in CTA */}
+          {isComplete ? (
+            <div style={{ padding:"16px 20px", borderTop:"1px solid rgba(255,255,255,.06)", background:"rgba(16,185,129,.04)" }}>
+              <div style={{ fontSize:11, fontWeight:700, color:"#10B981", letterSpacing:".08em", textTransform:"uppercase", marginBottom:6 }}>
+                ✓ Task 1.1 Complete
               </div>
-              <div style={{ fontSize:16, color:"rgba(255,255,255,.92)", lineHeight:1.5, marginBottom:12 }}>
-                {activePart.prompt}
-              </div>
-              <textarea
-                value={draft}
-                onChange={e => setDraft(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) savePart(); }}
-                placeholder={activePart.placeholder}
-                rows={4}
-                style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:"1px solid rgba(255,255,255,.12)", background:"rgba(255,255,255,.02)", color:"#fff", fontSize:13.5, lineHeight:1.6, resize:"vertical", outline:"none", fontFamily:"var(--ff-body)", marginBottom:12 }}
-              />
-              {validationError && (
-                <div style={{ marginBottom:12, fontSize:12, lineHeight:1.5, color:"#FCA5A5", padding:"8px 10px", borderRadius:8, border:"1px solid rgba(239,68,68,.35)", background:"rgba(239,68,68,.08)", whiteSpace:"pre-wrap" }}>
-                  {validationError}
-                </div>
-              )}
-              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                <button onClick={goBack} disabled={partIdx===0} style={{ padding:"9px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,.09)", background:"transparent", color:partIdx===0?"rgba(255,255,255,.2)":"rgba(255,255,255,.55)", cursor:partIdx===0?"not-allowed":"pointer", fontSize:12, fontWeight:600 }}>
-                  Back
-                </button>
-                <button onClick={savePart} disabled={!draft.trim()} style={{ padding:"9px 14px", borderRadius:8, border:"none", background:draft.trim()?"linear-gradient(135deg,#E8553A,#BE185D)":"rgba(255,255,255,.06)", color:draft.trim()?"#fff":"rgba(255,255,255,.3)", cursor:draft.trim()?"pointer":"not-allowed", fontSize:12, fontWeight:700 }}>
-                  {partIdx === HYPOTHESIS_PARTS.length - 1 ? "Generate hypothesis" : "Next question"}
-                </button>
-                <button onClick={() => signIn("google")} style={{ padding:"9px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,.1)", background:"rgba(255,255,255,.02)", color:"rgba(255,255,255,.65)", cursor:"pointer", fontSize:12, fontWeight:600 }}>
-                  Sign in now
-                </button>
-              </div>
-            </>
+              <p style={{ fontSize:13, lineHeight:1.6, color:"rgba(255,255,255,.55)", margin:"0 0 12px" }}>
+                Your hypothesis is ready. Sign in to save it and continue to <strong style={{ color:"rgba(255,255,255,.8)" }}>Interview Targets</strong> — the next task in Step 1.
+              </p>
+              <button
+                onClick={() => signIn("google")}
+                style={{ width:"100%", padding:"11px 16px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#E8553A,#BE185D)", color:"#fff", cursor:"pointer", fontSize:13, fontWeight:700 }}
+              >
+                Save & Continue with Google →
+              </button>
+            </div>
           ) : (
             <>
-              <div style={{ fontSize:11, color:"#10B981", fontWeight:700, letterSpacing:".08em", textTransform:"uppercase", marginBottom:8 }}>
-                {generatingHypothesis ? "Generating your hypothesis…" : "Draft Ready"}
-              </div>
-              {generatingHypothesis ? (
-                <div style={{ padding:"20px 14px", borderRadius:10, border:"1px solid rgba(255,255,255,.06)", background:"rgba(255,255,255,.02)", marginBottom:14, display:"flex", alignItems:"center", gap:10 }}>
-                  <div style={{ display:"flex", gap:5 }}>
-                    {[0,1,2].map(i => (
-                      <div key={i} style={{ width:6, height:6, borderRadius:"50%", background:"#E8553A", animation:`ffBounce 1.4s ${i*.15}s infinite` }} />
-                    ))}
-                  </div>
-                  <span style={{ fontSize:12, color:"rgba(255,255,255,.35)" }}>Claude is polishing your hypothesis…</span>
-                </div>
-              ) : (
-                <div style={{ fontSize:13.5, lineHeight:1.7, color:"rgba(255,255,255,.88)", padding:"12px 14px", borderRadius:10, border:"1px solid rgba(16,185,129,.25)", background:"rgba(16,185,129,.06)", marginBottom:14 }}>
-                  {aiHypothesis || hypothesis}
-                </div>
-              )}
-              <p style={{ margin:"0 0 12px", fontSize:12, color:"rgba(255,255,255,.42)" }}>
-                Sign in to save this draft and continue the full founder journey.
-              </p>
-              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                <button onClick={goBack} disabled={generatingHypothesis} style={{ padding:"9px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,.09)", background:"transparent", color:generatingHypothesis?"rgba(255,255,255,.2)":"rgba(255,255,255,.55)", cursor:generatingHypothesis?"not-allowed":"pointer", fontSize:12, fontWeight:600 }}>
-                  Edit answers
+              <div style={{ padding:"12px 16px", borderTop:"1px solid rgba(255,255,255,.04)", display:"flex", gap:8, alignItems:"flex-end" }}>
+                <textarea
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                  placeholder={loading ? "Mentor is thinking…" : "Type your answer… (Enter to send)"}
+                  disabled={loading}
+                  rows={2}
+                  style={{ flex:1, padding:"10px 12px", borderRadius:10, border:"1px solid rgba(255,255,255,.1)", background:"rgba(255,255,255,.03)", color:"#fff", fontSize:13, lineHeight:1.5, resize:"none", outline:"none", fontFamily:"var(--ff-body)", opacity:loading ? 0.5 : 1 }}
+                />
+                <button
+                  onClick={send}
+                  disabled={!input.trim() || loading}
+                  style={{ padding:"10px 16px", borderRadius:10, border:"none", background:input.trim() && !loading ? "linear-gradient(135deg,#E8553A,#BE185D)" : "rgba(255,255,255,.05)", color:input.trim() && !loading ? "#fff" : "rgba(255,255,255,.2)", cursor:input.trim() && !loading ? "pointer" : "not-allowed", fontSize:13, fontWeight:700, whiteSpace:"nowrap", alignSelf:"stretch" }}
+                >
+                  Send
                 </button>
-                <button onClick={() => signIn("google")} disabled={generatingHypothesis} style={{ padding:"9px 14px", borderRadius:8, border:"none", background:generatingHypothesis?"rgba(255,255,255,.06)":"linear-gradient(135deg,#E8553A,#BE185D)", color:generatingHypothesis?"rgba(255,255,255,.3)":"#fff", cursor:generatingHypothesis?"not-allowed":"pointer", fontSize:12, fontWeight:700 }}>
-                  Save & Continue with Google
+              </div>
+              <div style={{ padding:"0 16px 12px", textAlign:"center" }}>
+                <button onClick={() => signIn("google")} style={{ fontSize:11, color:"rgba(255,255,255,.2)", background:"none", border:"none", cursor:"pointer", textDecoration:"underline", fontFamily:"var(--ff-body)" }}>
+                  Already have an account? Sign in
                 </button>
               </div>
             </>
