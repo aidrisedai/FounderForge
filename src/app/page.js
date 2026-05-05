@@ -103,39 +103,6 @@ function Timeline({ steps, project, activeStepId, activeTaskIdx, onNav }) {
   );
 }
 
-const HYPOTHESIS_PARTS = [
-  {
-    key: "audience",
-    label: "Audience",
-    prompt: "Who is the specific audience you want to serve? Name role + context, not generic labels.",
-    placeholder: "e.g. Solo consultants in the US doing $5k-$20k/month and selling via LinkedIn",
-  },
-  {
-    key: "problem",
-    label: "Problem",
-    prompt: "What exact painful problem do they have? Include one real recent example.",
-    placeholder: "e.g. Last week this happened 3 times and caused missed outcomes",
-  },
-  {
-    key: "cause",
-    label: "Root Cause",
-    prompt: "Why does this problem keep happening based on observed evidence (not guesses)?",
-    placeholder: "e.g. Information is split across multiple places, so there is no single source of truth",
-  },
-  {
-    key: "workaround",
-    label: "Current Workaround",
-    prompt: "How are they handling this problem today? List real tools and steps.",
-    placeholder: "e.g. They enroll in afterschool programs, use online tutorials, and hire tutors",
-  },
-  {
-    key: "cost",
-    label: "Cost",
-    prompt: "What measurable cost does this create? Include at least one number.",
-    placeholder: "e.g. 4+ hours/week and $300-$500/month in extra costs",
-  },
-];
-
 // ── Pre Sign-in Experience ──
 function PreSignInExperience() {
   const [messages, setMessages] = useState([]);
