@@ -184,7 +184,8 @@ function PreSignInExperience() {
 
       const done = raw.includes("[TASK_COMPLETE]");
       const clean = raw
-        .replace(/\[DELIVERABLE_START\][\s\S]*?\[DELIVERABLE_END\]/g, "")
+        .replace(/\[DELIVERABLE_START\]/g, "")
+        .replace(/\[DELIVERABLE_END\]/g, "")
         .replace(/\[TASK_COMPLETE\]/g, "")
         .trim();
 
@@ -216,16 +217,27 @@ function PreSignInExperience() {
         <div style={{ padding:28, borderRadius:18, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.06)" }}>
           <div style={{ width:56, height:56, borderRadius:14, marginBottom:18, background:"linear-gradient(135deg,#E8553A,#BE185D)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(232,85,58,.3)" }}>F</div>
           <div style={{ fontSize:10, fontWeight:700, letterSpacing:".3em", color:"rgba(255,255,255,.18)", marginBottom:12, fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>AI Startup Mentor</div>
-          <h1 style={{ fontSize:"clamp(28px,4vw,42px)", fontWeight:400, lineHeight:1.05, margin:"0 0 12px", fontFamily:"var(--ff-heading)", letterSpacing:"-.02em" }}>Founder<span style={{ color:"#E8553A" }}>Forge</span></h1>
-          <p style={{ fontSize:18, lineHeight:1.35, color:"#fff", margin:"0 0 10px", fontFamily:"var(--ff-heading)" }}>Get a validated startup hypothesis in minutes.</p>
-          <p style={{ fontSize:13.5, lineHeight:1.7, color:"rgba(255,255,255,.45)", margin:"0 0 20px" }}>
-            Talk to the real AI mentor — no signup needed. Finish this task, then sign in to save your work and continue the full 6-step journey.
+          <h1 style={{ fontSize:"clamp(32px,5vw,46px)", fontWeight:400, lineHeight:1.05, margin:"0 0 12px", fontFamily:"var(--ff-heading)", letterSpacing:"-.02em" }}>Founder<span style={{ color:"#E8553A" }}>Forge</span></h1>
+          <p style={{ fontSize:20, lineHeight:1.35, color:"#fff", margin:"0 0 12px", fontFamily:"var(--ff-heading)" }}>Get a validated startup hypothesis in 5 minutes.</p>
+          <p style={{ fontSize:14, lineHeight:1.7, color:"rgba(255,255,255,.45)", margin:"0 0 20px" }}>
+            Try the first task before signup. You will see exactly how the workflow feels before creating an account.
           </p>
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:18 }}>
+            <button
+              onClick={() => signIn("google")}
+              style={{ padding:"9px 14px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#E8553A,#BE185D)", color:"#fff", cursor:"pointer", fontSize:12, fontWeight:700 }}
+            >
+              Sign in with Google now
+            </button>
+            <span style={{ fontSize:12, color:"rgba(255,255,255,.4)", alignSelf:"center" }}>
+              or use the chat preview first
+            </span>
+          </div>
           <div style={{ display:"grid", gap:8, marginBottom:20 }}>
             {[
-              "Real AI coaching — one focused question at a time",
+              "Step-by-step startup guidance (one focused question at a time)",
               "A concrete deliverable saved at every task",
-              "6 steps from idea to revenue",
+              "A campaign and execution plan you can follow daily",
             ].map(item => (
               <div key={item} style={{ fontSize:12.5, color:"rgba(255,255,255,.55)", padding:"8px 10px", borderRadius:8, border:"1px solid rgba(255,255,255,.06)", background:"rgba(255,255,255,.015)" }}>
                 {item}
