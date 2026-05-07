@@ -8,6 +8,7 @@ import UserProfile from "@/components/UserProfile";
 import LeaderboardWidget from "@/components/LeaderboardWidget";
 import AchievementNotification, { LevelUpNotification, XPNotification } from "@/components/AchievementNotification";
 import { getPersonalitySummary, getPersonalizedEncouragement } from "@/lib/personality";
+import PersonaSimulation from "@/components/PersonaSimulation";
 
 // ── API helpers ──
 async function apiGet(url) {
@@ -498,6 +499,25 @@ export default function Home() {
 
   function handleSend() { if (!input.trim() || loading) return; const t = input.trim(); setInput(""); callMentor(t, false); }
 
+  function handleSimulationComplete(deliverableText) {
+    updateProject(activeId, p => {
+      const nd = { ...(p.deliverables||{}), [task.id]: deliverableText };
+      const nc = { ...(p.completedTasks||{}) };
+      nc[step.id] = Math.max(nc[step.id]||0, taskIdx+1);
+      return { ...p, deliverables: nd, completedTasks: nc };
+    });
+    setTimeout(() => {
+      if (taskIdx < step.tasks.length-1) {
+        setTaskIdx(taskIdx+1);
+        setTaskStartTime(Date.now());
+      } else if (stepIdx < CURRICULUM.length-1) {
+        setStepIdx(stepIdx+1);
+        setTaskIdx(0);
+        setTaskStartTime(Date.now());
+      }
+    }, 400);
+  }
+
   function createProject(name) {
     const p = { id: "p_" + Date.now(), name, completedTasks: {}, deliverables: {}, taskMessages: {} };
     setProjects(prev => [...prev, p]);
@@ -765,7 +785,16 @@ export default function Home() {
         <Timeline steps={CURRICULUM} project={project} activeStepId={step.id} activeTaskIdx={taskIdx} onNav={(si,ti) => { setStepIdx(si); setTaskIdx(ti); }} />
       </div>
 
-      {/* Chat */}
+      {/* Chat or Simulation */}
+      {task.type === "simulation" ? (
+        <PersonaSimulation
+          key={`sim-${activeId}-${task.id}`}
+          project={project}
+          task={task}
+          step={step}
+          onComplete={handleSimulationComplete}
+        />
+      ) : (
       <div style={{ flex:1, display:"flex", flexDirection:"column", height:"100vh", minWidth:0 }}>
         <div style={{ padding:"10px 20px", borderBottom:"1px solid rgba(255,255,255,.05)", background:"rgba(255,255,255,.012)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -847,6 +876,7 @@ export default function Home() {
           </div>
         </div>
       </div>
+      )}
       
       {/* Memory Dashboard Modal */}
       {showMemory && (
