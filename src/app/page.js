@@ -151,15 +151,25 @@ function PreSignInExperience() {
       const raw = (data.content || []).map(c => c.text || "").join("") || "Something went wrong — please refresh.";
 
       const done = raw.includes("[TASK_COMPLETE]");
+      const delMatch = raw.match(/\[DELIVERABLE_START\]([\s\S]*?)\[DELIVERABLE_END\]/);
+      const deliverable = delMatch ? delMatch[1].trim() : null;
       const clean = raw
-        .replace(/\[DELIVERABLE_START\]/g, "")
-        .replace(/\[DELIVERABLE_END\]/g, "")
+        .replace(/\[DELIVERABLE_START\][\s\S]*?\[DELIVERABLE_END\]/g, "")
         .replace(/\[TASK_COMPLETE\]/g, "")
         .trim();
 
       const next = [...(isInit ? [] : displayMsgs), { role: "assistant", content: clean }];
       setMessages(next);
       if (done) setIsComplete(true);
+
+      try {
+        const prev = JSON.parse(localStorage.getItem("ff_guest_session") || "{}");
+        localStorage.setItem("ff_guest_session", JSON.stringify({
+          messages: next,
+          deliverable: deliverable || prev.deliverable || null,
+          savedAt: Date.now(),
+        }));
+      } catch (_) {}
     } catch (e) {
       const err = [...(isInit ? [] : displayMsgs), { role: "assistant", content: "Something went wrong. Please refresh and try again." }];
       setMessages(err);
@@ -311,6 +321,7 @@ export default function Home() {
   const [taskStartTime, setTaskStartTime] = useState(null);
   const [showSidebarNewProject, setShowSidebarNewProject] = useState(false);
   const [sidebarProjectName, setSidebarProjectName] = useState("");
+  const [importBanner, setImportBanner] = useState(false);
   const btmRef = useRef(null);
   const needsInitRef = useRef(false);
 
@@ -323,11 +334,38 @@ export default function Home() {
   // Load user data and personality
   useEffect(() => {
     if (status === "authenticated") {
-      // Load projects
+      // Load projects, then check for guest session to import
       apiGet("/api/projects").then(data => {
         const projs = data.projects || [];
-        setProjects(projs);
-        if (projs.length > 0) setActiveId(projs[0].id);
+
+        let guestImport = null;
+        try {
+          const raw = localStorage.getItem("ff_guest_session");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed.messages?.length > 0) guestImport = parsed;
+            localStorage.removeItem("ff_guest_session");
+          }
+        } catch (_) {}
+
+        if (guestImport) {
+          const gp = {
+            id: "p_" + Date.now(),
+            name: "My Startup Idea",
+            completedTasks: guestImport.deliverable ? { 1: 1 } : {},
+            deliverables: guestImport.deliverable ? { "1.1": guestImport.deliverable } : {},
+            taskMessages: { "1.1": guestImport.messages },
+          };
+          const merged = [gp, ...projs];
+          setProjects(merged);
+          setActiveId(gp.id);
+          setImportBanner(true);
+          setTimeout(() => setImportBanner(false), 5000);
+        } else {
+          setProjects(projs);
+          if (projs.length > 0) setActiveId(projs[0].id);
+        }
+
         setDataLoaded(true);
       }).catch(() => setDataLoaded(true));
       
@@ -894,6 +932,15 @@ export default function Home() {
       {/* Leaderboard Widget */}
       {showLeaderboard && <LeaderboardWidget />}
       
+      {/* Import banner */}
+      {importBanner && (
+        <div style={{ position:"fixed", top:20, left:"50%", transform:"translateX(-50%)", zIndex:2100, padding:"10px 18px", borderRadius:10, background:"rgba(16,185,129,.12)", border:"1px solid rgba(16,185,129,.25)", display:"flex", alignItems:"center", gap:10, animation:"ffSlide .4s", boxShadow:"0 4px 24px rgba(0,0,0,.4)" }}>
+          <span style={{ fontSize:15 }}>✅</span>
+          <span style={{ fontSize:13, color:"rgba(255,255,255,.75)", fontFamily:"var(--ff-body)" }}>We picked up where you left off — your draft has been saved.</span>
+          <button onClick={() => setImportBanner(false)} style={{ background:"none", border:"none", color:"rgba(255,255,255,.3)", cursor:"pointer", fontSize:16, lineHeight:1, padding:"0 0 0 4px" }}>×</button>
+        </div>
+      )}
+
       {/* Notifications */}
       <div style={{ position: "fixed", top: 20, right: 20, zIndex: 2000 }}>
         {notifications.map((notif) => {
