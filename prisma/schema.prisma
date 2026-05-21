@@ -20,13 +20,18 @@ model User {
   updatedAt     DateTime  @updatedAt
   
   // Relations
-  projects           Project[]
-  personality        Personality?
-  memory             Memory?
-  activities         Activity[]
-  stats              UserStats?
-  achievements       UserAchievement[]
-  leaderboardEntries LeaderboardEntry[]
+  projects               Project[]
+  personality            Personality?
+  memory                 Memory?
+  activities             Activity[]
+  stats                  UserStats?
+  achievements           UserAchievement[]
+  leaderboardEntries     LeaderboardEntry[]
+  founderProfile         FounderProfile?
+  sentConnections        Connection[]      @relation("ConnectionRequester")
+  receivedConnections    Connection[]      @relation("ConnectionReceiver")
+  sentMessages           DirectMessage[]   @relation("DMSender")
+  receivedMessages       DirectMessage[]   @relation("DMReceiver")
   
   @@index([email])
 }
@@ -291,9 +296,68 @@ model LeaderboardEntry {
 model AdminSession {
   id         String   @id @default(cuid())
   token      String   @unique
-  
+
   createdAt  DateTime @default(now())
   expiresAt  DateTime
-  
+
   @@index([token])
+}
+
+// ── Social / Community models ──
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+// Community profile founders opt into for discovery
+model FounderProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bio           String?  @db.Text
+  linkedIn      String?
+  twitter       String?
+  website       String?
+  openToConnect Boolean  @default(true)
+  lookingFor    String[] // e.g. ["peer", "co-founder", "advisor"]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Peer connection requests between founders
+model Connection {
+  id          String           @id @default(cuid())
+  requesterId String
+  requester   User             @relation("ConnectionRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  receiverId  String
+  receiver    User             @relation("ConnectionReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  status      ConnectionStatus @default(PENDING)
+  message     String?          @db.Text
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([requesterId, receiverId])
+  @@index([requesterId])
+  @@index([receiverId])
+}
+
+// Async direct messages between connected founders
+model DirectMessage {
+  id         String   @id @default(cuid())
+  senderId   String
+  sender     User     @relation("DMSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("DMReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  content    String   @db.Text
+  read       Boolean  @default(false)
+
+  createdAt  DateTime @default(now())
+
+  @@index([senderId, receiverId])
+  @@index([receiverId, read])
 }
