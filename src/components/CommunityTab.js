@@ -1,6 +1,41 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
+// ── URL safety helpers (defense against javascript:/data: injection) ───────────
+function safeHttpsUrl(input) {
+  if (!input || typeof input !== "string") return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  try {
+    const url = new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function safeLinkedInUrl(input) {
+  const url = safeHttpsUrl(input);
+  if (!url) return null;
+  const host = (() => { try { return new URL(url).hostname.toLowerCase(); } catch { return ""; } })();
+  if (!host.endsWith("linkedin.com")) return null;
+  return url;
+}
+
+// Accepts "@handle", "handle", or full twitter/x URLs. Returns canonical handle or null.
+function extractTwitterHandle(input) {
+  if (!input || typeof input !== "string") return null;
+  let val = input.trim().replace(/^@/, "");
+  if (!val) return null;
+  // If it's a URL, pull out the path
+  const m = val.match(/^https?:\/\/(?:www\.)?(?:twitter|x)\.com\/([A-Za-z0-9_]{1,15})\/?/i);
+  if (m) val = m[1];
+  // Otherwise must match handle rules
+  if (!/^[A-Za-z0-9_]{1,15}$/.test(val)) return null;
+  return val;
+}
+
 const STEP_LABELS = {
   1: "Discover", 2: "Define", 3: "Develop",
   4: "Deploy", 5: "Deepen", 6: "Dominate", 7: "Promote",
@@ -84,7 +119,7 @@ function ProfileSetupModal({ existing, onSave, onClose }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <label style={{ fontSize: 10, fontWeight: 700, color: dimmer, letterSpacing: ".08em", fontFamily: "var(--ff-body)", textTransform: "uppercase" }}>Short bio</label>
-          <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder="Tell other founders about you and what you're building..."
+          <textarea value={bio} onChange={(e) => setBio(e.target.value.slice(0, 1000))} rows={3} maxLength={1000} placeholder="Tell other founders about you and what you're building..."
             style={{ padding: "10px 12px", borderRadius: 8, border: `1px solid ${border}`, background: card, color: "rgba(255,255,255,.85)", fontSize: 13, fontFamily: "var(--ff-body)", resize: "vertical", outline: "none" }} />
         </div>
 
@@ -206,12 +241,14 @@ function FounderCard({ founder, onMessage }) {
       )}
 
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-        {founder.profile?.linkedIn && (
-          <a href={founder.profile.linkedIn} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: "#0A66C2", fontFamily: "var(--ff-body)", fontWeight: 600, textDecoration: "none", padding: "4px 8px", borderRadius: 5, background: "rgba(10,102,194,.08)", border: "1px solid rgba(10,102,194,.2)" }}>LinkedIn ↗</a>
-        )}
-        {founder.profile?.twitter && (
-          <a href={`https://twitter.com/${founder.profile.twitter.replace(/^@/, "")}`} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: "#1DA1F2", fontFamily: "var(--ff-body)", fontWeight: 600, textDecoration: "none", padding: "4px 8px", borderRadius: 5, background: "rgba(29,161,242,.08)", border: "1px solid rgba(29,161,242,.2)" }}>Twitter ↗</a>
-        )}
+        {(() => {
+          const url = safeLinkedInUrl(founder.profile?.linkedIn);
+          return url ? <a href={url} target="_blank" rel="noreferrer noopener" style={{ fontSize: 10, color: "#0A66C2", fontFamily: "var(--ff-body)", fontWeight: 600, textDecoration: "none", padding: "4px 8px", borderRadius: 5, background: "rgba(10,102,194,.08)", border: "1px solid rgba(10,102,194,.2)" }}>LinkedIn ↗</a> : null;
+        })()}
+        {(() => {
+          const handle = extractTwitterHandle(founder.profile?.twitter);
+          return handle ? <a href={`https://twitter.com/${handle}`} target="_blank" rel="noreferrer noopener" style={{ fontSize: 10, color: "#1DA1F2", fontFamily: "var(--ff-body)", fontWeight: 600, textDecoration: "none", padding: "4px 8px", borderRadius: 5, background: "rgba(29,161,242,.08)", border: "1px solid rgba(29,161,242,.2)" }}>Twitter ↗</a> : null;
+        })()}
         <div style={{ flex: 1 }} />
         <Btn variant={localStatus === "ACCEPTED" ? "primary" : "ghost"} onClick={handleBtnClick} disabled={connecting || localStatus === "DECLINED" || (localStatus === "PENDING" && founder.iRequested)}>
           {connecting ? "…" : btnLabel}
@@ -220,7 +257,7 @@ function FounderCard({ founder, onMessage }) {
 
       {showIntro && !localStatus && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <textarea value={introMsg} onChange={(e) => setIntroMsg(e.target.value)} rows={2} placeholder="Add a short intro message (optional)…"
+          <textarea value={introMsg} onChange={(e) => setIntroMsg(e.target.value.slice(0, 500))} rows={2} maxLength={500} placeholder="Add a short intro message (optional)…"
             style={{ padding: "8px 10px", borderRadius: 7, border: `1px solid ${border}`, background: "rgba(255,255,255,.02)", color: "rgba(255,255,255,.8)", fontSize: 12, fontFamily: "var(--ff-body)", resize: "none", outline: "none" }} />
           <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
             <Btn onClick={() => setShowIntro(false)}>Cancel</Btn>
@@ -445,12 +482,14 @@ function MessagesTab({ openThread }) {
           <button onClick={() => setActive(null)} style={{ background: "none", border: "none", color: dim, cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "0 4px" }}>←</button>
           <Avatar src={otherUser?.image} name={otherUser?.name} size={30} />
           <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--ff-heading)", color: "rgba(255,255,255,.9)" }}>{otherUser?.name}</div>
-          {otherUser?.founderProfile?.linkedIn && (
-            <a href={otherUser.founderProfile.linkedIn} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: "#0A66C2", fontFamily: "var(--ff-body)", fontWeight: 600, textDecoration: "none", marginLeft: "auto", padding: "3px 8px", borderRadius: 4, background: "rgba(10,102,194,.08)", border: "1px solid rgba(10,102,194,.2)" }}>LinkedIn ↗</a>
-          )}
-          {otherUser?.founderProfile?.twitter && (
-            <a href={`https://twitter.com/${otherUser.founderProfile.twitter.replace(/^@/, "")}`} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: "#1DA1F2", fontFamily: "var(--ff-body)", fontWeight: 600, textDecoration: "none", padding: "3px 8px", borderRadius: 4, background: "rgba(29,161,242,.08)", border: "1px solid rgba(29,161,242,.2)" }}>Twitter ↗</a>
-          )}
+          {(() => {
+            const url = safeLinkedInUrl(otherUser?.founderProfile?.linkedIn);
+            return url ? <a href={url} target="_blank" rel="noreferrer noopener" style={{ fontSize: 10, color: "#0A66C2", fontFamily: "var(--ff-body)", fontWeight: 600, textDecoration: "none", marginLeft: "auto", padding: "3px 8px", borderRadius: 4, background: "rgba(10,102,194,.08)", border: "1px solid rgba(10,102,194,.2)" }}>LinkedIn ↗</a> : null;
+          })()}
+          {(() => {
+            const handle = extractTwitterHandle(otherUser?.founderProfile?.twitter);
+            return handle ? <a href={`https://twitter.com/${handle}`} target="_blank" rel="noreferrer noopener" style={{ fontSize: 10, color: "#1DA1F2", fontFamily: "var(--ff-body)", fontWeight: 600, textDecoration: "none", padding: "3px 8px", borderRadius: 4, background: "rgba(29,161,242,.08)", border: "1px solid rgba(29,161,242,.2)" }}>Twitter ↗</a> : null;
+          })()}
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, padding: "14px 0" }}>
@@ -469,7 +508,7 @@ function MessagesTab({ openThread }) {
         </div>
 
         <div style={{ display: "flex", gap: 8, paddingTop: 12, borderTop: `1px solid ${border}` }}>
-          <textarea value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} rows={2} placeholder="Write a message… (Enter to send)"
+          <textarea value={draft} onChange={(e) => setDraft(e.target.value.slice(0, 4000))} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} rows={2} maxLength={4000} placeholder="Write a message… (Enter to send)"
             style={{ flex: 1, padding: "9px 12px", borderRadius: 8, border: `1px solid ${border}`, background: card, color: "rgba(255,255,255,.85)", fontSize: 13, fontFamily: "var(--ff-body)", resize: "none", outline: "none" }} />
           <button onClick={send} disabled={!draft.trim() || sending} style={{ padding: "9px 16px", borderRadius: 8, border: "none", background: draft.trim() && !sending ? `linear-gradient(135deg,${accent},#BE185D)` : "rgba(255,255,255,.03)", color: draft.trim() && !sending ? "#fff" : dimmer, fontSize: 12, fontWeight: 600, cursor: draft.trim() && !sending ? "pointer" : "not-allowed", fontFamily: "var(--ff-body)" }}>Send</button>
         </div>

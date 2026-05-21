@@ -53,9 +53,21 @@ export async function POST(req) {
   const me = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!me) return Response.json({ error: "User not found" }, { status: 404 });
 
-  const { receiverId, message } = await req.json();
-  if (!receiverId) return Response.json({ error: "receiverId required" }, { status: 400 });
+  let body;
+  try { body = await req.json(); } catch { return Response.json({ error: "Invalid JSON" }, { status: 400 }); }
+  const { receiverId } = body;
+  const message = typeof body.message === "string" ? body.message.trim().slice(0, 500) || null : null;
+
+  if (!receiverId || typeof receiverId !== "string") return Response.json({ error: "receiverId required" }, { status: 400 });
   if (receiverId === me.id) return Response.json({ error: "Cannot connect with yourself" }, { status: 400 });
+
+  // Validate receiver exists and has an open community profile
+  const receiver = await prisma.user.findUnique({
+    where: { id: receiverId },
+    include: { founderProfile: true },
+  });
+  if (!receiver) return Response.json({ error: "Receiver not found" }, { status: 404 });
+  if (!receiver.founderProfile?.openToConnect) return Response.json({ error: "Receiver is not open to connections" }, { status: 403 });
 
   const existing = await prisma.connection.findFirst({
     where: {

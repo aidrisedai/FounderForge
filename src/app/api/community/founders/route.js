@@ -3,12 +3,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/prisma";
 
 function activeStepForProject(completedTasks) {
+  // Highest step the founder has made progress on. Defaults to 1 for new projects.
   if (!completedTasks || Object.keys(completedTasks).length === 0) return 1;
-  // The active step is the lowest step that still has tasks remaining,
-  // i.e. the first step not fully completed. We use task counts from the
-  // curriculum (7 steps with 4–8 tasks each), but we only need to know
-  // which steps have been started/completed relative to each other.
-  // Simplest proxy: the highest step key that has at least one task done.
   const stepsWithProgress = Object.entries(completedTasks)
     .filter(([, v]) => Number(v) > 0)
     .map(([k]) => Number(k));

@@ -58,8 +58,11 @@ export async function POST(req, { params }) {
   if (!me) return Response.json({ error: "User not found" }, { status: 404 });
 
   const otherId = params.userId;
-  const { content } = await req.json();
-  if (!content?.trim()) return Response.json({ error: "Content required" }, { status: 400 });
+  let body;
+  try { body = await req.json(); } catch { return Response.json({ error: "Invalid JSON" }, { status: 400 }); }
+  if (typeof body.content !== "string") return Response.json({ error: "Content required" }, { status: 400 });
+  const content = body.content.trim().slice(0, 4000);
+  if (!content) return Response.json({ error: "Content required" }, { status: 400 });
 
   const conn = await prisma.connection.findFirst({
     where: {
@@ -73,7 +76,7 @@ export async function POST(req, { params }) {
   if (!conn) return Response.json({ error: "Not connected" }, { status: 403 });
 
   const message = await prisma.directMessage.create({
-    data: { senderId: me.id, receiverId: otherId, content: content.trim() },
+    data: { senderId: me.id, receiverId: otherId, content },
   });
 
   return Response.json({ message }, { status: 201 });
