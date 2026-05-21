@@ -2,6 +2,19 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/prisma";
 
+function activeStepForProject(completedTasks) {
+  if (!completedTasks || Object.keys(completedTasks).length === 0) return 1;
+  // The active step is the lowest step that still has tasks remaining,
+  // i.e. the first step not fully completed. We use task counts from the
+  // curriculum (7 steps with 4–8 tasks each), but we only need to know
+  // which steps have been started/completed relative to each other.
+  // Simplest proxy: the highest step key that has at least one task done.
+  const stepsWithProgress = Object.entries(completedTasks)
+    .filter(([, v]) => Number(v) > 0)
+    .map(([k]) => Number(k));
+  return stepsWithProgress.length > 0 ? Math.max(...stepsWithProgress) : 1;
+}
+
 export async function GET(req) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -10,7 +23,7 @@ export async function GET(req) {
   if (!me) return Response.json({ error: "User not found" }, { status: 404 });
 
   const { searchParams } = new URL(req.url);
-  const stepFilter = searchParams.get("step"); // optional numeric filter
+  const stepFilter = searchParams.get("step");
 
   const founders = await prisma.user.findMany({
     where: {
@@ -20,10 +33,10 @@ export async function GET(req) {
     include: {
       founderProfile: true,
       stats: { select: { xp: true, level: true } },
+      // Include ALL projects so we can show every stage a founder is active in
       projects: {
-        select: { completedTasks: true, name: true },
+        select: { id: true, name: true, completedTasks: true },
         orderBy: { updatedAt: "desc" },
-        take: 1,
       },
       sentConnections: {
         where: { receiverId: me.id },
@@ -39,20 +52,18 @@ export async function GET(req) {
 
   const result = founders
     .map((f) => {
-      const project = f.projects[0];
-      const completedSteps = project?.completedTasks
-        ? Object.entries(project.completedTasks)
-            .filter(([, v]) => v > 0)
-            .map(([k]) => Number(k))
-        : [];
-      const currentStep = completedSteps.length > 0 ? Math.max(...completedSteps) : 1;
+      // Build a per-project stage list
+      const projectStages = f.projects.map((p) => ({
+        id: p.id,
+        name: p.name,
+        activeStep: activeStepForProject(p.completedTasks),
+      }));
+
+      const allSteps = projectStages.map((p) => p.activeStep);
 
       const sentConn = f.sentConnections[0];
       const receivedConn = f.receivedConnections[0];
       const connection = sentConn || receivedConn || null;
-      const connectionStatus = connection?.status || null;
-      const connectionId = connection?.id || null;
-      const iRequested = !!receivedConn;
 
       return {
         id: f.id,
@@ -60,16 +71,17 @@ export async function GET(req) {
         image: f.image,
         profile: f.founderProfile,
         stats: f.stats,
-        startupName: project?.name || null,
-        currentStep,
-        connectionStatus,
-        connectionId,
-        iRequested,
+        projectStages,   // [{name, activeStep}] — one entry per project
+        allSteps,        // flat array for filter matching
+        connectionStatus: connection?.status || null,
+        connectionId: connection?.id || null,
+        iRequested: !!receivedConn,
       };
     })
     .filter((f) => {
       if (!stepFilter) return true;
-      return String(f.currentStep) === String(stepFilter);
+      // Show this founder if ANY of their projects is at the requested step
+      return f.allSteps.includes(Number(stepFilter));
     });
 
   return Response.json({ founders: result });

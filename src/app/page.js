@@ -9,6 +9,7 @@ import LeaderboardWidget from "@/components/LeaderboardWidget";
 import AchievementNotification, { LevelUpNotification, XPNotification } from "@/components/AchievementNotification";
 import { getPersonalitySummary, getPersonalizedEncouragement } from "@/lib/personality";
 import PersonaSimulation from "@/components/PersonaSimulation";
+import CommunityTab from "@/components/CommunityTab";
 
 // ── API helpers ──
 async function apiGet(url) {

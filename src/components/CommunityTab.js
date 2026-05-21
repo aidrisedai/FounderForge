@@ -120,13 +120,11 @@ function ProfileSetupModal({ existing, onSave, onClose }) {
 
 // ── Founder Card ──────────────────────────────────────────────────────────────
 
-function FounderCard({ founder, onConnect, onMessage }) {
+function FounderCard({ founder, onMessage }) {
   const [connecting, setConnecting] = useState(false);
   const [localStatus, setLocalStatus] = useState(founder.connectionStatus);
   const [introMsg, setIntroMsg] = useState("");
   const [showIntro, setShowIntro] = useState(false);
-
-  const stepColor = STEP_COLORS[founder.currentStep] || accent;
 
   async function handleConnect() {
     if (showIntro) {
@@ -155,19 +153,43 @@ function FounderCard({ founder, onConnect, onMessage }) {
     if (!localStatus || localStatus === "DECLINED") handleConnect();
   }
 
+  // Show up to 3 project rows; collapse the rest
+  const projects = founder.projectStages || [];
+  const visibleProjects = projects.slice(0, 3);
+  const hiddenCount = projects.length - visibleProjects.length;
+
   return (
     <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 12, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Header: avatar + name + level */}
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
         <Avatar src={founder.image} name={founder.name} size={40} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--ff-heading)", color: "rgba(255,255,255,.9)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{founder.name}</div>
-          {founder.startupName && <div style={{ fontSize: 11, color: dim, fontFamily: "var(--ff-body)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{founder.startupName}</div>}
-          <div style={{ display: "flex", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
-            <Tag label={`Step ${founder.currentStep}: ${STEP_LABELS[founder.currentStep] || "?"}`} color={stepColor} />
-            {founder.stats?.level && <Tag label={`Lvl ${founder.stats.level}`} color="#8B5CF6" />}
-          </div>
+          {founder.stats?.level && (
+            <div style={{ marginTop: 3 }}>
+              <Tag label={`Lvl ${founder.stats.level}`} color="#8B5CF6" />
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Projects: one row per project showing name + active step */}
+      {visibleProjects.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          {visibleProjects.map((p) => {
+            const color = STEP_COLORS[p.activeStep] || accent;
+            return (
+              <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,.6)", fontFamily: "var(--ff-body)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                <Tag label={`Step ${p.activeStep}: ${STEP_LABELS[p.activeStep] || "?"}`} color={color} />
+              </div>
+            );
+          })}
+          {hiddenCount > 0 && (
+            <div style={{ fontSize: 10, color: dimmer, fontFamily: "var(--ff-body)" }}>+{hiddenCount} more project{hiddenCount > 1 ? "s" : ""}</div>
+          )}
+        </div>
+      )}
 
       {founder.profile?.bio && (
         <div style={{ fontSize: 11.5, color: dim, lineHeight: 1.6, fontFamily: "var(--ff-body)" }}>
@@ -256,7 +278,7 @@ function DiscoverTab({ myProfile, onSetupProfile, onMessage }) {
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 12 }}>
           {founders.map((f) => (
-            <FounderCard key={f.id} founder={f} onConnect={() => {}} onMessage={onMessage} />
+            <FounderCard key={f.id} founder={f} onMessage={onMessage} />
           ))}
         </div>
       )}
