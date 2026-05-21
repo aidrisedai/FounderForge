@@ -28,10 +28,22 @@ model User {
   achievements           UserAchievement[]
   leaderboardEntries     LeaderboardEntry[]
   founderProfile         FounderProfile?
-  sentConnections        Connection[]      @relation("ConnectionRequester")
-  receivedConnections    Connection[]      @relation("ConnectionReceiver")
-  sentMessages           DirectMessage[]   @relation("DMSender")
-  receivedMessages       DirectMessage[]   @relation("DMReceiver")
+  sentConnections        Connection[]        @relation("ConnectionRequester")
+  receivedConnections    Connection[]        @relation("ConnectionReceiver")
+  sentMessages           DirectMessage[]     @relation("DMSender")
+  receivedMessages       DirectMessage[]     @relation("DMReceiver")
+  // Forums
+  postsAuthored          Post[]              @relation("PostAuthor")
+  postVotes              PostVote[]          @relation("PostVoter")
+  commentsAuthored       Comment[]           @relation("CommentAuthor")
+  // Group rooms
+  roomsCreated           GroupRoom[]         @relation("RoomCreator")
+  roomMemberships        GroupMembership[]   @relation("RoomMember")
+  groupMessages          GroupMessage[]      @relation("RoomMessageSender")
+  // Feed
+  feedPosts              FeedPost[]          @relation("FeedPostAuthor")
+  feedReactions          FeedReaction[]      @relation("FeedReactor")
+  feedComments           FeedComment[]       @relation("FeedCommentAuthor")
   
   @@index([email])
 }
@@ -360,4 +372,152 @@ model DirectMessage {
 
   @@index([senderId, receiverId])
   @@index([receiverId, read])
+}
+
+// ── Forums (Reddit-style) ────────────────────────────────────────────────────
+
+model Channel {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  icon        String?
+  type        String   // "curriculum" | "topic"
+  order       Int      @default(0)
+  posts       Post[]
+  createdAt   DateTime @default(now())
+}
+
+model Post {
+  id           String     @id @default(cuid())
+  channelId    String
+  channel      Channel    @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  authorId     String
+  author       User       @relation("PostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  title        String
+  body         String     @db.Text
+  voteScore    Int        @default(0)
+  commentCount Int        @default(0)
+  votes        PostVote[]
+  comments     Comment[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([channelId, createdAt])
+  @@index([channelId, voteScore])
+  @@index([authorId])
+}
+
+model PostVote {
+  id     String @id @default(cuid())
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation("PostVoter", fields: [userId], references: [id], onDelete: Cascade)
+  value  Int    // 1 or -1
+
+  @@unique([postId, userId])
+  @@index([postId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([authorId])
+}
+
+// ── Group Rooms (async group chat) ───────────────────────────────────────────
+
+enum MemberRole {
+  ADMIN
+  MEMBER
+}
+
+model GroupRoom {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  isPublic    Boolean           @default(true)
+  creatorId   String
+  creator     User              @relation("RoomCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  members     GroupMembership[]
+  messages    GroupMessage[]
+  createdAt   DateTime          @default(now())
+
+  @@index([isPublic])
+  @@index([creatorId])
+}
+
+model GroupMembership {
+  id       String     @id @default(cuid())
+  roomId   String
+  room     GroupRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User       @relation("RoomMember", fields: [userId], references: [id], onDelete: Cascade)
+  role     MemberRole @default(MEMBER)
+  joinedAt DateTime   @default(now())
+
+  @@unique([roomId, userId])
+  @@index([userId])
+}
+
+model GroupMessage {
+  id        String    @id @default(cuid())
+  roomId    String
+  room      GroupRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User      @relation("RoomMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  content   String    @db.Text
+  createdAt DateTime  @default(now())
+
+  @@index([roomId, createdAt])
+}
+
+// ── Feed (LinkedIn-style) ────────────────────────────────────────────────────
+
+model FeedPost {
+  id        String         @id @default(cuid())
+  authorId  String
+  author    User           @relation("FeedPostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  body      String         @db.Text
+  milestone String?        // e.g. "Completed: Problem Hypothesis"
+  taskId    String?
+  stepId    Int?
+  reactions FeedReaction[]
+  comments  FeedComment[]
+  createdAt DateTime       @default(now())
+
+  @@index([authorId, createdAt])
+  @@index([createdAt])
+}
+
+model FeedReaction {
+  id         String   @id @default(cuid())
+  feedPostId String
+  feedPost   FeedPost @relation(fields: [feedPostId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation("FeedReactor", fields: [userId], references: [id], onDelete: Cascade)
+  type       String   // "like" | "celebrate" | "insightful"
+
+  @@unique([feedPostId, userId])
+  @@index([feedPostId])
+}
+
+model FeedComment {
+  id         String   @id @default(cuid())
+  feedPostId String
+  feedPost   FeedPost @relation(fields: [feedPostId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation("FeedCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  body       String   @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([feedPostId])
 }

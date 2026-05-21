@@ -324,6 +324,7 @@ export default function Home() {
   const [sidebarProjectName, setSidebarProjectName] = useState("");
   const [importBanner, setImportBanner] = useState(false);
   const [showCommunity, setShowCommunity] = useState(false);
+  const [sharePrompt, setSharePrompt] = useState(null); // {body, milestone, taskId, stepId}
   const btmRef = useRef(null);
   const needsInitRef = useRef(false);
 
@@ -473,7 +474,17 @@ export default function Home() {
           return { ...p, deliverables: nd, completedTasks: nc };
         });
         setBanner(task.title);
-        
+
+        // Offer opt-in share to community feed after a short delay
+        setTimeout(() => {
+          setSharePrompt({
+            body: `Just completed "${task.title}" 🎉 ${task.goal ? `\n\n${task.goal}` : ""}`.trim(),
+            milestone: `Completed: ${task.title}`,
+            taskId: task.id,
+            stepId: step.id,
+          });
+        }, 1500);
+
         // Handle gamification data
         if (data.gamification) {
           const { xpEarned, leveledUp, newLevel, achievements } = data.gamification;
@@ -834,7 +845,7 @@ export default function Home() {
 
       {/* Main content area — exactly one of: Community, Simulation, or Chat */}
       {showCommunity ? (
-        <CommunityTab session={session} />
+        <CommunityTab session={session} sharePrompt={sharePrompt} onShareDone={() => setSharePrompt(null)} />
       ) : task.type === "simulation" ? (
         <PersonaSimulation
           key={`sim-${activeId}-${task.id}`}
@@ -949,6 +960,19 @@ export default function Home() {
           <span style={{ fontSize:15 }}>✅</span>
           <span style={{ fontSize:13, color:"rgba(255,255,255,.75)", fontFamily:"var(--ff-body)" }}>We picked up where you left off — your draft has been saved.</span>
           <button onClick={() => setImportBanner(false)} style={{ background:"none", border:"none", color:"rgba(255,255,255,.3)", cursor:"pointer", fontSize:16, lineHeight:1, padding:"0 0 0 4px" }}>×</button>
+        </div>
+      )}
+
+      {/* Share-to-feed toast (only visible when not already in Community) */}
+      {sharePrompt && !showCommunity && (
+        <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", zIndex:2100, padding:"12px 18px", borderRadius:12, background:"rgba(16,16,18,.97)", border:"1px solid rgba(232,85,58,.3)", display:"flex", alignItems:"center", gap:12, animation:"ffSlide .4s", boxShadow:"0 8px 40px rgba(0,0,0,.5)", maxWidth:440 }}>
+          <span style={{ fontSize:20, flexShrink:0 }}>🏆</span>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:"rgba(255,255,255,.9)", fontFamily:"var(--ff-body)", marginBottom:2 }}>Task complete!</div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,.45)", fontFamily:"var(--ff-body)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{sharePrompt.milestone}</div>
+          </div>
+          <button onClick={() => { setShowCommunity(true); }} style={{ padding:"6px 12px", borderRadius:7, border:"none", background:"linear-gradient(135deg,#E8553A,#BE185D)", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"var(--ff-body)", flexShrink:0 }}>Share to Feed</button>
+          <button onClick={() => setSharePrompt(null)} style={{ background:"none", border:"none", color:"rgba(255,255,255,.25)", cursor:"pointer", fontSize:18, lineHeight:1, padding:"0 0 0 4px", flexShrink:0 }}>×</button>
         </div>
       )}
 

@@ -543,9 +543,12 @@ function MessagesTab({ openThread }) {
 }
 
 // ── Main CommunityTab ─────────────────────────────────────────────────────────
+import FeedTab from "@/components/community/FeedTab";
+import ForumsTab from "@/components/community/ForumsTab";
+import RoomsTab from "@/components/community/RoomsTab";
 
-export default function CommunityTab({ session }) {
-  const [activeTab, setActiveTab] = useState("discover");
+export default function CommunityTab({ session, sharePrompt, onShareDone }) {
+  const [activeTab, setActiveTab] = useState("feed");
   const [myProfile, setMyProfile] = useState(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
@@ -558,16 +561,28 @@ export default function CommunityTab({ session }) {
       .catch(() => setProfileLoaded(true));
   }, []);
 
+  // When a share prompt arrives from the AI journey, switch to Feed tab
+  useEffect(() => {
+    if (sharePrompt) setActiveTab("feed");
+  }, [sharePrompt]);
+
   function handleMessage(user) {
     setMessageTarget(user);
     setActiveTab("messages");
   }
 
   const tabs = [
-    { id: "discover", label: "Discover" },
+    { id: "feed",        label: "Feed" },
+    { id: "discover",    label: "Discover" },
+    { id: "forums",      label: "Forums" },
+    { id: "rooms",       label: "Rooms" },
     { id: "connections", label: "Connections" },
-    { id: "messages", label: "Messages" },
+    { id: "messages",    label: "Messages" },
   ];
+
+  // Forums and Rooms use a two-panel layout, so they need full height without extra padding
+  const fullHeightTabs = ["forums", "rooms"];
+  const isFullHeight = fullHeightTabs.includes(activeTab);
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100vh", minWidth: 0, overflow: "hidden" }}>
@@ -584,9 +599,10 @@ export default function CommunityTab({ session }) {
             </button>
           )}
         </div>
-        <div style={{ display: "flex", gap: 2 }}>
+        <div style={{ display: "flex", gap: 2, overflowX: "auto" }}>
           {tabs.map((t) => (
-            <button key={t.id} onClick={() => { setActiveTab(t.id); if (t.id !== "messages") setMessageTarget(null); }} style={{ padding: "7px 14px", borderRadius: "6px 6px 0 0", fontSize: 12, fontWeight: 600, fontFamily: "var(--ff-body)", cursor: "pointer", border: "none", background: activeTab === t.id ? "rgba(255,255,255,.04)" : "transparent", color: activeTab === t.id ? "rgba(255,255,255,.9)" : dim, borderBottom: activeTab === t.id ? `2px solid ${accent}` : "2px solid transparent" }}>
+            <button key={t.id} onClick={() => { setActiveTab(t.id); if (t.id !== "messages") setMessageTarget(null); }}
+              style={{ padding: "7px 14px", borderRadius: "6px 6px 0 0", fontSize: 12, fontWeight: 600, fontFamily: "var(--ff-body)", cursor: "pointer", border: "none", whiteSpace: "nowrap", background: activeTab === t.id ? "rgba(255,255,255,.04)" : "transparent", color: activeTab === t.id ? "rgba(255,255,255,.9)" : dim, borderBottom: activeTab === t.id ? `2px solid ${accent}` : "2px solid transparent" }}>
               {t.label}
             </button>
           ))}
@@ -594,10 +610,13 @@ export default function CommunityTab({ session }) {
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
-        {activeTab === "discover" && <DiscoverTab myProfile={myProfile} onSetupProfile={() => setShowSetup(true)} onMessage={handleMessage} />}
+      <div style={{ flex: 1, overflow: "hidden", ...(isFullHeight ? { display: "flex", flexDirection: "column" } : { overflowY: "auto" }), padding: isFullHeight ? "16px 24px" : 24 }}>
+        {activeTab === "feed"        && <FeedTab sharePrompt={sharePrompt} onShareDone={onShareDone} />}
+        {activeTab === "discover"    && <DiscoverTab myProfile={myProfile} onSetupProfile={() => setShowSetup(true)} onMessage={handleMessage} />}
+        {activeTab === "forums"      && <ForumsTab />}
+        {activeTab === "rooms"       && <RoomsTab />}
         {activeTab === "connections" && <ConnectionsTab onMessage={handleMessage} />}
-        {activeTab === "messages" && <MessagesTab key={messageTarget?.id} openThread={messageTarget} />}
+        {activeTab === "messages"    && <MessagesTab key={messageTarget?.id} openThread={messageTarget} />}
       </div>
 
       {showSetup && (
