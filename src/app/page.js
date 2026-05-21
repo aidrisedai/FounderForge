@@ -832,8 +832,10 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Chat or Simulation */}
-      {task.type === "simulation" ? (
+      {/* Main content area — exactly one of: Community, Simulation, or Chat */}
+      {showCommunity ? (
+        <CommunityTab session={session} />
+      ) : task.type === "simulation" ? (
         <PersonaSimulation
           key={`sim-${activeId}-${task.id}`}
           project={project}
@@ -841,11 +843,6 @@ export default function Home() {
           step={step}
           onComplete={handleSimulationComplete}
         />
-      ) : null}
-
-      {/* Community View or Chat */}
-      {showCommunity ? (
-        <CommunityTab session={session} />
       ) : (
       <div style={{ flex:1, display:"flex", flexDirection:"column", height:"100vh", minWidth:0 }}>
         <div style={{ padding:"10px 20px", borderBottom:"1px solid rgba(255,255,255,.05)", background:"rgba(255,255,255,.012)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
