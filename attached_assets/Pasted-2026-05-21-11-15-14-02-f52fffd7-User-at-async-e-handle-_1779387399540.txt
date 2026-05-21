@@ -1,0 +1,171 @@
+2026-05-21 11:15:14.02
+f52fffd7
+User
+at async e_.handle (/home/runner/workspace/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:39943)
+2026-05-21 11:15:14.02
+f52fffd7
+User
+clientVersion: '5.22.0',
+2026-05-21 11:15:14.02
+f52fffd7
+User
+⨯ PrismaClientKnownRequestError:
+2026-05-21 11:15:14.02
+f52fffd7
+User
+at $n.handleRequestError (/home/runner/workspace/node_modules/@prisma/client/runtime/library.js:121:7315)
+2026-05-21 11:15:14.02
+f52fffd7
+User
+at async /home/runner/workspace/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:38411
+2026-05-21 11:15:14.02
+f52fffd7
+User
+at $n.handleAndLogRequestError (/home/runner/workspace/node_modules/@prisma/client/runtime/library.js:121:6623)
+2026-05-21 11:15:14.02
+f52fffd7
+User
+at async c (/home/runner/workspace/.next/server/app/api/community/rooms/route.js:1:1528)
+2026-05-21 11:15:14.02
+f52fffd7
+User
+Invalid `prisma.groupRoom.findMany()` invocation:
+2026-05-21 11:15:37.02
+f52fffd7
+User
+}
+2026-05-21 11:15:37.02
+f52fffd7
+User
+at $n.request (/home/runner/workspace/node_modules/@prisma/client/runtime/library.js:121:6307)
+2026-05-21 11:15:37.02
+f52fffd7
+User
+at async l (/home/runner/workspace/node_modules/@prisma/client/runtime/library.js:130:9633) {
+2026-05-21 11:15:37.02
+f52fffd7
+User
+code: 'P2021',
+2026-05-21 11:15:37.02
+f52fffd7
+User
+at $n.handleRequestError (/home/runner/workspace/node_modules/@prisma/client/runtime/library.js:121:7315)
+2026-05-21 11:15:37.02
+f52fffd7
+User
+at $n.handleAndLogRequestError (/home/runner/workspace/node_modules/@prisma/client/runtime/library.js:121:6623)
+2026-05-21 11:15:37.02
+f52fffd7
+User
+Invalid `prisma.groupRoom.create()` invocation:
+2026-05-21 11:15:37.02
+f52fffd7
+User
+The table `public.GroupRoom` does not exist in the current database.
+2026-05-21 11:15:37.02
+f52fffd7
+User
+meta: { modelName: 'GroupRoom', table: 'public.GroupRoom' }
+2026-05-21 11:15:37.02
+f52fffd7
+User
+clientVersion: '5.22.0',
+2026-05-21 11:15:37.02
+f52fffd7
+User
+⨯ PrismaClientKnownRequestError:
+2026-05-21 11:15:37.02
+f52fffd7
+User
+⨯ PrismaClientKnownRequestError:
+2026-05-21 11:15:37.02
+f52fffd7
+User
+clientVersion: '5.22.0',
+2026-05-21 11:15:37.02
+f52fffd7
+User
+meta: { modelName: 'GroupRoom', table: 'public.GroupRoom' }
+2026-05-21 11:15:37.02
+f52fffd7
+User
+The table `public.GroupRoom` does not exist in the current database.
+2026-05-21 11:15:37.02
+f52fffd7
+User
+Invalid `prisma.groupRoom.create()` invocation:
+2026-05-21 11:15:37.02
+f52fffd7
+User
+at $n.handleAndLogRequestError (/home/runner/workspace/node_modules/@prisma/client/runtime/library.js:121:6623)
+2026-05-21 11:15:37.02
+f52fffd7
+User
+at $n.handleRequestError (/home/runner/workspace/node_modules/@prisma/client/runtime/library.js:121:7315)
+
+2026-05-21 11:15:37.02
+f52fffd7
+User
+code: 'P2021',
+2026-05-21 11:15:37.02
+f52fffd7
+User
+at async l (/home/runner/workspace/node_modules/@prisma/client/runtime/library.js:130:9633) {
+2026-05-21 11:15:37.02
+f52fffd7
+User
+at $n.request (/home/runner/workspace/node_modules/@prisma/client/runtime/library.js:121:6307)
+2026-05-21 11:15:37.02
+f52fffd7
+User
+}
+2026-05-21 11:15:37.02
+f52fffd7
+User
+⨯ PrismaClientKnownRequestError:
+2026-05-21 11:15:37.02
+f52fffd7
+User
+clientVersion: '5.22.0',
+2026-05-21 11:15:37.02
+f52fffd7
+User
+meta: { modelName: 'GroupRoom', table: 'public.GroupRoom' }
+2026-05-21 11:15:37.02
+f52fffd7
+User
+The table `public.GroupRoom` does not exist in the current database.
+2026-05-21 11:15:37.02
+f52fffd7
+User
+Invalid `prisma.groupRoom.create()` invocation:
+2026-05-21 11:15:37.02
+f52fffd7
+User
+at $n.handleAndLogRequestError (/home/runner/workspace/node_modules/@prisma/client/runtime/library.js:121:6623)
+2026-05-21 11:15:37.02
+f52fffd7
+User
+at $n.handleRequestError (/home/runner/workspace/node_modules/@prisma/client/runtime/library.js:121:7315)
+2026-05-21 11:15:37.02
+f52fffd7
+User
+code: 'P2021',
+2026-05-21 11:15:37.02
+f52fffd7
+User
+at async l (/home/runner/workspace/node_modules/@prisma/client/runtime/library.js:130:9633) {
+2026-05-21 11:15:37.02
+f52fffd7
+User
+at $n.request (/home/runner/workspace/node_modules/@prisma/client/runtime/library.js:121:6307)
+2026-05-21 11:15:37.02
+f52fffd7
+User
+}
+
+Collapse
+
+Wrap
+
+Colors
