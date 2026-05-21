@@ -322,6 +322,7 @@ export default function Home() {
   const [showSidebarNewProject, setShowSidebarNewProject] = useState(false);
   const [sidebarProjectName, setSidebarProjectName] = useState("");
   const [importBanner, setImportBanner] = useState(false);
+  const [showCommunity, setShowCommunity] = useState(false);
   const btmRef = useRef(null);
   const needsInitRef = useRef(false);
 
@@ -820,7 +821,14 @@ export default function Home() {
               style={{ width:"100%", padding:"6px", borderRadius:5, border:"1px dashed rgba(255,255,255,.08)", background:"transparent", color:"rgba(255,255,255,.2)", fontSize:10, cursor:"pointer", fontFamily:"var(--ff-body)", fontWeight:600, marginTop:4 }}>+ New Project</button>
           )}
         </div>
-        <Timeline steps={CURRICULUM} project={project} activeStepId={step.id} activeTaskIdx={taskIdx} onNav={(si,ti) => { setStepIdx(si); setTaskIdx(ti); }} />
+        <Timeline steps={CURRICULUM} project={project} activeStepId={step.id} activeTaskIdx={taskIdx} onNav={(si,ti) => { setStepIdx(si); setTaskIdx(ti); setShowCommunity(false); }} />
+
+        {/* Community nav button */}
+        <div style={{ padding:"10px 12px", borderTop:"1px solid rgba(255,255,255,.04)", flexShrink:0 }}>
+          <button onClick={() => setShowCommunity(c => !c)} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${showCommunity?"rgba(232,85,58,.3)":"rgba(255,255,255,.06)"}`, background:showCommunity?"rgba(232,85,58,.08)":"transparent", color:showCommunity?"#E8553A":"rgba(255,255,255,.35)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:7, transition:"all .15s" }}>
+            <span style={{ fontSize:14 }}>🤝</span> Community
+          </button>
+        </div>
       </div>
 
       {/* Chat or Simulation */}
@@ -832,6 +840,11 @@ export default function Home() {
           step={step}
           onComplete={handleSimulationComplete}
         />
+      ) : null}
+
+      {/* Community View or Chat */}
+      {showCommunity ? (
+        <CommunityTab session={session} />
       ) : (
       <div style={{ flex:1, display:"flex", flexDirection:"column", height:"100vh", minWidth:0 }}>
         <div style={{ padding:"10px 20px", borderBottom:"1px solid rgba(255,255,255,.05)", background:"rgba(255,255,255,.012)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -915,7 +928,7 @@ export default function Home() {
         </div>
       </div>
       )}
-      
+
       {/* Memory Dashboard Modal */}
       {showMemory && (
         <MemoryDashboard 
