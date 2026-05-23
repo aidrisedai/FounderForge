@@ -32,7 +32,8 @@ model User {
   receivedConnections    Connection[]      @relation("ConnectionReceiver")
   sentMessages           DirectMessage[]   @relation("DMSender")
   receivedMessages       DirectMessage[]   @relation("DMReceiver")
-  
+  discoveredProblems     DiscoveredProblem[]
+
   @@index([email])
 }
 
@@ -360,4 +361,52 @@ model DirectMessage {
 
   @@index([senderId, receiverId])
   @@index([receiverId, read])
+}
+
+// ── Idea Discovery Track ──────────────────────────────────────────────────────
+
+model Domain {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  description String
+  icon        String
+  keywords    String[]
+  videos      DomainVideo[]
+  createdAt   DateTime      @default(now())
+}
+
+model DomainVideo {
+  id                 String              @id @default(cuid())
+  youtubeId          String              @unique
+  title              String
+  description        String?             @db.Text
+  thumbnailUrl       String?
+  channelTitle       String?
+  domainId           String
+  domain             Domain              @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  transcript         String?             @db.Text
+  extractedProblems  Json?
+  transcriptCachedAt DateTime?
+  problems           DiscoveredProblem[]
+  createdAt          DateTime            @default(now())
+
+  @@index([domainId])
+}
+
+model DiscoveredProblem {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId     String?
+  video       DomainVideo? @relation(fields: [videoId], references: [id], onDelete: SetNull)
+  domainId    String?
+  problemText String       @db.Text
+  notes       String?      @db.Text
+  graduated   Boolean      @default(false)
+  projectId   String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId])
 }

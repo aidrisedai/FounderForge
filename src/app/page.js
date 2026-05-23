@@ -9,6 +9,7 @@ import LeaderboardWidget from "@/components/LeaderboardWidget";
 import AchievementNotification, { LevelUpNotification, XPNotification } from "@/components/AchievementNotification";
 import { getPersonalitySummary, getPersonalizedEncouragement } from "@/lib/personality";
 import CommunityTab from "@/components/CommunityTab";
+import DiscoveryModule from "@/components/DiscoveryModule";
 
 // ── API helpers ──
 async function apiGet(url) {
@@ -510,6 +511,7 @@ export default function Home() {
   const [showSidebarNewProject, setShowSidebarNewProject] = useState(false);
   const [sidebarProjectName, setSidebarProjectName] = useState("");
   const [showCommunity, setShowCommunity] = useState(false);
+  const [showDiscovery, setShowDiscovery] = useState(false);
   const btmRef = useRef(null);
   const needsInitRef = useRef(false);
 
@@ -964,16 +966,32 @@ export default function Home() {
         </div>
         <Timeline steps={CURRICULUM} project={project} activeStepId={step.id} activeTaskIdx={taskIdx} onNav={(si,ti) => { setStepIdx(si); setTaskIdx(ti); setShowCommunity(false); }} />
 
-        {/* Community nav button */}
-        <div style={{ padding:"10px 12px", borderTop:"1px solid rgba(255,255,255,.04)", flexShrink:0 }}>
-          <button onClick={() => setShowCommunity(c => !c)} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${showCommunity?"rgba(232,85,58,.3)":"rgba(255,255,255,.06)"}`, background:showCommunity?"rgba(232,85,58,.08)":"transparent", color:showCommunity?"#E8553A":"rgba(255,255,255,.35)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:7, transition:"all .15s" }}>
+        {/* Community + Discovery nav buttons */}
+        <div style={{ padding:"10px 12px", borderTop:"1px solid rgba(255,255,255,.04)", flexShrink:0, display:"flex", flexDirection:"column", gap:6 }}>
+          <button onClick={() => { setShowCommunity(c => !c); setShowDiscovery(false); }} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${showCommunity?"rgba(232,85,58,.3)":"rgba(255,255,255,.06)"}`, background:showCommunity?"rgba(232,85,58,.08)":"transparent", color:showCommunity?"#E8553A":"rgba(255,255,255,.35)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:7, transition:"all .15s" }}>
             <span style={{ fontSize:14 }}>🤝</span> Community
+          </button>
+          <button onClick={() => { setShowDiscovery(d => !d); setShowCommunity(false); }} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${showDiscovery?"rgba(99,102,241,.4)":"rgba(255,255,255,.06)"}`, background:showDiscovery?"rgba(99,102,241,.1)":"transparent", color:showDiscovery?"#818cf8":"rgba(255,255,255,.35)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:7, transition:"all .15s" }}>
+            <span style={{ fontSize:14 }}>🔍</span> Discover an Idea
           </button>
         </div>
       </div>
 
-      {/* Community View or Chat */}
-      {showCommunity ? (
+      {/* Discovery / Community / Chat */}
+      {showDiscovery ? (
+        <div style={{ flex:1, height:"100vh", overflow:"hidden", background:"#f9fafb" }}>
+          <DiscoveryModule onGraduate={(project) => {
+            setShowDiscovery(false);
+            // Refresh projects list so new project appears
+            apiGet("/api/projects").then(d => {
+              if (d.projects) {
+                const newProj = d.projects.find(p => p.id === project.id);
+                if (newProj) { setProjects(d.projects); setActiveId(project.id); }
+              }
+            }).catch(() => {});
+          }} />
+        </div>
+      ) : showCommunity ? (
         <CommunityTab session={session} />
       ) : (
       <div style={{ flex:1, display:"flex", flexDirection:"column", height:"100vh", minWidth:0 }}>
