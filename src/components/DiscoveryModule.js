@@ -1,6 +1,197 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 
+// ─── Guided Learning Panel ────────────────────────────────────────────────────
+
+const CARD_COLORS = { concept: "#6366f1", list: "#10b981", debate: "#ec4899", question: "#f59e0b", feedback: "#3b82f6" };
+const CARD_BG = { concept: "#f0f4ff", list: "#f0fdf4", debate: "#fff0f6", question: "#fffbeb", feedback: "#eff6ff" };
+
+function LearningCard({ card }) {
+  const accent = CARD_COLORS[card.type] || "#6366f1";
+  const bg = CARD_BG[card.type] || "#f0f4ff";
+
+  return (
+    <div style={{ background: bg, border: `1.5px solid ${accent}22`, borderLeft: `3px solid ${accent}`, borderRadius: 10, padding: "12px 14px", marginBottom: 10 }}>
+      {card.title && <div style={{ fontWeight: 700, fontSize: 13, color: accent, marginBottom: 5 }}>{card.title}</div>}
+
+      {card.type === "debate" && card.sides ? (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {["a", "b"].map((side) => (
+            <div key={side} style={{ background: "#fff", borderRadius: 7, padding: "8px 10px" }}>
+              <div style={{ fontWeight: 700, fontSize: 11, color: "#ec4899", marginBottom: 3, textTransform: "uppercase" }}>{card.sides[side]?.label}</div>
+              <div style={{ fontSize: 12, color: "#374151", lineHeight: 1.5 }}>{card.sides[side]?.text}</div>
+            </div>
+          ))}
+        </div>
+      ) : card.type === "list" && card.items ? (
+        <div>
+          {card.items.map((item, i) => (
+            <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+              <div style={{ width: 20, height: 20, background: accent, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{item.num || i + 1}</div>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 12, color: "#111827" }}>{item.title}</div>
+                {item.desc && <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.4 }}>{item.desc}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.6, fontStyle: card.type === "question" ? "italic" : "normal" }}>{card.body}</div>
+      )}
+    </div>
+  );
+}
+
+function GuidedLearningPanel({ video, onProblemCaptured }) {
+  const [sequence, setSequence] = useState(null);
+  const [phaseIdx, setPhaseIdx] = useState(0);
+  const [cards, setCards] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [complete, setComplete] = useState(false);
+  const [phaseBanner, setPhaseBanner] = useState(null);
+  const feedRef = useRef(null);
+
+  useEffect(() => { callTutor([], "orientation"); }, [video.youtubeId]);
+
+  useEffect(() => {
+    if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight;
+  }, [cards, loading]);
+
+  async function callTutor(msgs, phase) {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/discovery/videos/${video.youtubeId}/learn`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: msgs, phase }),
+      });
+      const data = await res.json();
+      if (data.sequence && !sequence) setSequence(data.sequence);
+
+      const newCards = data.cards || [];
+      setCards((prev) => [...prev, ...newCards]);
+
+      const shouldAdvance = newCards.some((c) => c.advance);
+      if (shouldAdvance) {
+        const seq = data.sequence || sequence;
+        if (seq && phaseIdx + 1 < seq.length) {
+          const nextPhase = seq[phaseIdx + 1];
+          const label = nextPhase === "synthesis" ? "Final Reflection" : `Problem ${phaseIdx + 1}`;
+          setPhaseBanner(label);
+          setTimeout(() => {
+            setPhaseBanner(null);
+            setPhaseIdx((i) => i + 1);
+            callTutor(msgs, nextPhase);
+          }, 1800);
+        } else {
+          setComplete(true);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function send(text) {
+    const txt = (text || input).trim();
+    if (!txt || loading) return;
+    setInput("");
+
+    const userMsg = { role: "user", content: txt };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+    setCards((prev) => [...prev, { _user: true, body: txt }]);
+
+    const seq = sequence;
+    const phase = seq ? seq[phaseIdx] : "orientation";
+    await callTutor(newMessages, phase);
+  }
+
+  const lastCards = cards.slice(-1);
+  const quickReplies = lastCards[0]?._user ? [] : (lastCards[0]?.replies || []);
+
+  if (complete) {
+    return (
+      <div style={{ flex: 1, overflow: "auto", padding: "20px 18px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>🎓</div>
+        <div style={{ fontWeight: 700, fontSize: 16, color: "#111827", marginBottom: 8 }}>Session complete!</div>
+        <div style={{ color: "#6b7280", fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>You've explored the key problems in this space. Capture the one that resonates most.</div>
+        <button
+          onClick={() => onProblemCaptured && onProblemCaptured()}
+          style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)" }}
+        >
+          💡 Capture a Problem
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {phaseBanner && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(99,102,241,.9)", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 0 }}>
+          <div style={{ textAlign: "center", color: "#fff" }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>→</div>
+            <div style={{ fontWeight: 700, fontSize: 18 }}>{phaseBanner}</div>
+          </div>
+        </div>
+      )}
+
+      {sequence && (
+        <div style={{ padding: "10px 18px", borderBottom: "1px solid #e5e7eb", display: "flex", gap: 4 }}>
+          {sequence.map((_, i) => (
+            <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= phaseIdx ? "#6366f1" : "#e5e7eb", transition: "background .3s" }} />
+          ))}
+        </div>
+      )}
+
+      <div ref={feedRef} style={{ flex: 1, overflow: "auto", padding: "14px 18px" }}>
+        {cards.map((card, i) =>
+          card._user ? (
+            <div key={i} style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+              <div style={{ background: "#6366f1", color: "#fff", borderRadius: "12px 12px 2px 12px", padding: "8px 12px", fontSize: 13, maxWidth: "80%" }}>{card.body}</div>
+            </div>
+          ) : (
+            <LearningCard key={i} card={card} />
+          )
+        )}
+        {loading && (
+          <div style={{ display: "flex", gap: 4, padding: "10px 0" }}>
+            {[0, 1, 2].map((i) => <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: "#6366f1", animation: `ffBounce .9s ${i * 0.15}s infinite` }} />)}
+          </div>
+        )}
+      </div>
+
+      {quickReplies.length > 0 && !loading && (
+        <div style={{ padding: "0 18px 8px", display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {quickReplies.map((r, i) => (
+            <button key={i} onClick={() => send(r)} style={{ background: "#f0f4ff", color: "#6366f1", border: "1px solid #c7d2fe", borderRadius: 20, padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "var(--ff-body)" }}>{r}</button>
+          ))}
+        </div>
+      )}
+
+      <div style={{ padding: "10px 18px", borderTop: "1px solid #e5e7eb", display: "flex", gap: 8, background: "#fff" }}>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && send()}
+          placeholder="Your thoughts…"
+          style={{ flex: 1, border: "1.5px solid #e5e7eb", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontFamily: "var(--ff-body)", outline: "none" }}
+        />
+        <button
+          onClick={() => send()}
+          disabled={!input.trim() || loading}
+          style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: (!input.trim() || loading) ? 0.5 : 1 }}
+        >→</button>
+      </div>
+    </>
+  );
+}
+
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 function Avatar({ name, size = 32 }) {
@@ -145,6 +336,7 @@ function VideoFeed({ domain, onSelectVideo, onBack }) {
 // ─── Video Player ─────────────────────────────────────────────────────────────
 
 function VideoPlayer({ video, domain, onBack, onProblemCaptured }) {
+  const [sidebarMode, setSidebarMode] = useState("scout"); // "scout" | "learn"
   const [analysis, setAnalysis] = useState(null);
   const [analyzing, setAnalyzing] = useState(true);
   const [captureOpen, setCaptureOpen] = useState(false);
@@ -220,70 +412,81 @@ function VideoPlayer({ video, domain, onBack, onProblemCaptured }) {
       </div>
 
       {/* Right: AI sidebar */}
-      <div style={{ width: 360, borderLeft: "1px solid #e5e7eb", display: "flex", flexDirection: "column", background: "#fafafa", flexShrink: 0 }}>
-        <div style={{ padding: "16px 18px", borderBottom: "1px solid #e5e7eb", background: "#fff" }}>
-          <div style={{ fontWeight: 700, color: "#111827", fontSize: 15, marginBottom: 2 }}>🤖 AI Problem Scout</div>
-          <div style={{ color: "#9ca3af", fontSize: 12 }}>Analyzing video for problems worth solving</div>
+      <div style={{ width: 360, borderLeft: "1px solid #e5e7eb", display: "flex", flexDirection: "column", background: "#fafafa", flexShrink: 0, position: "relative" }}>
+        {/* Mode toggle header */}
+        <div style={{ padding: "12px 18px", borderBottom: "1px solid #e5e7eb", background: "#fff" }}>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              onClick={() => setSidebarMode("scout")}
+              style={{ flex: 1, background: sidebarMode === "scout" ? "#6366f1" : "#f3f4f6", color: sidebarMode === "scout" ? "#fff" : "#374151", border: "none", borderRadius: 7, padding: "7px 0", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "var(--ff-body)" }}
+            >🤖 Problem Scout</button>
+            <button
+              onClick={() => setSidebarMode("learn")}
+              style={{ flex: 1, background: sidebarMode === "learn" ? "#6366f1" : "#f3f4f6", color: sidebarMode === "learn" ? "#fff" : "#374151", border: "none", borderRadius: 7, padding: "7px 0", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "var(--ff-body)" }}
+            >📚 Guided Learning</button>
+          </div>
+          <div style={{ color: "#9ca3af", fontSize: 11, marginTop: 6, textAlign: "center" }}>
+            {sidebarMode === "scout" ? "Scan for problems worth solving" : "Socratic deep dive into this space"}
+          </div>
         </div>
 
-        <div style={{ flex: 1, overflow: "auto", padding: "16px 18px" }}>
-          {analyzing ? (
-            <div style={{ textAlign: "center", padding: "32px 0", color: "#9ca3af" }}>
-              <div style={{ fontSize: 28, marginBottom: 10 }}>⏳</div>
-              <div style={{ fontSize: 14 }}>Analyzing transcript…</div>
-            </div>
-          ) : !analysis || analysis.error ? (
-            <div style={{ color: "#9ca3af", fontSize: 14, textAlign: "center", paddingTop: 24 }}>
-              Could not analyze this video. Try watching and using the capture button below.
-            </div>
-          ) : (
-            <>
-              {analysis.domainContext && (
-                <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px", marginBottom: 16, fontSize: 13, color: "#1e40af", lineHeight: 1.5 }}>
-                  {analysis.domainContext}
+        {sidebarMode === "learn" ? (
+          <GuidedLearningPanel video={video} onProblemCaptured={() => openCapture("")} />
+        ) : (
+          <>
+            <div style={{ flex: 1, overflow: "auto", padding: "16px 18px" }}>
+              {analyzing ? (
+                <div style={{ textAlign: "center", padding: "32px 0", color: "#9ca3af" }}>
+                  <div style={{ fontSize: 28, marginBottom: 10 }}>⏳</div>
+                  <div style={{ fontSize: 14 }}>Analyzing transcript…</div>
                 </div>
-              )}
-
-              {(analysis.problems || []).length > 0 && (
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#374151", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>Problems Surfaced</div>
-                  {analysis.problems.map((p, i) => (
-                    <div key={i} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "10px 12px", marginBottom: 8 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: "#111827", marginBottom: 3 }}>{p.title}</div>
-                      <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.5, marginBottom: 8 }}>{p.description}</div>
-                      <button
-                        onClick={() => openCapture(p.title + ": " + p.description)}
-                        style={{ background: "#f0f4ff", color: "#6366f1", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "var(--ff-body)" }}
-                      >
-                        💡 Capture this
-                      </button>
+              ) : !analysis || analysis.error ? (
+                <div style={{ color: "#9ca3af", fontSize: 14, textAlign: "center", paddingTop: 24 }}>
+                  Could not analyze this video. Try watching and using the capture button below.
+                </div>
+              ) : (
+                <>
+                  {analysis.domainContext && (
+                    <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px", marginBottom: 16, fontSize: 13, color: "#1e40af", lineHeight: 1.5 }}>
+                      {analysis.domainContext}
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {(analysis.questions || []).length > 0 && (
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#374151", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>Reflect</div>
-                  {analysis.questions.map((q, i) => (
-                    <div key={i} style={{ background: "#fff8f0", border: "1px solid #fed7aa", borderRadius: 8, padding: "10px 12px", marginBottom: 8, fontSize: 13, color: "#92400e", lineHeight: 1.5 }}>
-                      {q}
+                  )}
+                  {(analysis.problems || []).length > 0 && (
+                    <div style={{ marginBottom: 20 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: "#374151", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>Problems Surfaced</div>
+                      {analysis.problems.map((p, i) => (
+                        <div key={i} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "10px 12px", marginBottom: 8 }}>
+                          <div style={{ fontWeight: 600, fontSize: 13, color: "#111827", marginBottom: 3 }}>{p.title}</div>
+                          <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.5, marginBottom: 8 }}>{p.description}</div>
+                          <button
+                            onClick={() => openCapture(p.title + ": " + p.description)}
+                            style={{ background: "#f0f4ff", color: "#6366f1", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "var(--ff-body)" }}
+                          >💡 Capture this</button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  )}
+                  {(analysis.questions || []).length > 0 && (
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: "#374151", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>Reflect</div>
+                      {analysis.questions.map((q, i) => (
+                        <div key={i} style={{ background: "#fff8f0", border: "1px solid #fed7aa", borderRadius: 8, padding: "10px 12px", marginBottom: 8, fontSize: 13, color: "#92400e", lineHeight: 1.5 }}>
+                          {q}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
-            </>
-          )}
-        </div>
-
-        <div style={{ padding: "12px 18px", borderTop: "1px solid #e5e7eb", background: "#fff" }}>
-          <button
-            onClick={() => openCapture("")}
-            style={{ width: "100%", background: "#6366f1", color: "#fff", border: "none", borderRadius: 8, padding: "10px 0", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)" }}
-          >
-            💡 I see a problem here
-          </button>
-        </div>
+            </div>
+            <div style={{ padding: "12px 18px", borderTop: "1px solid #e5e7eb", background: "#fff" }}>
+              <button
+                onClick={() => openCapture("")}
+                style={{ width: "100%", background: "#6366f1", color: "#fff", border: "none", borderRadius: 8, padding: "10px 0", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)" }}
+              >💡 I see a problem here</button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Capture modal */}
