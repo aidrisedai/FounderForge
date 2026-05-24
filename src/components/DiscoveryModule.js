@@ -74,14 +74,18 @@ function DomainBrowser({ onSelect }) {
 function VideoFeed({ domain, onSelectVideo, onBack }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    setLoading(true);
-    fetch(`/api/discovery/domains/${domain.slug}/videos`)
+  function loadVideos(refresh = false) {
+    const url = `/api/discovery/domains/${domain.slug}/videos${refresh ? "?refresh=true" : ""}`;
+    if (refresh) setRefreshing(true); else setLoading(true);
+    fetch(url)
       .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [domain.slug]);
+      .then((d) => { setData(d); setLoading(false); setRefreshing(false); })
+      .catch(() => { setLoading(false); setRefreshing(false); });
+  }
+
+  useEffect(() => { loadVideos(); }, [domain.slug]);
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 24px" }}>
@@ -92,10 +96,18 @@ function VideoFeed({ domain, onSelectVideo, onBack }) {
         <span style={{ color: "#d1d5db" }}>|</span>
         <span style={{ fontSize: 22 }}>{domain.icon}</span>
         <h2 style={{ fontFamily: "var(--ff-head)", fontSize: 22, fontWeight: 700, color: "#111827", margin: 0 }}>{domain.name}</h2>
+        <button
+          onClick={() => loadVideos(true)}
+          disabled={refreshing}
+          title="Search YouTube for more videos"
+          style={{ marginLeft: "auto", background: "none", border: "1px solid #e5e7eb", borderRadius: 8, padding: "5px 12px", fontSize: 12, color: "#6b7280", cursor: "pointer", fontFamily: "var(--ff-body)", opacity: refreshing ? 0.5 : 1 }}
+        >
+          {refreshing ? "Searching…" : "↻ Refresh videos"}
+        </button>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: "center", padding: 48, color: "#9ca3af" }}>Searching YouTube…</div>
+        <div style={{ textAlign: "center", padding: 48, color: "#9ca3af" }}>Loading videos…</div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 18 }}>
           {(data?.videos || []).map((v) => (
