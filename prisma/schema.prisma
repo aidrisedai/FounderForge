@@ -46,6 +46,8 @@ model User {
   feedComments           FeedComment[]       @relation("FeedCommentAuthor")
   // Discovery
   discoveredProblems     DiscoveredProblem[]
+  // 90 Days at YC
+  ycPrograms             YCProgram[]
 
   @@index([email])
 }
@@ -570,4 +572,47 @@ model DiscoveredProblem {
   updatedAt   DateTime     @updatedAt
 
   @@index([userId])
+}
+
+// ── 90 Days at YC ─────────────────────────────────────────────────────────────
+
+model YCProgram {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startupName     String
+  oneLiner        String   @db.Text
+  stage           String   // "idea" | "building" | "launched" | "revenue"
+  startingRevenue Int      @default(0)        // monthly revenue at start, USD
+  targetRevenue   Int      @default(1000000)  // annual run-rate goal, USD
+  currentDay      Int      @default(1)
+  status          String   @default("active") // "active" | "completed" | "abandoned"
+  phases          Json?    // [{name, dayStart, dayEnd, goal, milestone}]
+  partnerName     String   @default("Michael Seibel")
+  startDate       DateTime @default(now())
+  days            YCDay[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model YCDay {
+  id          String    @id @default(cuid())
+  programId   String
+  program     YCProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  dayNumber   Int
+  theme       String
+  objective   String    @db.Text
+  tasks       Json      @default("[]")  // [{text, done}]
+  partnerNote String?   @db.Text
+  rationale   String?   @db.Text
+  detailed    Boolean   @default(false)
+  status      String    @default("pending") // "pending" | "active" | "done"
+  report      Json?     // {summary, blockers, revenue, users, mood}
+  reportedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([programId, dayNumber])
+  @@index([programId])
 }

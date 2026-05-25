@@ -11,6 +11,7 @@ import { getPersonalitySummary, getPersonalizedEncouragement } from "@/lib/perso
 import PersonaSimulation from "@/components/PersonaSimulation";
 import CommunityTab from "@/components/CommunityTab";
 import DiscoveryModule from "@/components/DiscoveryModule";
+import NinetyDayYC from "@/components/NinetyDayYC";
 
 // ── API helpers ──
 async function apiGet(url) {
@@ -326,6 +327,7 @@ export default function Home() {
   const [importBanner, setImportBanner] = useState(false);
   const [showCommunity, setShowCommunity] = useState(false);
   const [showDiscovery, setShowDiscovery] = useState(false);
+  const [showYC, setShowYC] = useState(false);
   const [sharePrompt, setSharePrompt] = useState(null); // {body, milestone, taskId, stepId}
   const btmRef = useRef(null);
   const needsInitRef = useRef(false);
@@ -837,19 +839,26 @@ export default function Home() {
         </div>
         <Timeline steps={CURRICULUM} project={project} activeStepId={step.id} activeTaskIdx={taskIdx} onNav={(si,ti) => { setStepIdx(si); setTaskIdx(ti); setShowCommunity(false); }} />
 
-        {/* Community + Discovery nav buttons */}
+        {/* Community + Discovery + YC nav buttons */}
         <div style={{ padding:"10px 12px", borderTop:"1px solid rgba(255,255,255,.04)", flexShrink:0, display:"flex", flexDirection:"column", gap:6 }}>
-          <button onClick={() => { setShowCommunity(c => !c); setShowDiscovery(false); }} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${showCommunity?"rgba(232,85,58,.3)":"rgba(255,255,255,.06)"}`, background:showCommunity?"rgba(232,85,58,.08)":"transparent", color:showCommunity?"#E8553A":"rgba(255,255,255,.35)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:7, transition:"all .15s" }}>
+          <button onClick={() => { setShowCommunity(c => !c); setShowDiscovery(false); setShowYC(false); }} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${showCommunity?"rgba(232,85,58,.3)":"rgba(255,255,255,.06)"}`, background:showCommunity?"rgba(232,85,58,.08)":"transparent", color:showCommunity?"#E8553A":"rgba(255,255,255,.35)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:7, transition:"all .15s" }}>
             <span style={{ fontSize:14 }}>🤝</span> Community
           </button>
-          <button onClick={() => { setShowDiscovery(d => !d); setShowCommunity(false); }} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${showDiscovery?"rgba(99,102,241,.4)":"rgba(255,255,255,.06)"}`, background:showDiscovery?"rgba(99,102,241,.1)":"transparent", color:showDiscovery?"#818cf8":"rgba(255,255,255,.35)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:7, transition:"all .15s" }}>
+          <button onClick={() => { setShowDiscovery(d => !d); setShowCommunity(false); setShowYC(false); }} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${showDiscovery?"rgba(99,102,241,.4)":"rgba(255,255,255,.06)"}`, background:showDiscovery?"rgba(99,102,241,.1)":"transparent", color:showDiscovery?"#818cf8":"rgba(255,255,255,.35)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:7, transition:"all .15s" }}>
             <span style={{ fontSize:14 }}>🔍</span> Discover an Idea
+          </button>
+          <button onClick={() => { setShowYC(y => !y); setShowCommunity(false); setShowDiscovery(false); }} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${showYC?"rgba(255,102,0,.4)":"rgba(255,255,255,.06)"}`, background:showYC?"rgba(255,102,0,.1)":"transparent", color:showYC?"#FF6600":"rgba(255,255,255,.35)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:7, transition:"all .15s" }}>
+            <span style={{ fontSize:14 }}>🚀</span> 90 Days at YC
           </button>
         </div>
       </div>
 
-      {/* Main content area — exactly one of: Discovery, Community, Simulation, or Chat */}
-      {showDiscovery ? (
+      {/* Main content area — exactly one of: YC, Discovery, Community, Simulation, or Chat */}
+      {showYC ? (
+        <div style={{ flex:1, height:"100vh", overflow:"hidden", background:"#f9fafb" }}>
+          <NinetyDayYC />
+        </div>
+      ) : showDiscovery ? (
         <div style={{ flex:1, height:"100vh", overflow:"hidden", background:"#f9fafb" }}>
           <DiscoveryModule onGraduate={(project) => {
             setShowDiscovery(false);
