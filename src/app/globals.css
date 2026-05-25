@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
   /* ── EdAI brand palette ── */
@@ -15,6 +15,9 @@
   --edai-gold: #F5B84B;
   --edai-danger: #E05A47;
   --edai-radius: 18px;
+
+  /* ── Type scale ── */
+  --ff-display: 'Libre Baskerville', Georgia, serif;
 
   /* ── Accent helpers (used throughout inline styles) ── */
   --ff-accent: #1FA67A;
@@ -37,7 +40,7 @@
 
   /* ── Type ── */
   --ff-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  --ff-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --ff-body: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* ── Aliases for CSS-module components (UserProfile, Leaderboard, etc.) ── */
   --color-bg: var(--edai-surface);
@@ -93,6 +96,21 @@ textarea::placeholder, input::placeholder {
 @keyframes ffFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes ffFadeUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ffFloat {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%       { transform: translateY(-18px) scale(1.03); }
+}
+
+@keyframes ffGlow {
+  0%, 100% { box-shadow: 0 0 30px rgba(31,166,122,.2); }
+  50%       { box-shadow: 0 0 60px rgba(31,166,122,.45); }
 }
 
 /* ── Hover utilities ── */
