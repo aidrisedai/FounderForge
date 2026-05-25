@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
-const accent = "#E8553A";
+const accent = "var(--ff-accent)";
 const dim = "rgba(255,255,255,.35)";
 const dimmer = "rgba(255,255,255,.15)";
 const card = "rgba(255,255,255,.03)";
@@ -10,7 +10,7 @@ const border = "rgba(255,255,255,.06)";
 function Avatar({ src, name, size=28 }) {
   const initials = (name||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
   return src ? <img src={src} alt={name} style={{width:size,height:size,borderRadius:"50%",objectFit:"cover",flexShrink:0}} />
-    : <div style={{width:size,height:size,borderRadius:"50%",background:"linear-gradient(135deg,#E8553A,#BE185D)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*.35,fontWeight:700,color:"#fff",flexShrink:0}}>{initials}</div>;
+    : <div style={{width:size,height:size,borderRadius:"50%",background:"var(--ff-accent-grad)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*.35,fontWeight:700,color:"#fff",flexShrink:0}}>{initials}</div>;
 }
 
 function timeStamp(date) {
@@ -49,7 +49,7 @@ function CreateRoomModal({ onCreated, onClose }) {
         </label>
         <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
           <button onClick={onClose} style={{padding:"7px 14px",borderRadius:7,border:`1px solid ${border}`,background:card,color:dim,fontSize:11,fontWeight:600,fontFamily:"var(--ff-body)",cursor:"pointer"}}>Cancel</button>
-          <button onClick={submit} disabled={!name.trim()||submitting} style={{padding:"7px 14px",borderRadius:7,border:"none",background:name.trim()&&!submitting?`linear-gradient(135deg,${accent},#BE185D)`:"rgba(255,255,255,.05)",color:name.trim()&&!submitting?"#fff":dimmer,fontSize:11,fontWeight:600,fontFamily:"var(--ff-body)",cursor:name.trim()&&!submitting?"pointer":"not-allowed"}}>{submitting?"Creating…":"Create"}</button>
+          <button onClick={submit} disabled={!name.trim()||submitting} style={{padding:"7px 14px",borderRadius:7,border:"none",background:name.trim()&&!submitting?`linear-gradient(135deg,${accent},var(--ff-accent-2))`:"rgba(255,255,255,.05)",color:name.trim()&&!submitting?"#fff":dimmer,fontSize:11,fontWeight:600,fontFamily:"var(--ff-body)",cursor:name.trim()&&!submitting?"pointer":"not-allowed"}}>{submitting?"Creating…":"Create"}</button>
         </div>
       </div>
     </div>
@@ -134,7 +134,7 @@ function RoomChat({ room, myId, onLeave }) {
           onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
           style={{flex:1,padding:"9px 12px",borderRadius:8,border:`1px solid ${border}`,background:card,color:"rgba(255,255,255,.85)",fontSize:13,fontFamily:"var(--ff-body)",resize:"none",outline:"none"}}/>
         <button onClick={send} disabled={!draft.trim()||sending}
-          style={{padding:"9px 16px",borderRadius:8,border:"none",background:draft.trim()&&!sending?`linear-gradient(135deg,${accent},#BE185D)`:"rgba(255,255,255,.03)",color:draft.trim()&&!sending?"#fff":dimmer,fontSize:12,fontWeight:600,fontFamily:"var(--ff-body)",cursor:draft.trim()&&!sending?"pointer":"not-allowed"}}>Send</button>
+          style={{padding:"9px 16px",borderRadius:8,border:"none",background:draft.trim()&&!sending?`linear-gradient(135deg,${accent},var(--ff-accent-2))`:"rgba(255,255,255,.03)",color:draft.trim()&&!sending?"#fff":dimmer,fontSize:12,fontWeight:600,fontFamily:"var(--ff-body)",cursor:draft.trim()&&!sending?"pointer":"not-allowed"}}>Send</button>
       </div>
     </div>
   );
@@ -171,7 +171,7 @@ export default function RoomsTab() {
     <div style={{display:"flex",gap:0,height:"100%"}}>
       {/* Room list sidebar */}
       <div style={{width:220,minWidth:220,borderRight:`1px solid ${border}`,paddingRight:12,display:"flex",flexDirection:"column",gap:8,overflowY:"auto"}}>
-        <button onClick={()=>setShowCreate(true)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${accent},#BE185D)`,color:"#fff",fontSize:11,fontWeight:700,fontFamily:"var(--ff-body)",cursor:"pointer",marginBottom:4}}>+ Create Room</button>
+        <button onClick={()=>setShowCreate(true)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${accent},var(--ff-accent-2))`,color:"#fff",fontSize:11,fontWeight:700,fontFamily:"var(--ff-body)",cursor:"pointer",marginBottom:4}}>+ Create Room</button>
 
         {loading && <div style={{textAlign:"center",padding:20,color:dimmer,fontSize:11,fontFamily:"var(--ff-body)"}}>Loading…</div>}
         {myRooms.length>0 && (

@@ -41,10 +41,10 @@ const STEP_LABELS = {
   4: "Deploy", 5: "Deepen", 6: "Dominate", 7: "Promote",
 };
 const STEP_COLORS = {
-  1: "#E8553A", 2: "#F59E0B", 3: "#10B981",
+  1: "var(--ff-accent)", 2: "#F59E0B", 3: "#10B981",
   4: "#3B82F6", 5: "#8B5CF6", 6: "#EC4899", 7: "#06B6D4",
 };
-const accent = "#E8553A";
+const accent = "var(--ff-accent)";
 const dim = "rgba(255,255,255,.35)";
 const dimmer = "rgba(255,255,255,.15)";
 const card = "rgba(255,255,255,.03)";
@@ -57,7 +57,7 @@ function Avatar({ src, name, size = 36 }) {
   return src ? (
     <img src={src} alt={name} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
   ) : (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg,#E8553A,#BE185D)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.35, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: "50%", background: "var(--ff-accent-grad)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.35, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
       {initials}
     </div>
   );
@@ -74,7 +74,7 @@ function Tag({ label, color = accent }) {
 function Btn({ children, onClick, variant = "ghost", disabled = false, style: extra = {} }) {
   const base = { fontSize: 11, fontWeight: 600, fontFamily: "var(--ff-body)", borderRadius: 7, cursor: disabled ? "not-allowed" : "pointer", border: "none", transition: "opacity .15s", opacity: disabled ? 0.4 : 1, ...extra };
   const variants = {
-    primary: { padding: "7px 14px", background: `linear-gradient(135deg,${accent},#BE185D)`, color: "#fff" },
+    primary: { padding: "7px 14px", background: `linear-gradient(135deg,${accent},var(--ff-accent-2))`, color: "#fff" },
     ghost: { padding: "6px 12px", background: card, border: `1px solid ${border}`, color: dim },
     danger: { padding: "6px 12px", background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.15)", color: "rgba(239,68,68,.8)" },
   };
@@ -510,7 +510,7 @@ function MessagesTab({ openThread }) {
         <div style={{ display: "flex", gap: 8, paddingTop: 12, borderTop: `1px solid ${border}` }}>
           <textarea value={draft} onChange={(e) => setDraft(e.target.value.slice(0, 4000))} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} rows={2} maxLength={4000} placeholder="Write a message… (Enter to send)"
             style={{ flex: 1, padding: "9px 12px", borderRadius: 8, border: `1px solid ${border}`, background: card, color: "rgba(255,255,255,.85)", fontSize: 13, fontFamily: "var(--ff-body)", resize: "none", outline: "none" }} />
-          <button onClick={send} disabled={!draft.trim() || sending} style={{ padding: "9px 16px", borderRadius: 8, border: "none", background: draft.trim() && !sending ? `linear-gradient(135deg,${accent},#BE185D)` : "rgba(255,255,255,.03)", color: draft.trim() && !sending ? "#fff" : dimmer, fontSize: 12, fontWeight: 600, cursor: draft.trim() && !sending ? "pointer" : "not-allowed", fontFamily: "var(--ff-body)" }}>Send</button>
+          <button onClick={send} disabled={!draft.trim() || sending} style={{ padding: "9px 16px", borderRadius: 8, border: "none", background: draft.trim() && !sending ? `linear-gradient(135deg,${accent},var(--ff-accent-2))` : "rgba(255,255,255,.03)", color: draft.trim() && !sending ? "#fff" : dimmer, fontSize: 12, fontWeight: 600, cursor: draft.trim() && !sending ? "pointer" : "not-allowed", fontFamily: "var(--ff-body)" }}>Send</button>
         </div>
       </div>
     );

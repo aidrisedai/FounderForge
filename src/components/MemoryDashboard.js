@@ -162,10 +162,10 @@ export default function MemoryDashboard({ userId, onClose }) {
               onClick={() => setActiveTab(tab)}
               style={{
                 padding: "12px 20px",
-                background: activeTab === tab ? "rgba(232,85,58,0.1)" : "transparent",
+                background: activeTab === tab ? "rgba(31,166,122,0.1)" : "transparent",
                 border: "none",
-                borderBottom: activeTab === tab ? "2px solid #E8553A" : "2px solid transparent",
-                color: activeTab === tab ? "#E8553A" : "rgba(255,255,255,0.4)",
+                borderBottom: activeTab === tab ? "2px solid var(--ff-accent)" : "2px solid transparent",
+                color: activeTab === tab ? "var(--ff-accent)" : "rgba(255,255,255,0.4)",
                 fontSize: 12,
                 fontWeight: 600,
                 fontFamily: "var(--ff-body)",
@@ -260,12 +260,12 @@ export default function MemoryDashboard({ userId, onClose }) {
                   <div key={insight.id} style={{
                     padding: "14px 18px",
                     background: insight.importance === "high" 
-                      ? "rgba(232,85,58,0.05)" 
+                      ? "rgba(31,166,122,0.05)" 
                       : "rgba(255,255,255,0.02)",
                     borderRadius: 10,
                     marginBottom: 12,
                     border: insight.importance === "high"
-                      ? "1px solid rgba(232,85,58,0.2)"
+                      ? "1px solid rgba(31,166,122,0.2)"
                       : "1px solid rgba(255,255,255,0.05)"
                   }}>
                     <div style={{ 
@@ -284,7 +284,7 @@ export default function MemoryDashboard({ userId, onClose }) {
                     }}>
                       {new Date(insight.timestamp).toLocaleString()}
                       {insight.importance === "high" && (
-                        <span style={{ color: "#E8553A", marginLeft: 8 }}>
+                        <span style={{ color: "var(--ff-accent)", marginLeft: 8 }}>
                           • Important
                         </span>
                       )}
@@ -444,8 +444,8 @@ export default function MemoryDashboard({ userId, onClose }) {
               padding: "8px 16px",
               borderRadius: 6,
               border: "none",
-              background: "rgba(232,85,58,0.1)",
-              color: "#E8553A",
+              background: "rgba(31,166,122,0.1)",
+              color: "var(--ff-accent)",
               fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",

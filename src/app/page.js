@@ -46,8 +46,8 @@ function ChatBubble({ role, content }) {
   const isBot = role === "assistant";
   return (
     <div style={{ display:"flex", gap:10, padding:"5px 0", flexDirection:isBot?"row":"row-reverse", alignItems:"flex-start", animation:"ffSlide .3s ease-out" }}>
-      {isBot && <div style={{ width:32, height:32, minWidth:32, borderRadius:9, background:"linear-gradient(135deg,#E8553A,#BE185D)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 2px 8px rgba(232,85,58,.25)", marginTop:2 }}>F</div>}
-      <div style={{ padding:"12px 16px", borderRadius:14, borderTopLeftRadius:isBot?3:14, borderTopRightRadius:isBot?14:3, background:isBot?"rgba(255,255,255,.04)":"rgba(232,85,58,.1)", border:`1px solid ${isBot?"rgba(255,255,255,.06)":"rgba(232,85,58,.15)"}`, fontSize:14, lineHeight:1.75, color:"rgba(255,255,255,.85)", fontFamily:"var(--ff-body)", whiteSpace:"pre-wrap", maxWidth:"85%" }}>{content}</div>
+      {isBot && <div style={{ width:32, height:32, minWidth:32, borderRadius:9, background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 2px 8px rgba(31,166,122,.25)", marginTop:2 }}>F</div>}
+      <div style={{ padding:"12px 16px", borderRadius:14, borderTopLeftRadius:isBot?3:14, borderTopRightRadius:isBot?14:3, background:isBot?"rgba(255,255,255,.04)":"rgba(31,166,122,.1)", border:`1px solid ${isBot?"rgba(255,255,255,.06)":"rgba(31,166,122,.15)"}`, fontSize:14, lineHeight:1.75, color:"rgba(255,255,255,.85)", fontFamily:"var(--ff-body)", whiteSpace:"pre-wrap", maxWidth:"85%" }}>{content}</div>
     </div>
   );
 }
@@ -60,13 +60,15 @@ function Timeline({ steps, project, activeStepId, activeTaskIdx, onNav }) {
 
   return (
     <div style={{ flex:1, overflowY:"auto" }}>
-      <div style={{ padding:"10px 16px", borderBottom:"1px solid rgba(255,255,255,.04)" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <div style={{ flex:1, height:4, borderRadius:2, background:"rgba(255,255,255,.05)", overflow:"hidden" }}>
-            <div style={{ height:"100%", borderRadius:2, background:"linear-gradient(90deg,#E8553A,#BE185D)", width:`${pct}%`, transition:"width .6s" }} />
-          </div>
-          <span style={{ fontSize:10, fontWeight:700, color:"rgba(255,255,255,.2)", fontFamily:"var(--ff-body)", fontWeight:600 }}>{pct}%</span>
+      <div style={{ padding:"18px 16px 12px", borderTop:"1px solid rgba(255,255,255,.06)", marginTop:8 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:9 }}>
+          <span style={{ fontSize:11, fontWeight:700, letterSpacing:".14em", color:"var(--edai-muted)", fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>Your Journey</span>
+          <span style={{ fontSize:11, fontWeight:600, color:"var(--ff-accent)", fontFamily:"var(--ff-body)" }}>{done}/{TOTAL_TASKS} tasks</span>
         </div>
+        <div style={{ position:"relative", height:8, borderRadius:99, background:"rgba(255,255,255,.06)", overflow:"hidden" }}>
+          <div style={{ position:"absolute", inset:0, height:"100%", borderRadius:99, background:"var(--ff-accent-grad)", width:`${pct}%`, transition:"width .6s ease", boxShadow:pct>0?"0 0 12px var(--ff-accent-glow)":"none" }} />
+        </div>
+        <div style={{ marginTop:6, fontSize:10.5, color:"rgba(255,255,255,.3)", fontFamily:"var(--ff-body)" }}>{pct}% complete</div>
       </div>
       {steps.map((s, si) => {
         const sd = ct[s.id] || 0;
@@ -75,10 +77,10 @@ function Timeline({ steps, project, activeStepId, activeTaskIdx, onNav }) {
         return (
           <div key={s.id}>
             <div onClick={() => onNav(si, Math.min(sd, s.tasks.length-1))} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 16px", cursor:"pointer", background:isActive?"rgba(255,255,255,.025)":"transparent", borderLeft:`3px solid ${isActive?s.color:stepDone?s.color+"50":"transparent"}` }}>
-              <span style={{ fontSize:14 }}>{stepDone?"✅":s.icon}</span>
+              <span style={{ fontSize:15 }}>{stepDone?"✅":s.icon}</span>
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:9, fontWeight:700, letterSpacing:".1em", color:isActive?s.color:"rgba(255,255,255,.2)", fontFamily:"var(--ff-body)", fontWeight:600, textTransform:"uppercase" }}>STEP {s.id} · {sd}/{s.tasks.length}</div>
-                <div style={{ fontSize:13, color:isActive?"rgba(255,255,255,.85)":"rgba(255,255,255,.4)", fontFamily:"var(--ff-heading)", fontWeight:isActive?700:400, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.title}</div>
+                <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:".12em", color:isActive?s.color:stepDone?"rgba(255,255,255,.4)":"rgba(255,255,255,.3)", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:1 }}>STEP {s.id} · {sd}/{s.tasks.length}</div>
+                <div style={{ fontSize:13.5, color:isActive?"var(--edai-text)":"rgba(255,255,255,.45)", fontFamily:"var(--ff-heading)", fontWeight:isActive?700:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.title}</div>
               </div>
             </div>
             {(isActive || sd > 0) && <div style={{ padding:"2px 16px 4px 30px" }}>
@@ -89,11 +91,12 @@ function Timeline({ steps, project, activeStepId, activeTaskIdx, onNav }) {
                 return (
                   <div key={t.id} style={{ position:"relative", paddingLeft:16, paddingBottom:1 }}>
                     {ti < s.tasks.length-1 && <div style={{ position:"absolute", left:4, top:10, bottom:0, width:1, background:tdone?`${s.color}35`:"rgba(255,255,255,.04)" }} />}
-                    <div style={{ position:"absolute", left:0, top:7, width:9, height:9, borderRadius:"50%", background:tdone?s.color:curr?`${s.color}50`:"rgba(255,255,255,.06)", border:curr?`2px solid ${s.color}`:"none", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                      {tdone && <span style={{ fontSize:6, color:"#fff" }}>✓</span>}
+                    <div style={{ position:"absolute", left:-1, top:6, width:tdone?12:curr?12:10, height:tdone?12:curr?12:10, borderRadius:"50%", background:tdone?s.color:curr?"transparent":"transparent", border:curr?`2px solid ${s.color}`:tdone?"none":"1.5px solid rgba(255,255,255,.18)", display:"flex", alignItems:"center", justifyContent:"center", animation:curr?"ffPulse 2s infinite":"none" }}>
+                      {tdone && <span style={{ fontSize:7, color:"#fff", fontWeight:800 }}>✓</span>}
+                      {curr && <div style={{ width:5, height:5, borderRadius:"50%", background:s.color }} />}
                     </div>
-                    <div onClick={() => onNav(si, ti)} style={{ padding:"4px 0", cursor:"pointer" }}>
-                      <div style={{ fontSize:11, fontWeight:curr?600:400, color:tdone?"rgba(255,255,255,.45)":curr?"rgba(255,255,255,.75)":"rgba(255,255,255,.14)", fontFamily:"var(--ff-body)", fontWeight:600 }}>{t.title}</div>
+                    <div onClick={() => onNav(si, ti)} className="ff-task-row" style={{ padding:"4px 6px", margin:"0 -6px", borderRadius:6, cursor:"pointer", transition:"background .15s" }}>
+                      <div style={{ fontSize:11.5, fontWeight:curr?700:tdone?500:500, color:tdone?"rgba(255,255,255,.5)":curr?"var(--edai-text)":"rgba(255,255,255,.32)", fontFamily:"var(--ff-body)" }}>{t.title}</div>
                       {tdone && d && <div style={{ marginTop:3, padding:"5px 8px", borderRadius:5, background:"rgba(255,255,255,.018)", border:"1px solid rgba(255,255,255,.03)", fontSize:10.5, lineHeight:1.45, color:"rgba(255,255,255,.28)", fontFamily:"var(--ff-body)" }}>{d.length > 150 ? d.slice(0,150)+"…" : d}</div>}
                     </div>
                   </div>
@@ -191,14 +194,14 @@ function PreSignInExperience() {
   return (
     <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:"32px 24px", position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", inset:0, opacity:.02, backgroundImage:"radial-gradient(rgba(255,255,255,.7) 1px,transparent 1px)", backgroundSize:"28px 28px" }} />
-      <div style={{ position:"absolute", top:"-25%", right:"-10%", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,rgba(232,85,58,.06) 0%,transparent 70%)", filter:"blur(80px)" }} />
+      <div style={{ position:"absolute", top:"-25%", right:"-10%", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,rgba(31,166,122,.06) 0%,transparent 70%)", filter:"blur(80px)" }} />
       <div style={{ width:"100%", maxWidth:1020, display:"grid", gap:24, gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))", position:"relative", zIndex:1, alignItems:"start" }}>
 
         {/* LEFT: Branding */}
         <div style={{ padding:28, borderRadius:18, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.06)" }}>
-          <div style={{ width:56, height:56, borderRadius:14, marginBottom:18, background:"linear-gradient(135deg,#E8553A,#BE185D)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(232,85,58,.3)" }}>F</div>
+          <div style={{ width:56, height:56, borderRadius:14, marginBottom:18, background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(31,166,122,.3)" }}>F</div>
           <div style={{ fontSize:10, fontWeight:700, letterSpacing:".3em", color:"rgba(255,255,255,.18)", marginBottom:12, fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>AI Startup Mentor</div>
-          <h1 style={{ fontSize:"clamp(32px,5vw,46px)", fontWeight:400, lineHeight:1.05, margin:"0 0 12px", fontFamily:"var(--ff-heading)", letterSpacing:"-.02em" }}>Founder<span style={{ color:"#E8553A" }}>Forge</span></h1>
+          <h1 style={{ fontSize:"clamp(32px,5vw,46px)", fontWeight:400, lineHeight:1.05, margin:"0 0 12px", fontFamily:"var(--ff-heading)", letterSpacing:"-.02em" }}>Founder<span style={{ color:"var(--ff-accent)" }}>Forge</span></h1>
           <p style={{ fontSize:20, lineHeight:1.35, color:"#fff", margin:"0 0 12px", fontFamily:"var(--ff-heading)" }}>Get a validated startup hypothesis in 5 minutes.</p>
           <p style={{ fontSize:14, lineHeight:1.7, color:"rgba(255,255,255,.45)", margin:"0 0 20px" }}>
             Try the first task before signup. You will see exactly how the workflow feels before creating an account.
@@ -206,7 +209,7 @@ function PreSignInExperience() {
           <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:18 }}>
             <button
               onClick={() => signIn("google")}
-              style={{ padding:"9px 14px", borderRadius:8, border:"none", background:"linear-gradient(135deg,#E8553A,#BE185D)", color:"#fff", cursor:"pointer", fontSize:12, fontWeight:700 }}
+              style={{ padding:"9px 14px", borderRadius:8, border:"none", background:"var(--ff-accent-grad)", color:"#fff", cursor:"pointer", fontSize:12, fontWeight:700 }}
             >
               Sign in with Google now
             </button>
@@ -262,7 +265,7 @@ function PreSignInExperience() {
               </p>
               <button
                 onClick={() => signIn("google")}
-                style={{ width:"100%", padding:"11px 16px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#E8553A,#BE185D)", color:"#fff", cursor:"pointer", fontSize:13, fontWeight:700 }}
+                style={{ width:"100%", padding:"11px 16px", borderRadius:10, border:"none", background:"var(--ff-accent-grad)", color:"#fff", cursor:"pointer", fontSize:13, fontWeight:700 }}
               >
                 Save & Continue with Google →
               </button>
@@ -282,7 +285,7 @@ function PreSignInExperience() {
                 <button
                   onClick={send}
                   disabled={!input.trim() || loading}
-                  style={{ padding:"10px 16px", borderRadius:10, border:"none", background:input.trim() && !loading ? "linear-gradient(135deg,#E8553A,#BE185D)" : "rgba(255,255,255,.05)", color:input.trim() && !loading ? "#fff" : "rgba(255,255,255,.2)", cursor:input.trim() && !loading ? "pointer" : "not-allowed", fontSize:13, fontWeight:700, whiteSpace:"nowrap", alignSelf:"stretch" }}
+                  style={{ padding:"10px 16px", borderRadius:10, border:"none", background:input.trim() && !loading ? "var(--ff-accent-grad)" : "rgba(255,255,255,.05)", color:input.trim() && !loading ? "#fff" : "rgba(255,255,255,.2)", cursor:input.trim() && !loading ? "pointer" : "not-allowed", fontSize:13, fontWeight:700, whiteSpace:"nowrap", alignSelf:"stretch" }}
                 >
                   Send
                 </button>
@@ -592,7 +595,7 @@ export default function Home() {
       <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:32, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", inset:0, opacity:.02, backgroundImage:"radial-gradient(rgba(255,255,255,.7) 1px,transparent 1px)", backgroundSize:"28px 28px" }} />
         <div style={{ textAlign:"center", maxWidth:520, position:"relative", zIndex:1 }}>
-          <div style={{ width:60, height:60, borderRadius:16, margin:"0 auto 24px", background:"linear-gradient(135deg,#E8553A,#BE185D)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(232,85,58,.3)" }}>F</div>
+          <div style={{ width:60, height:60, borderRadius:16, margin:"0 auto 24px", background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(31,166,122,.3)" }}>F</div>
           <p style={{ fontSize:13, color:"rgba(255,255,255,.35)", marginBottom:8 }}>Welcome, {session.user.name}</p>
           <h1 style={{ fontSize:32, fontFamily:"var(--ff-heading)", margin:"0 0 16px" }}>Personalize your experience</h1>
           <p style={{ fontSize:14, lineHeight:1.7, color:"rgba(255,255,255,.45)", margin:"0 auto 32px", maxWidth:420 }}>
@@ -606,13 +609,13 @@ export default function Home() {
                 padding:"14px 36px", 
                 borderRadius:10, 
                 border:"none", 
-                background:"linear-gradient(135deg,#E8553A,#BE185D)", 
+                background:"var(--ff-accent-grad)", 
                 color:"#fff", 
                 fontSize:13, 
                 fontWeight:700, 
                 cursor:"pointer", 
                 fontFamily:"var(--ff-body)", 
-                boxShadow:"0 4px 30px rgba(232,85,58,.3)" 
+                boxShadow:"0 4px 30px rgba(31,166,122,.3)" 
               }}
             >
               Personalize My Journey →
@@ -667,10 +670,10 @@ export default function Home() {
       <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:32, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", inset:0, opacity:.02, backgroundImage:"radial-gradient(rgba(255,255,255,.7) 1px,transparent 1px)", backgroundSize:"28px 28px" }} />
         <div style={{ textAlign:"center", maxWidth:460, position:"relative", zIndex:1 }}>
-          <div style={{ width:60, height:60, borderRadius:16, margin:"0 auto 24px", background:"linear-gradient(135deg,#E8553A,#BE185D)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(232,85,58,.3)" }}>F</div>
+          <div style={{ width:60, height:60, borderRadius:16, margin:"0 auto 24px", background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(31,166,122,.3)" }}>F</div>
           <p style={{ fontSize:13, color:"rgba(255,255,255,.35)", marginBottom:4 }}>Welcome, {session.user.name}</p>
           {personality && (
-            <p style={{ fontSize:10, color:"rgba(232,85,58,.6)", marginBottom:12, fontFamily:"var(--ff-body)", fontWeight:600 }}>
+            <p style={{ fontSize:10, color:"rgba(31,166,122,.6)", marginBottom:12, fontFamily:"var(--ff-body)", fontWeight:600 }}>
               {getPersonalitySummary(personality)}
             </p>
           )}
@@ -682,10 +685,10 @@ export default function Home() {
                 placeholder="Name your startup idea..."
                 style={{ width:280, padding:"12px 18px", borderRadius:10, textAlign:"center", border:"1px solid rgba(255,255,255,.15)", background:"rgba(255,255,255,.04)", color:"#fff", fontSize:14, outline:"none", fontFamily:"var(--ff-body)" }} />
               <button onClick={() => { if (newName.trim()) { createProject(newName.trim()); setNewName(""); setShowNewForm(false); } }} disabled={!newName.trim()}
-                style={{ padding:"10px 28px", borderRadius:8, border:"none", background:newName.trim()?"linear-gradient(135deg,#E8553A,#BE185D)":"rgba(255,255,255,.05)", color:newName.trim()?"#fff":"rgba(255,255,255,.2)", fontSize:12, fontWeight:700, cursor:newName.trim()?"pointer":"not-allowed", fontFamily:"var(--ff-body)", fontWeight:600 }}>BEGIN →</button>
+                style={{ padding:"10px 28px", borderRadius:8, border:"none", background:newName.trim()?"var(--ff-accent-grad)":"rgba(255,255,255,.05)", color:newName.trim()?"#fff":"rgba(255,255,255,.2)", fontSize:12, fontWeight:700, cursor:newName.trim()?"pointer":"not-allowed", fontFamily:"var(--ff-body)", fontWeight:600 }}>BEGIN →</button>
             </div>
           ) : (
-            <button onClick={() => setShowNewForm(true)} style={{ padding:"14px 36px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#E8553A,#BE185D)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"var(--ff-body)", fontWeight:600, boxShadow:"0 4px 30px rgba(232,85,58,.3)" }}>NEW PROJECT →</button>
+            <button onClick={() => setShowNewForm(true)} style={{ padding:"14px 36px", borderRadius:10, border:"none", background:"var(--ff-accent-grad)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"var(--ff-body)", fontWeight:600, boxShadow:"0 4px 30px rgba(31,166,122,.3)" }}>NEW PROJECT →</button>
           )}
         </div>
       </div>
@@ -697,60 +700,73 @@ export default function Home() {
       {/* Sidebar */}
       <div style={{ width:280, minWidth:280, height:"100vh", background:"rgba(255,255,255,.012)", borderRight:"1px solid rgba(255,255,255,.05)", display:"flex", flexDirection:"column" }}>
         <div style={{ padding:"14px 16px", borderBottom:"1px solid rgba(255,255,255,.05)" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-            <div style={{ fontSize:18, fontFamily:"var(--ff-heading)" }}>Founder<span style={{ color:"#E8553A" }}>Forge</span></div>
-            <button onClick={() => signOut()} style={{ fontSize:10, padding:"4px 8px", borderRadius:4, border:"1px solid rgba(255,255,255,.08)", background:"transparent", color:"rgba(255,255,255,.25)", cursor:"pointer", fontFamily:"var(--ff-body)", fontWeight:600 }}>Sign out</button>
+          <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:12 }}>
+            <div style={{ width:30, height:30, minWidth:30, borderRadius:9, background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 2px 10px var(--ff-accent-glow)" }}>F</div>
+            <div style={{ fontSize:18, fontFamily:"var(--ff-heading)", fontWeight:600 }}>Founder<span style={{ color:"var(--ff-accent)" }}>Forge</span></div>
           </div>
-          <div style={{ fontSize:11, color:"rgba(255,255,255,.3)", marginBottom:4, fontFamily:"var(--ff-body)" }}>{session.user.name}</div>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:12, padding:"6px 8px", borderRadius:8, background:"rgba(255,255,255,.025)", border:"1px solid var(--edai-border)" }}>
+            <span style={{ fontSize:12, color:"var(--edai-muted)", fontFamily:"var(--ff-body)", fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{session.user.name}</span>
+            <button onClick={() => signOut()} title="Sign out" className="ff-ghost" style={{ fontSize:14, lineHeight:1, padding:"4px 6px", borderRadius:6, border:"none", background:"transparent", color:"rgba(255,255,255,.3)", cursor:"pointer", fontFamily:"var(--ff-body)", flexShrink:0 }}>⏏</button>
+          </div>
           {personality && (
-            <button 
+            <button
               onClick={() => setShowPersonality(true)}
-              style={{ 
-                fontSize:9, 
-                padding:"3px 6px", 
-                borderRadius:4, 
-                border:"1px solid rgba(232,85,58,.2)", 
-                background:"rgba(232,85,58,.05)", 
-                color:"rgba(232,85,58,.7)", 
-                cursor:"pointer", 
-                fontFamily:"var(--ff-body)", 
+              className="ff-row-hover"
+              style={{
+                fontSize:13,
+                padding:"8px 11px",
+                borderRadius:9,
+                border:"1px solid var(--ff-accent-border)",
+                background:"var(--ff-accent-soft)",
+                color:"var(--ff-accent)",
+                cursor:"pointer",
+                fontFamily:"var(--ff-body)",
                 fontWeight:600,
-                marginBottom:12,
+                marginBottom:16,
                 width:"100%",
-                textAlign:"left"
+                textAlign:"left",
+                display:"flex",
+                alignItems:"center",
+                gap:7,
+                lineHeight:1.3
               }}
             >
-              ✨ {getPersonalitySummary(personality).split(" • ").slice(0, 2).join(" • ")}
+              <span style={{ fontSize:14 }}>✨</span>
+              <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{getPersonalitySummary(personality).split(" • ").slice(0, 2).join(" • ")}</span>
             </button>
           )}
           {!personality && personalityChecked && (
-            <button 
+            <button
               onClick={() => setShowPersonality(true)}
-              style={{ 
-                fontSize:9, 
-                padding:"3px 6px", 
-                borderRadius:4, 
-                border:"1px dashed rgba(255,255,255,.1)", 
-                background:"transparent", 
-                color:"rgba(255,255,255,.25)", 
-                cursor:"pointer", 
-                fontFamily:"var(--ff-body)", 
+              className="ff-row-hover"
+              style={{
+                fontSize:12,
+                padding:"7px 10px",
+                borderRadius:8,
+                border:"1px dashed rgba(255,255,255,.14)",
+                background:"transparent",
+                color:"rgba(255,255,255,.35)",
+                cursor:"pointer",
+                fontFamily:"var(--ff-body)",
                 fontWeight:600,
-                marginBottom:12,
+                marginBottom:16,
                 width:"100%"
               }}
             >
               + Add personality profile
             </button>
           )}
-          <div style={{ fontSize:9, fontWeight:700, letterSpacing:".1em", color:"rgba(255,255,255,.15)", fontFamily:"var(--ff-body)", fontWeight:600, marginBottom:6 }}>PROJECTS</div>
-          {projects.map(p => (
-            <div key={p.id} onClick={() => setActiveId(p.id)} style={{ padding:"6px 10px", borderRadius:6, cursor:"pointer", marginBottom:2, background:p.id===activeId?"rgba(255,255,255,.05)":"transparent", border:p.id===activeId?"1px solid rgba(255,255,255,.08)":"1px solid transparent", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-              <span style={{ fontSize:12, color:p.id===activeId?"rgba(255,255,255,.9)":"rgba(255,255,255,.4)", fontFamily:"var(--ff-body)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
+          <div style={{ fontSize:11, fontWeight:700, letterSpacing:".14em", color:"var(--edai-muted)", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:8 }}>Projects</div>
+          {projects.map(p => {
+            const active = p.id === activeId;
+            return (
+            <div key={p.id} onClick={() => setActiveId(p.id)} className={active?"":"ff-row-hover"} style={{ padding:"7px 10px", borderRadius:7, cursor:"pointer", marginBottom:3, background:active?"var(--ff-accent-soft)":"transparent", borderLeft:`3px solid ${active?"var(--ff-accent)":"transparent"}`, display:"flex", alignItems:"center", justifyContent:"space-between", transition:"background .15s" }}>
+              <span style={{ fontSize:12.5, color:active?"var(--edai-text)":"rgba(255,255,255,.5)", fontWeight:active?700:500, fontFamily:"var(--ff-body)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
               <button onClick={e => { e.stopPropagation(); setProjects(prev => prev.filter(x => x.id !== p.id)); if (activeId === p.id) setActiveId(projects.find(x => x.id !== p.id)?.id || null); }}
-                style={{ background:"none", border:"none", color:"rgba(255,255,255,.1)", cursor:"pointer", fontSize:13, padding:2 }}>×</button>
+                style={{ background:"none", border:"none", color:"rgba(255,255,255,.18)", cursor:"pointer", fontSize:14, padding:2, flexShrink:0 }}>×</button>
             </div>
-          ))}
+            );
+          })}
           {showSidebarNewProject ? (
             <div style={{ marginTop:4, padding:"8px", borderRadius:6, background:"rgba(255,255,255,.03)", border:"1px solid rgba(255,255,255,.08)" }}>
               <input 
@@ -802,7 +818,7 @@ export default function Home() {
                     padding:"4px 8px", 
                     borderRadius:3, 
                     border:"none", 
-                    background:sidebarProjectName.trim()?"#E8553A":"rgba(255,255,255,.05)", 
+                    background:sidebarProjectName.trim()?"var(--ff-accent)":"rgba(255,255,255,.05)", 
                     color:sidebarProjectName.trim()?"#fff":"rgba(255,255,255,.2)", 
                     fontSize:10, 
                     fontWeight:600, 
@@ -840,26 +856,27 @@ export default function Home() {
         <Timeline steps={CURRICULUM} project={project} activeStepId={step.id} activeTaskIdx={taskIdx} onNav={(si,ti) => { setStepIdx(si); setTaskIdx(ti); setShowCommunity(false); }} />
 
         {/* Community + Discovery + YC nav buttons */}
-        <div style={{ padding:"10px 12px", borderTop:"1px solid rgba(255,255,255,.04)", flexShrink:0, display:"flex", flexDirection:"column", gap:6 }}>
-          <button onClick={() => { setShowCommunity(c => !c); setShowDiscovery(false); setShowYC(false); }} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${showCommunity?"rgba(232,85,58,.3)":"rgba(255,255,255,.06)"}`, background:showCommunity?"rgba(232,85,58,.08)":"transparent", color:showCommunity?"#E8553A":"rgba(255,255,255,.35)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:7, transition:"all .15s" }}>
-            <span style={{ fontSize:14 }}>🤝</span> Community
-          </button>
-          <button onClick={() => { setShowDiscovery(d => !d); setShowCommunity(false); setShowYC(false); }} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${showDiscovery?"rgba(99,102,241,.4)":"rgba(255,255,255,.06)"}`, background:showDiscovery?"rgba(99,102,241,.1)":"transparent", color:showDiscovery?"#818cf8":"rgba(255,255,255,.35)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:7, transition:"all .15s" }}>
-            <span style={{ fontSize:14 }}>🔍</span> Discover an Idea
-          </button>
-          <button onClick={() => { setShowYC(y => !y); setShowCommunity(false); setShowDiscovery(false); }} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${showYC?"rgba(255,102,0,.4)":"rgba(255,255,255,.06)"}`, background:showYC?"rgba(255,102,0,.1)":"transparent", color:showYC?"#FF6600":"rgba(255,255,255,.35)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:7, transition:"all .15s" }}>
-            <span style={{ fontSize:14 }}>🚀</span> 90 Days at YC
-          </button>
+        <div style={{ padding:"14px 12px 12px", borderTop:"1px solid rgba(255,255,255,.06)", flexShrink:0, display:"flex", flexDirection:"column", gap:6 }}>
+          <div style={{ fontSize:11, fontWeight:700, letterSpacing:".14em", color:"var(--edai-muted)", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:4, paddingLeft:4 }}>Explore</div>
+          {[
+            { key:"community", label:"Community", icon:"🤝", on:showCommunity, accent:"31,166,122", text:"var(--ff-accent)", toggle:() => { setShowCommunity(c => !c); setShowDiscovery(false); setShowYC(false); } },
+            { key:"discover", label:"Discover an Idea", icon:"🔍", on:showDiscovery, accent:"0,102,204", text:"#4D9BE8", toggle:() => { setShowDiscovery(d => !d); setShowCommunity(false); setShowYC(false); } },
+            { key:"yc", label:"90 Days at YC", icon:"🚀", on:showYC, accent:"255,102,0", text:"#FF8534", toggle:() => { setShowYC(y => !y); setShowCommunity(false); setShowDiscovery(false); } },
+          ].map(n => (
+            <button key={n.key} onClick={n.toggle} className={n.on?"":"ff-row-hover"} style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1px solid ${n.on?`rgba(${n.accent},.4)`:"transparent"}`, borderLeft:`3px solid ${n.on?`rgb(${n.accent})`:"transparent"}`, background:n.on?`rgba(${n.accent},.1)`:"transparent", color:n.on?n.text:"rgba(255,255,255,.45)", fontSize:12.5, fontWeight:n.on?700:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:8, transition:"all .15s" }}>
+              <span style={{ fontSize:15 }}>{n.icon}</span> {n.label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Main content area — exactly one of: YC, Discovery, Community, Simulation, or Chat */}
       {showYC ? (
-        <div style={{ flex:1, height:"100vh", overflow:"hidden", background:"#f9fafb" }}>
+        <div style={{ flex:1, height:"100vh", overflow:"hidden", background:"var(--edai-bg)" }}>
           <NinetyDayYC />
         </div>
       ) : showDiscovery ? (
-        <div style={{ flex:1, height:"100vh", overflow:"hidden", background:"#f9fafb" }}>
+        <div style={{ flex:1, height:"100vh", overflow:"hidden", background:"var(--edai-bg)" }}>
           <DiscoveryModule onGraduate={(project) => {
             setShowDiscovery(false);
             apiGet("/api/projects").then(d => {
@@ -883,23 +900,30 @@ export default function Home() {
       ) : (
       <div style={{ flex:1, display:"flex", flexDirection:"column", height:"100vh", minWidth:0 }}>
         <div style={{ padding:"10px 20px", borderBottom:"1px solid rgba(255,255,255,.05)", background:"rgba(255,255,255,.012)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <span style={{ fontSize:16 }}>{step.icon}</span>
+          <div style={{ display:"flex", alignItems:"center", gap:11 }}>
+            <span style={{ fontSize:18, width:34, height:34, borderRadius:9, display:"flex", alignItems:"center", justifyContent:"center", background:`${step.color}1A`, border:`1px solid ${step.color}33` }}>{step.icon}</span>
             <div>
-              <div style={{ fontSize:9, fontWeight:700, letterSpacing:".11em", color:step.color, fontFamily:"var(--ff-body)", fontWeight:600, textTransform:"uppercase" }}>STEP {step.id} · TASK {taskIdx+1}/{step.tasks.length}{isRevisiting?" · REVISITING":""}</div>
-              <div style={{ fontSize:14, fontFamily:"var(--ff-heading)", color:"rgba(255,255,255,.9)" }}>{task.title}</div>
+              <div style={{ fontSize:10, fontWeight:600, fontFamily:"var(--ff-body)", color:"rgba(255,255,255,.4)", display:"flex", alignItems:"center", gap:5, marginBottom:1 }}>
+                <span style={{ color:step.color, fontWeight:700 }}>Step {step.id}: {step.title}</span>
+                <span style={{ opacity:.4 }}>›</span>
+                <span>Task {taskIdx+1}/{step.tasks.length}</span>
+                {isRevisiting && <span style={{ fontSize:8.5, fontWeight:700, letterSpacing:".08em", padding:"1px 6px", borderRadius:99, background:"var(--ff-blue-soft)", color:"var(--ff-blue)", textTransform:"uppercase" }}>Revisiting</span>}
+              </div>
+              <div style={{ fontSize:15, fontFamily:"var(--ff-heading)", fontWeight:600, color:"var(--edai-text)" }}>{task.title}</div>
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button
               onClick={() => setShowMemory(true)}
+              title="Memory & Insights"
+              className="ff-ghost"
               style={{
-                padding: "6px 12px",
-                borderRadius: 6,
-                border: "1px solid rgba(255,255,255,.08)",
-                background: "rgba(255,255,255,.02)",
-                color: "rgba(255,255,255,.4)",
-                fontSize: 11,
+                padding: "7px 13px",
+                borderRadius: 9,
+                border: "1px solid var(--edai-border)",
+                background: "rgba(255,255,255,.025)",
+                color: "var(--edai-muted)",
+                fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
                 fontFamily: "var(--ff-body)",
@@ -909,17 +933,19 @@ export default function Home() {
               }}
             >
               <span style={{ fontSize: 14 }}>🧠</span>
-              Memory & Insights
+              Memory
             </button>
             <button
               onClick={() => setShowProfile(true)}
+              title="Profile & Stats"
+              className="ff-ghost"
               style={{
-                padding: "6px 12px",
-                borderRadius: 6,
-                border: "1px solid rgba(255,255,255,.08)",
-                background: "rgba(255,255,255,.02)",
-                color: "rgba(255,255,255,.4)",
-                fontSize: 11,
+                padding: "7px 13px",
+                borderRadius: 9,
+                border: "1px solid var(--edai-border)",
+                background: "rgba(255,255,255,.025)",
+                color: "var(--edai-muted)",
+                fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
                 fontFamily: "var(--ff-body)",
@@ -929,21 +955,30 @@ export default function Home() {
               }}
             >
               <span style={{ fontSize: 14 }}>🏆</span>
-              Profile & Stats
+              Profile
             </button>
           </div>
         </div>
-        <div style={{ padding:"8px 20px", borderBottom:"1px solid rgba(255,255,255,.03)" }}>
-          <div style={{ maxWidth:660, margin:"0 auto", display:"flex", gap:6, flexWrap:"wrap" }}>
-            <div style={{ flex:1, minWidth:180, padding:"6px 10px", borderRadius:6, background:`${step.color}06`, border:`1px solid ${step.color}10`, display:"flex", alignItems:"center", gap:6 }}>
-              <span style={{ fontSize:8, fontWeight:700, letterSpacing:".1em", padding:"2px 5px", borderRadius:3, background:`${step.color}15`, color:step.color, fontFamily:"var(--ff-body)", fontWeight:600, textTransform:"uppercase" }}>GOAL</span>
-              <span style={{ fontSize:11, color:"rgba(255,255,255,.4)", fontFamily:"var(--ff-body)", lineHeight:1.3 }}>{task.goal}</span>
+        <div style={{ padding:"10px 20px", borderBottom:"1px solid rgba(255,255,255,.03)" }}>
+          {(() => {
+            const del = (project.deliverables || {})[task.id];
+            return (
+          <div style={{ maxWidth:660, margin:"0 auto", display:"flex", gap:8, flexWrap:"wrap" }}>
+            <div style={{ flex:1, minWidth:200, padding:"9px 12px", borderRadius:9, background:`${step.color}0D`, border:"1px solid var(--edai-border)", borderLeft:`3px solid ${step.color}`, display:"flex", flexDirection:"column", gap:4 }}>
+              <span style={{ fontSize:9, fontWeight:700, letterSpacing:".12em", color:step.color, fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>Goal</span>
+              <span style={{ fontSize:12, color:"rgba(255,255,255,.7)", fontFamily:"var(--ff-body)", lineHeight:1.45 }}>{task.goal}</span>
             </div>
-            <div style={{ flex:1, minWidth:180, padding:"6px 10px", borderRadius:6, background:"rgba(255,255,255,.015)", border:"1px solid rgba(255,255,255,.03)", display:"flex", alignItems:"center", gap:6 }}>
-              <span style={{ fontSize:8, fontWeight:700, letterSpacing:".1em", padding:"2px 5px", borderRadius:3, background:"rgba(255,255,255,.05)", color:"rgba(255,255,255,.25)", fontFamily:"var(--ff-body)", fontWeight:600, textTransform:"uppercase" }}>OUTPUT</span>
-              <span style={{ fontSize:11, color:"rgba(255,255,255,.25)", fontFamily:"var(--ff-body)", lineHeight:1.3 }}>{task.output}</span>
+            <div style={{ flex:1, minWidth:200, padding:"9px 12px", borderRadius:9, background:del?"var(--ff-blue-soft)":"rgba(255,255,255,.02)", border:"1px solid var(--edai-border)", borderLeft:`3px solid ${del?"var(--ff-blue)":"rgba(255,255,255,.14)"}`, display:"flex", flexDirection:"column", gap:4 }}>
+              <span style={{ fontSize:9, fontWeight:700, letterSpacing:".12em", color:del?"#4D9BE8":"rgba(255,255,255,.3)", fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>Output</span>
+              {del ? (
+                <span style={{ fontSize:12, color:"rgba(255,255,255,.7)", fontFamily:"var(--ff-body)", lineHeight:1.45 }}>{del.length > 140 ? del.slice(0,140)+"…" : del}</span>
+              ) : (
+                <span style={{ fontSize:11.5, color:"rgba(255,255,255,.3)", fontFamily:"var(--ff-body)", lineHeight:1.45, fontStyle:"italic" }}>Your output will appear here as you work through this task.</span>
+              )}
             </div>
           </div>
+            );
+          })()}
         </div>
         <div style={{ flex:1, overflowY:"auto", padding:"12px 20px 8px" }}>
           <div style={{ maxWidth:660, margin:"0 auto" }}>
@@ -953,12 +988,17 @@ export default function Home() {
             <div ref={btmRef} />
           </div>
         </div>
-        <div style={{ padding:"10px 20px 12px", borderTop:"1px solid rgba(255,255,255,.04)", background:"rgba(255,255,255,.008)" }}>
-          <div style={{ maxWidth:660, margin:"0 auto", display:"flex", gap:8, alignItems:"flex-end" }}>
-            <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key==="Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder="Share your work here..." rows={2}
-              style={{ flex:1, padding:"10px 14px", borderRadius:9, border:"1px solid rgba(255,255,255,.06)", background:"rgba(255,255,255,.02)", color:"rgba(255,255,255,.9)", fontSize:13.5, lineHeight:1.6, resize:"none", outline:"none", fontFamily:"var(--ff-body)" }} />
-            <button onClick={handleSend} disabled={!input.trim()||loading}
-              style={{ padding:"10px 16px", borderRadius:9, border:"none", background:input.trim()&&!loading?"linear-gradient(135deg,#E8553A,#BE185D)":"rgba(255,255,255,.03)", color:input.trim()&&!loading?"#fff":"rgba(255,255,255,.12)", fontSize:12, fontWeight:600, cursor:input.trim()&&!loading?"pointer":"not-allowed", fontFamily:"var(--ff-body)", fontWeight:600, minWidth:56 }}>Send</button>
+        <div style={{ padding:"12px 20px 14px", borderTop:"1px solid rgba(255,255,255,.05)", background:"rgba(255,255,255,.012)" }}>
+          <div style={{ maxWidth:660, margin:"0 auto" }}>
+            <div style={{ display:"flex", gap:8, alignItems:"flex-end" }}>
+              <div style={{ flex:1, position:"relative" }}>
+                <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if ((e.key==="Enter" && !e.shiftKey) || (e.key==="Enter" && (e.metaKey||e.ctrlKey))) { e.preventDefault(); handleSend(); } }} placeholder={loading ? "Mentor is thinking…" : "Reply to your mentor — share what you found or ask a question…"} rows={2}
+                  style={{ width:"100%", padding:"11px 14px 22px", borderRadius:12, border:"1px solid var(--edai-border)", background:"var(--edai-surface)", color:"var(--edai-text)", fontSize:13.5, lineHeight:1.6, resize:"none", outline:"none", fontFamily:"var(--ff-body)" }} />
+                <span style={{ position:"absolute", right:12, bottom:8, fontSize:10, color:"rgba(255,255,255,.22)", fontFamily:"var(--ff-body)", pointerEvents:"none" }}>⌘ + Enter to send</span>
+              </div>
+              <button onClick={handleSend} disabled={!input.trim()||loading} className="ff-btn-accent"
+                style={{ padding:"11px 20px", borderRadius:12, border:"none", background:input.trim()&&!loading?"var(--ff-accent-grad)":"rgba(255,255,255,.04)", color:input.trim()&&!loading?"#fff":"rgba(255,255,255,.2)", fontSize:13, fontWeight:700, cursor:input.trim()&&!loading?"pointer":"not-allowed", fontFamily:"var(--ff-body)", minWidth:72, alignSelf:"stretch" }}>Send</button>
+            </div>
           </div>
         </div>
       </div>
@@ -991,13 +1031,13 @@ export default function Home() {
 
       {/* Share-to-feed toast (only visible when not already in Community) */}
       {sharePrompt && !showCommunity && (
-        <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", zIndex:2100, padding:"12px 18px", borderRadius:12, background:"rgba(16,16,18,.97)", border:"1px solid rgba(232,85,58,.3)", display:"flex", alignItems:"center", gap:12, animation:"ffSlide .4s", boxShadow:"0 8px 40px rgba(0,0,0,.5)", maxWidth:440 }}>
+        <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", zIndex:2100, padding:"12px 18px", borderRadius:12, background:"rgba(16,16,18,.97)", border:"1px solid rgba(31,166,122,.3)", display:"flex", alignItems:"center", gap:12, animation:"ffSlide .4s", boxShadow:"0 8px 40px rgba(0,0,0,.5)", maxWidth:440 }}>
           <span style={{ fontSize:20, flexShrink:0 }}>🏆</span>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"rgba(255,255,255,.9)", fontFamily:"var(--ff-body)", marginBottom:2 }}>Task complete!</div>
             <div style={{ fontSize:11, color:"rgba(255,255,255,.45)", fontFamily:"var(--ff-body)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{sharePrompt.milestone}</div>
           </div>
-          <button onClick={() => { setShowCommunity(true); }} style={{ padding:"6px 12px", borderRadius:7, border:"none", background:"linear-gradient(135deg,#E8553A,#BE185D)", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"var(--ff-body)", flexShrink:0 }}>Share to Feed</button>
+          <button onClick={() => { setShowCommunity(true); }} style={{ padding:"6px 12px", borderRadius:7, border:"none", background:"var(--ff-accent-grad)", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"var(--ff-body)", flexShrink:0 }}>Share to Feed</button>
           <button onClick={() => setSharePrompt(null)} style={{ background:"none", border:"none", color:"rgba(255,255,255,.25)", cursor:"pointer", fontSize:18, lineHeight:1, padding:"0 0 0 4px", flexShrink:0 }}>×</button>
         </div>
       )}
