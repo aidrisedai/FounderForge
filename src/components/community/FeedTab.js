@@ -1,19 +1,19 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
-const accent = "#E8553A";
+const accent = "var(--ff-accent)";
 const dim = "rgba(255,255,255,.35)";
 const dimmer = "rgba(255,255,255,.15)";
 const card = "rgba(255,255,255,.03)";
 const border = "rgba(255,255,255,.06)";
 
-const STEP_COLORS = { 1:"#E8553A",2:"#F59E0B",3:"#10B981",4:"#3B82F6",5:"#8B5CF6",6:"#EC4899",7:"#06B6D4" };
+const STEP_COLORS = { 1:"var(--ff-accent)",2:"#F59E0B",3:"#10B981",4:"#3B82F6",5:"#8B5CF6",6:"#EC4899",7:"#06B6D4" };
 const REACTIONS = [{ type:"like",emoji:"👍",label:"Like" },{ type:"celebrate",emoji:"🎉",label:"Celebrate" },{ type:"insightful",emoji:"💡",label:"Insightful" }];
 
 function Avatar({ src, name, size=36 }) {
   const initials = (name||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
   return src ? <img src={src} alt={name} style={{width:size,height:size,borderRadius:"50%",objectFit:"cover",flexShrink:0}} />
-    : <div style={{width:size,height:size,borderRadius:"50%",background:"linear-gradient(135deg,#E8553A,#BE185D)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*.35,fontWeight:700,color:"#fff",flexShrink:0}}>{initials}</div>;
+    : <div style={{width:size,height:size,borderRadius:"50%",background:"var(--ff-accent-grad)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*.35,fontWeight:700,color:"#fff",flexShrink:0}}>{initials}</div>;
 }
 
 function timeAgo(date) {
@@ -120,7 +120,7 @@ function FeedCard({ post, myId, onReact, onComment }) {
               style={{flex:1,padding:"7px 10px",borderRadius:8,border:`1px solid ${border}`,background:card,color:"rgba(255,255,255,.85)",fontSize:12,fontFamily:"var(--ff-body)",resize:"none",outline:"none"}}
               onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submitComment();}}}/>
             <button onClick={submitComment} disabled={!commentDraft.trim()||submitting}
-              style={{padding:"7px 12px",borderRadius:8,border:"none",background:commentDraft.trim()&&!submitting?`linear-gradient(135deg,${accent},#BE185D)`:"rgba(255,255,255,.04)",color:commentDraft.trim()&&!submitting?"#fff":dimmer,fontSize:11,fontWeight:600,fontFamily:"var(--ff-body)",cursor:commentDraft.trim()&&!submitting?"pointer":"not-allowed"}}>Post</button>
+              style={{padding:"7px 12px",borderRadius:8,border:"none",background:commentDraft.trim()&&!submitting?`linear-gradient(135deg,${accent},var(--ff-accent-2))`:"rgba(255,255,255,.04)",color:commentDraft.trim()&&!submitting?"#fff":dimmer,fontSize:11,fontWeight:600,fontFamily:"var(--ff-body)",cursor:commentDraft.trim()&&!submitting?"pointer":"not-allowed"}}>Post</button>
           </div>
         </div>
       )}
@@ -177,7 +177,7 @@ export default function FeedTab({ sharePrompt, onShareDone }) {
               style={{width:"100%",padding:"10px 12px",borderRadius:8,border:`1px solid ${border}`,background:"rgba(255,255,255,.02)",color:"rgba(255,255,255,.85)",fontSize:13,fontFamily:"var(--ff-body)",resize:"vertical",outline:"none"}} autoFocus/>
             <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
               <button onClick={()=>{setComposerOpen(false);setDraft("");onShareDone?.();}} style={{padding:"7px 14px",borderRadius:7,border:`1px solid ${border}`,background:card,color:dim,fontSize:11,fontWeight:600,fontFamily:"var(--ff-body)",cursor:"pointer"}}>Cancel</button>
-              <button onClick={submitPost} disabled={!draft.trim()||posting} style={{padding:"7px 14px",borderRadius:7,border:"none",background:draft.trim()&&!posting?`linear-gradient(135deg,${accent},#BE185D)`:"rgba(255,255,255,.05)",color:draft.trim()&&!posting?"#fff":dimmer,fontSize:11,fontWeight:600,fontFamily:"var(--ff-body)",cursor:draft.trim()&&!posting?"pointer":"not-allowed"}}>{posting?"Posting…":"Post"}</button>
+              <button onClick={submitPost} disabled={!draft.trim()||posting} style={{padding:"7px 14px",borderRadius:7,border:"none",background:draft.trim()&&!posting?`linear-gradient(135deg,${accent},var(--ff-accent-2))`:"rgba(255,255,255,.05)",color:draft.trim()&&!posting?"#fff":dimmer,fontSize:11,fontWeight:600,fontFamily:"var(--ff-body)",cursor:draft.trim()&&!posting?"pointer":"not-allowed"}}>{posting?"Posting…":"Post"}</button>
             </div>
           </div>
         )}

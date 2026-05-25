@@ -1,25 +1,76 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --ff-heading: 'Playfair Display', Georgia, serif;
-  --ff-body: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* ── EdAI brand palette ── */
+  --edai-emerald: #1FA67A;
+  --edai-emerald-2: #0E8A63;
+  --edai-blue: #0066CC;
+  --edai-blue-soft: #2E86E0;
+  --edai-bg: #07110F;
+  --edai-surface: #0D1A17;
+  --edai-surface-2: #12231F;
+  --edai-border: rgba(255,255,255,0.10);
+  --edai-text: #F7FAF8;
+  --edai-muted: #A7B5AE;
+  --edai-gold: #F5B84B;
+  --edai-danger: #E05A47;
+  --edai-radius: 18px;
+
+  /* ── Accent helpers (used throughout inline styles) ── */
+  --ff-accent: #1FA67A;
+  --ff-accent-2: #0E8A63;
+  --ff-accent-grad: linear-gradient(135deg, #1FA67A, #0E8A63);
+  --ff-accent-grad-vivid: linear-gradient(135deg, #1FA67A, #0066CC);
+  --ff-accent-soft: rgba(31,166,122,0.10);
+  --ff-accent-border: rgba(31,166,122,0.25);
+  --ff-accent-glow: rgba(31,166,122,0.30);
+
+  /* ── Trust / mentor (blue) ── */
+  --ff-blue: #0066CC;
+  --ff-blue-soft: rgba(0,102,204,0.12);
+  --ff-blue-border: rgba(0,102,204,0.30);
+
+  /* ── Semantic ── */
+  --ff-success: #1FA67A;
+  --ff-warning: #F5B84B;
+  --ff-danger: #E05A47;
+
+  /* ── Type ── */
+  --ff-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --ff-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* ── Aliases for CSS-module components (UserProfile, Leaderboard, etc.) ── */
+  --color-bg: var(--edai-surface);
+  --color-bg-secondary: var(--edai-surface-2);
+  --color-text: var(--edai-text);
+  --color-text-secondary: var(--edai-muted);
+  --color-border: var(--edai-border);
+  --color-primary: var(--edai-emerald);
+  --color-secondary: var(--edai-blue);
+  --color-primary-rgb: 31, 166, 122;
+  --color-secondary-rgb: 0, 102, 204;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: #08080A;
-  color: #fff;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(0,102,204,0.06), transparent 60%),
+    radial-gradient(1000px 500px at -10% 110%, rgba(31,166,122,0.06), transparent 60%),
+    var(--edai-bg);
+  background-attachment: fixed;
+  color: var(--edai-text);
   font-family: var(--ff-body);
   min-height: 100vh;
 }
 
-::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,.05); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(31,166,122,.4); }
 
 textarea::placeholder, input::placeholder {
-  color: rgba(255,255,255,.18) !important;
+  color: rgba(255,255,255,.25) !important;
 }
 
 @keyframes ffBounce {
@@ -31,3 +82,25 @@ textarea::placeholder, input::placeholder {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Active-step "you are here" pulse */
+@keyframes ffPulse {
+  0% { box-shadow: 0 0 0 0 var(--ff-accent-glow); }
+  70% { box-shadow: 0 0 0 6px rgba(31,166,122,0); }
+  100% { box-shadow: 0 0 0 0 rgba(31,166,122,0); }
+}
+
+@keyframes ffFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Hover utilities ── */
+.ff-task-row:hover { background: rgba(255,255,255,.045); }
+.ff-row-hover { transition: background .15s, border-color .15s; }
+.ff-row-hover:hover { background: rgba(255,255,255,.04); }
+.ff-btn-accent { transition: transform .12s ease, box-shadow .15s ease, filter .15s ease; }
+.ff-btn-accent:hover:not(:disabled) { filter: brightness(1.08); box-shadow: 0 4px 18px var(--ff-accent-glow); }
+.ff-btn-accent:active:not(:disabled) { transform: translateY(1px); }
+.ff-ghost { transition: background .15s, border-color .15s, color .15s; }
+.ff-ghost:hover { background: rgba(255,255,255,.05); color: var(--edai-text); }

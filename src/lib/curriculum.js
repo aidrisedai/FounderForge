@@ -5,7 +5,7 @@
 
 export const CURRICULUM = [
   {
-    id:1, title:"Discover", subtitle:"Problem Validation", icon:"🔍", color:"#E8553A",
+    id:1, title:"Discover", subtitle:"Problem Validation", icon:"🔍", color:"#1FA67A",
     tagline:"Is this a burning hair problem?",
     overview:"Validate your problem is real, urgent, and worth solving. Listen before you build.",
     tasks:[
@@ -70,7 +70,7 @@ export const CURRICULUM = [
     ],
   },
   {
-    id:6, title:"Dominate", subtitle:"Growth", icon:"📈", color:"#BE185D",
+    id:6, title:"Dominate", subtitle:"Growth", icon:"📈", color:"#DB2777",
     tagline:"Build the engine",
     overview:"Repeatable growth engine. Prepare for scale.",
     tasks:[

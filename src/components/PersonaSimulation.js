@@ -11,7 +11,7 @@ function SimChatBubble({ role, content, personaInitial, personaColor }) {
           {personaInitial}
         </div>
       )}
-      <div style={{ padding:"12px 16px", borderRadius:14, borderTopLeftRadius:isPersona?3:14, borderTopRightRadius:isPersona?14:3, background:isPersona?"rgba(255,255,255,.04)":"rgba(232,85,58,.1)", border:`1px solid ${isPersona?"rgba(255,255,255,.06)":"rgba(232,85,58,.15)"}`, fontSize:14, lineHeight:1.75, color:"rgba(255,255,255,.85)", fontFamily:"var(--ff-body)", whiteSpace:"pre-wrap", maxWidth:"85%" }}>
+      <div style={{ padding:"12px 16px", borderRadius:14, borderTopLeftRadius:isPersona?3:14, borderTopRightRadius:isPersona?14:3, background:isPersona?"rgba(255,255,255,.04)":"rgba(31,166,122,.1)", border:`1px solid ${isPersona?"rgba(255,255,255,.06)":"rgba(31,166,122,.15)"}`, fontSize:14, lineHeight:1.75, color:"rgba(255,255,255,.85)", fontFamily:"var(--ff-body)", whiteSpace:"pre-wrap", maxWidth:"85%" }}>
         {content}
       </div>
     </div>
@@ -409,7 +409,7 @@ export default function PersonaSimulation({ project, task, step, onComplete }) {
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
                 <div style={{ fontSize:13, fontWeight:700, color:"rgba(255,255,255,.7)", fontFamily:"var(--ff-body)" }}>Overall coaching</div>
                 {debrief.overall.readinessScore && (
-                  <div style={{ padding:"4px 10px", borderRadius:6, background:"rgba(232,85,58,.08)", border:"1px solid rgba(232,85,58,.15)", fontSize:11, fontWeight:700, color:"#E8553A", fontFamily:"var(--ff-body)" }}>
+                  <div style={{ padding:"4px 10px", borderRadius:6, background:"rgba(31,166,122,.08)", border:"1px solid rgba(31,166,122,.15)", fontSize:11, fontWeight:700, color:"var(--ff-accent)", fontFamily:"var(--ff-body)" }}>
                     Readiness: {debrief.overall.readinessScore}
                   </div>
                 )}
@@ -425,8 +425,8 @@ export default function PersonaSimulation({ project, task, step, onComplete }) {
               )}
 
               {debrief.overall.topCoachingNote && (
-                <div style={{ padding:"12px 14px", borderRadius:8, background:"rgba(232,85,58,.04)", border:"1px solid rgba(232,85,58,.1)", marginBottom:12 }}>
-                  <div style={{ fontSize:9, fontWeight:700, color:"#E8553A", letterSpacing:".08em", textTransform:"uppercase", fontFamily:"var(--ff-body)", marginBottom:4 }}>Top coaching note</div>
+                <div style={{ padding:"12px 14px", borderRadius:8, background:"rgba(31,166,122,.04)", border:"1px solid rgba(31,166,122,.1)", marginBottom:12 }}>
+                  <div style={{ fontSize:9, fontWeight:700, color:"var(--ff-accent)", letterSpacing:".08em", textTransform:"uppercase", fontFamily:"var(--ff-body)", marginBottom:4 }}>Top coaching note</div>
                   <div style={{ fontSize:13, color:"rgba(255,255,255,.6)", lineHeight:1.65, fontFamily:"var(--ff-body)" }}>{debrief.overall.topCoachingNote}</div>
                 </div>
               )}
@@ -448,7 +448,7 @@ export default function PersonaSimulation({ project, task, step, onComplete }) {
 
           <button
             onClick={saveAndContinue}
-            style={{ width:"100%", padding:"13px 20px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#E8553A,#BE185D)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"var(--ff-body)", boxShadow:"0 4px 24px rgba(232,85,58,.25)" }}
+            style={{ width:"100%", padding:"13px 20px", borderRadius:10, border:"none", background:"var(--ff-accent-grad)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"var(--ff-body)", boxShadow:"0 4px 24px rgba(31,166,122,.25)" }}
           >
             Save debrief & continue to Interview Targets →
           </button>

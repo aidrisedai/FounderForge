@@ -69,7 +69,7 @@ export default function PersonalityAssessment({ onComplete, onSkip }) {
             style={{ 
               height: "100%", 
               borderRadius: 2, 
-              background: "linear-gradient(90deg,#E8553A,#BE185D)", 
+              background: "linear-gradient(90deg,#1FA67A,#0E8A63)", 
               width: `${progress}%`, 
               transition: "width .6s" 
             }} 
@@ -83,7 +83,7 @@ export default function PersonalityAssessment({ onComplete, onSkip }) {
           fontSize: 14, 
           fontWeight: 700, 
           letterSpacing: ".05em", 
-          color: "#E8553A", 
+          color: "var(--ff-accent)", 
           marginBottom: 12,
           fontFamily: "var(--ff-body)",
           textTransform: "uppercase"
@@ -111,8 +111,8 @@ export default function PersonalityAssessment({ onComplete, onSkip }) {
               style={{
                 padding: "16px 20px",
                 borderRadius: 12,
-                border: `1px solid ${isSelected ? "#E8553A" : "rgba(255,255,255,.08)"}`,
-                background: isSelected ? "rgba(232,85,58,.08)" : "rgba(255,255,255,.02)",
+                border: `1px solid ${isSelected ? "var(--ff-accent)" : "rgba(255,255,255,.08)"}`,
+                background: isSelected ? "rgba(31,166,122,.08)" : "rgba(255,255,255,.02)",
                 cursor: "pointer",
                 textAlign: "left",
                 transition: "all .2s",
@@ -135,7 +135,7 @@ export default function PersonalityAssessment({ onComplete, onSkip }) {
               <div style={{ 
                 fontSize: 14, 
                 fontWeight: 600, 
-                color: isSelected ? "#E8553A" : "rgba(255,255,255,.9)",
+                color: isSelected ? "var(--ff-accent)" : "rgba(255,255,255,.9)",
                 marginBottom: 4,
                 fontFamily: "var(--ff-body)"
               }}>

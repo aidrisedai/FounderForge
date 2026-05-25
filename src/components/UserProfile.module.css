@@ -4,11 +4,14 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(3, 8, 7, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 16px;
   animation: fadeIn 0.2s ease;
 }
 
@@ -19,7 +22,9 @@
 
 .modalContent {
   background: var(--color-bg);
-  border-radius: 16px;
+  border: 1px solid var(--edai-border);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  border-radius: 18px;
   width: 90%;
   max-width: 800px;
   max-height: 90vh;
@@ -251,6 +256,8 @@
 
 .achievementCard {
   background: var(--color-bg-secondary);
+  border: 1px solid var(--edai-border);
+  border-left: 3px solid var(--edai-emerald);
   border-radius: 12px;
   padding: 16px;
   display: flex;
@@ -261,12 +268,26 @@
 
 .achievementCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .achievementCard.locked {
+  opacity: 0.85;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-left: 3px solid rgba(255, 255, 255, 0.14);
+}
+
+.achievementCard.locked .achievementIcon {
   opacity: 0.5;
-  filter: grayscale(1);
+}
+
+.achievementCard.locked h4 {
+  color: var(--color-text-secondary);
+}
+
+.achievementCard.locked .xpReward {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-secondary);
 }
 
 .achievementIcon {
