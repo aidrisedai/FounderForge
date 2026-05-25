@@ -38,6 +38,17 @@
   /* ── Type ── */
   --ff-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   --ff-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* ── Aliases for CSS-module components (UserProfile, Leaderboard, etc.) ── */
+  --color-bg: var(--edai-surface);
+  --color-bg-secondary: var(--edai-surface-2);
+  --color-text: var(--edai-text);
+  --color-text-secondary: var(--edai-muted);
+  --color-border: var(--edai-border);
+  --color-primary: var(--edai-emerald);
+  --color-secondary: var(--edai-blue);
+  --color-primary-rgb: 31, 166, 122;
+  --color-secondary-rgb: 0, 102, 204;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }

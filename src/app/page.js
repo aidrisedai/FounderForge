@@ -42,12 +42,30 @@ function TypingDots() {
   );
 }
 
+// Lightweight inline markdown: **bold**, *italic*, `code` (newlines preserved by pre-wrap)
+function renderInlineMarkdown(text) {
+  if (typeof text !== "string") return text;
+  const parts = [];
+  const regex = /(\*\*([^*]+)\*\*|\*([^*\n]+)\*|`([^`]+)`)/g;
+  let last = 0, m, i = 0;
+  while ((m = regex.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    if (m[2] !== undefined) parts.push(<strong key={i} style={{ fontWeight: 700, color: "#fff" }}>{m[2]}</strong>);
+    else if (m[3] !== undefined) parts.push(<em key={i}>{m[3]}</em>);
+    else if (m[4] !== undefined) parts.push(<code key={i} style={{ fontFamily: "monospace", fontSize: "0.9em", background: "rgba(255,255,255,.08)", padding: "1px 5px", borderRadius: 4 }}>{m[4]}</code>);
+    last = m.index + m[0].length;
+    i++;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
+
 function ChatBubble({ role, content }) {
   const isBot = role === "assistant";
   return (
     <div style={{ display:"flex", gap:10, padding:"5px 0", flexDirection:isBot?"row":"row-reverse", alignItems:"flex-start", animation:"ffSlide .3s ease-out" }}>
       {isBot && <div style={{ width:32, height:32, minWidth:32, borderRadius:9, background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 2px 8px rgba(31,166,122,.25)", marginTop:2 }}>F</div>}
-      <div style={{ padding:"12px 16px", borderRadius:14, borderTopLeftRadius:isBot?3:14, borderTopRightRadius:isBot?14:3, background:isBot?"rgba(255,255,255,.04)":"rgba(31,166,122,.1)", border:`1px solid ${isBot?"rgba(255,255,255,.06)":"rgba(31,166,122,.15)"}`, fontSize:14, lineHeight:1.75, color:"rgba(255,255,255,.85)", fontFamily:"var(--ff-body)", whiteSpace:"pre-wrap", maxWidth:"85%" }}>{content}</div>
+      <div style={{ padding:"12px 16px", borderRadius:14, borderTopLeftRadius:isBot?3:14, borderTopRightRadius:isBot?14:3, background:isBot?"rgba(255,255,255,.04)":"rgba(31,166,122,.1)", border:`1px solid ${isBot?"rgba(255,255,255,.06)":"rgba(31,166,122,.15)"}`, fontSize:14, lineHeight:1.75, color:"rgba(255,255,255,.85)", fontFamily:"var(--ff-body)", whiteSpace:"pre-wrap", maxWidth:"85%" }}>{renderInlineMarkdown(content)}</div>
     </div>
   );
 }

@@ -214,7 +214,14 @@ export default function ForumsTab() {
             {showNewPost && <NewPostForm channel={activeChannel} onPost={p=>{setPosts(prev=>[p,...prev]);setShowNewPost(false);}} onCancel={()=>setShowNewPost(false)}/>}
 
             {loadingPosts ? <div style={{textAlign:"center",padding:40,color:dimmer,fontSize:12,fontFamily:"var(--ff-body)"}}>Loading…</div>
-            : posts.length===0 ? <div style={{textAlign:"center",padding:40,color:dimmer,fontSize:13,fontFamily:"var(--ff-body)"}}>No posts yet in this channel. Be the first to start a discussion!</div>
+            : posts.length===0 ? (
+              <div style={{textAlign:"center",padding:"48px 24px",display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
+                <div style={{fontSize:38,opacity:.9}}>{activeChannel.icon || "💬"}</div>
+                <div style={{fontSize:15,fontWeight:700,fontFamily:"var(--ff-heading)",color:"rgba(255,255,255,.8)"}}>No discussions yet</div>
+                <div style={{fontSize:13,color:dim,fontFamily:"var(--ff-body)",maxWidth:320,lineHeight:1.5}}>Be the first to ask a question or share something in {activeChannel.name}.</div>
+                <button onClick={()=>setShowNewPost(true)} className="ff-btn-accent" style={{marginTop:4,padding:"9px 18px",borderRadius:9,border:"none",background:"var(--ff-accent-grad)",color:"#fff",fontSize:13,fontWeight:700,fontFamily:"var(--ff-body)",cursor:"pointer"}}>Start the first discussion</button>
+              </div>
+            )
             : posts.map(post=>(
               <div key={post.id} onClick={()=>setActivePostId(post.id)} style={{background:card,border:`1px solid ${border}`,borderRadius:10,padding:"12px 14px",cursor:"pointer",display:"flex",gap:12,transition:"border-color .15s"}}>
                 {/* Vote score */}

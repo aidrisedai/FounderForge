@@ -75,13 +75,20 @@ export default function MemoryDashboard({ userId, onClose }) {
         left: 0,
         right: 0,
         bottom: 0,
-        background: "rgba(0,0,0,0.8)",
+        background: "rgba(3,8,7,0.72)",
+        backdropFilter: "blur(6px)",
+        WebkitBackdropFilter: "blur(6px)",
         display: "flex",
+        flexDirection: "column",
+        gap: 14,
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1000
       }}>
-        <div style={{ color: "rgba(255,255,255,0.5)" }}>Loading memory...</div>
+        <div style={{ display: "flex", gap: 6 }}>
+          {[0,1,2].map(i => <div key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--ff-accent)", animation: `ffBounce 1.2s ${i*0.15}s infinite` }} />)}
+        </div>
+        <div style={{ color: "var(--edai-muted)", fontFamily: "var(--ff-body)", fontSize: 13 }}>Loading memory…</div>
       </div>
     );
   }
@@ -93,16 +100,19 @@ export default function MemoryDashboard({ userId, onClose }) {
       left: 0,
       right: 0,
       bottom: 0,
-      background: "rgba(0,0,0,0.9)",
+      background: "rgba(3,8,7,0.72)",
+      backdropFilter: "blur(6px)",
+      WebkitBackdropFilter: "blur(6px)",
       zIndex: 1000,
       overflow: "auto"
-    }}>
-      <div style={{
+    }} onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} style={{
         maxWidth: 900,
         margin: "40px auto",
-        background: "rgba(255,255,255,0.03)",
-        borderRadius: 16,
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "var(--edai-surface)",
+        borderRadius: 18,
+        border: "1px solid var(--edai-border)",
+        boxShadow: "0 24px 80px rgba(0,0,0,.6)",
         overflow: "hidden"
       }}>
         {/* Header */}

@@ -36,8 +36,8 @@ function CreateRoomModal({ onCreated, onClose }) {
   }
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={onClose}>
-      <div onClick={e=>e.stopPropagation()} style={{width:400,background:"#111113",border:`1px solid ${border}`,borderRadius:16,padding:24,display:"flex",flexDirection:"column",gap:14}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(3,8,7,.72)",backdropFilter:"blur(6px)",WebkitBackdropFilter:"blur(6px)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{width:400,maxWidth:"100%",background:"var(--edai-surface)",border:`1px solid ${border}`,borderRadius:18,padding:24,display:"flex",flexDirection:"column",gap:14,boxShadow:"0 24px 80px rgba(0,0,0,.6)"}}>
         <div style={{fontSize:16,fontWeight:700,fontFamily:"var(--ff-heading)",color:"rgba(255,255,255,.9)"}}>Create a room</div>
         <input value={name} onChange={e=>setName(e.target.value.slice(0,100))} maxLength={100} placeholder="Room name" autoFocus
           style={{padding:"9px 12px",borderRadius:8,border:`1px solid ${border}`,background:card,color:"rgba(255,255,255,.9)",fontSize:13,fontFamily:"var(--ff-body)",outline:"none"}}/>
@@ -171,7 +171,10 @@ export default function RoomsTab() {
     <div style={{display:"flex",gap:0,height:"100%"}}>
       {/* Room list sidebar */}
       <div style={{width:220,minWidth:220,borderRight:`1px solid ${border}`,paddingRight:12,display:"flex",flexDirection:"column",gap:8,overflowY:"auto"}}>
-        <button onClick={()=>setShowCreate(true)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${accent},var(--ff-accent-2))`,color:"#fff",fontSize:11,fontWeight:700,fontFamily:"var(--ff-body)",cursor:"pointer",marginBottom:4}}>+ Create Room</button>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+          <span style={{fontSize:11,fontWeight:700,letterSpacing:".14em",color:"var(--edai-muted)",fontFamily:"var(--ff-body)",textTransform:"uppercase"}}>Rooms</span>
+          <button onClick={()=>setShowCreate(true)} className="ff-ghost" style={{padding:"4px 10px",borderRadius:7,border:`1px solid var(--ff-accent-border)`,background:"transparent",color:accent,fontSize:11,fontWeight:700,fontFamily:"var(--ff-body)",cursor:"pointer"}}>+ New</button>
+        </div>
 
         {loading && <div style={{textAlign:"center",padding:20,color:dimmer,fontSize:11,fontFamily:"var(--ff-body)"}}>Loading…</div>}
         {myRooms.length>0 && (

@@ -188,20 +188,20 @@ function FounderCard({ founder, onMessage }) {
     if (!localStatus || localStatus === "DECLINED") handleConnect();
   }
 
-  // Show up to 3 project rows; collapse the rest
+  // Lead with the most active project; collapse the rest
   const projects = founder.projectStages || [];
-  const visibleProjects = projects.slice(0, 3);
+  const visibleProjects = projects.slice(0, 1);
   const hiddenCount = projects.length - visibleProjects.length;
 
   return (
     <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 12, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
       {/* Header: avatar + name + level */}
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-        <Avatar src={founder.image} name={founder.name} size={40} />
+        <Avatar src={founder.image} name={founder.name} size={44} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--ff-heading)", color: "rgba(255,255,255,.9)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{founder.name}</div>
+          <div style={{ fontSize: 15.5, fontWeight: 700, fontFamily: "var(--ff-heading)", color: "var(--edai-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{founder.name}</div>
           {founder.stats?.level && (
-            <div style={{ marginTop: 3 }}>
+            <div style={{ marginTop: 4 }}>
               <Tag label={`Lvl ${founder.stats.level}`} color="#8B5CF6" />
             </div>
           )}
