@@ -60,6 +60,22 @@ function renderInlineMarkdown(text) {
   return parts;
 }
 
+function getQuickReplies(task, messages) {
+  if (!task) return [];
+  const hasUserResponded = messages.some(m => m.role === "user");
+  if (!hasUserResponded) {
+    return ["I'm ready — let's go", "I have a question first"];
+  }
+  if (task.type === "simulation") {
+    return ["Start the simulation", "Can you give me tips first?"];
+  }
+  const tid = task.id || "";
+  if (tid.endsWith(".7") || tid.endsWith(".6") || tid.endsWith(".5")) {
+    return ["Here's my draft", "What counts as complete?", "I need to revisit something"];
+  }
+  return ["Here's what I found", "Can you give me an example?", "I'm stuck — help me think through this"];
+}
+
 function ChatBubble({ role, content }) {
   const isBot = role === "assistant";
   return (
@@ -1008,6 +1024,35 @@ export default function Home() {
         </div>
         <div style={{ padding:"12px 20px 14px", borderTop:"1px solid rgba(255,255,255,.05)", background:"rgba(255,255,255,.012)" }}>
           <div style={{ maxWidth:660, margin:"0 auto" }}>
+            {!input.trim() && messages.length > 0 && !loading && (() => {
+              const suggestions = getQuickReplies(task, messages);
+              return suggestions.length > 0 ? (
+                <div style={{ display:"flex", gap:7, marginBottom:9, flexWrap:"wrap" }}>
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setInput(s)}
+                      style={{
+                        padding:"6px 13px",
+                        borderRadius:99,
+                        border:"1px solid var(--ff-accent-border)",
+                        background:"var(--ff-accent-soft)",
+                        color:"var(--ff-accent)",
+                        fontSize:12.5,
+                        fontWeight:500,
+                        cursor:"pointer",
+                        fontFamily:"var(--ff-body)",
+                        lineHeight:1,
+                        transition:"background .15s, border-color .15s, opacity .15s",
+                        whiteSpace:"nowrap"
+                      }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              ) : null;
+            })()}
             <div style={{ display:"flex", gap:8, alignItems:"flex-end" }}>
               <div style={{ flex:1, position:"relative" }}>
                 <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if ((e.key==="Enter" && !e.shiftKey) || (e.key==="Enter" && (e.metaKey||e.ctrlKey))) { e.preventDefault(); handleSend(); } }} placeholder={loading ? "Mentor is thinking…" : "Reply to your mentor — share what you found or ask a question…"} rows={2}
