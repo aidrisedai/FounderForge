@@ -144,194 +144,204 @@ function Timeline({ steps, project, activeStepId, activeTaskIdx, onNav }) {
   );
 }
 
-// ── Pre Sign-in Experience ──
-function PreSignInExperience() {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
-  const btmRef = useRef(null);
-  const initRef = useRef(false);
+// ── Landing Page ──
+function LandingPage() {
+  const [vis, setVis] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setVis(true), 80); return () => clearTimeout(t); }, []);
 
-  const scroll = useCallback(() => {
-    setTimeout(() => btmRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
-  }, []);
+  const fade = (delay = 0) => ({
+    opacity: vis ? 1 : 0,
+    transform: vis ? "translateY(0)" : "translateY(26px)",
+    transition: `opacity 0.75s ease ${delay}s, transform 0.75s ease ${delay}s`,
+  });
 
-  useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
-    callPreview(null, true);
-  }, []);
-
-  useEffect(() => { scroll(); }, [messages, loading]);
-
-  async function callPreview(userText, isInit) {
-    let apiMsgs;
-    let displayMsgs;
-
-    if (isInit) {
-      apiMsgs = [{ role: "user", content: "Ready. Guide me." }];
-      displayMsgs = [];
-    } else {
-      displayMsgs = [...messages, { role: "user", content: userText }];
-      apiMsgs = displayMsgs.filter(m => m.role === "user" || m.role === "assistant");
-      setMessages(displayMsgs);
-    }
-
-    setLoading(true);
-    scroll();
-
-    try {
-      const res = await fetch("/api/chat-preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMsgs }),
-      });
-      const data = await res.json();
-      const raw = (data.content || []).map(c => c.text || "").join("") || "Something went wrong — please refresh.";
-
-      const done = raw.includes("[TASK_COMPLETE]");
-      const delMatch = raw.match(/\[DELIVERABLE_START\]([\s\S]*?)\[DELIVERABLE_END\]/);
-      const deliverable = delMatch ? delMatch[1].trim() : null;
-      const clean = raw
-        .replace(/\[DELIVERABLE_START\][\s\S]*?\[DELIVERABLE_END\]/g, "")
-        .replace(/\[TASK_COMPLETE\]/g, "")
-        .trim();
-
-      const next = [...(isInit ? [] : displayMsgs), { role: "assistant", content: clean }];
-      setMessages(next);
-      if (done) setIsComplete(true);
-
-      try {
-        const prev = JSON.parse(localStorage.getItem("ff_guest_session") || "{}");
-        localStorage.setItem("ff_guest_session", JSON.stringify({
-          messages: next,
-          deliverable: deliverable || prev.deliverable || null,
-          savedAt: Date.now(),
-        }));
-      } catch (_) {}
-    } catch (e) {
-      const err = [...(isInit ? [] : displayMsgs), { role: "assistant", content: "Something went wrong. Please refresh and try again." }];
-      setMessages(err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function send() {
-    const text = input.trim();
-    if (!text || loading || isComplete) return;
-    setInput("");
-    callPreview(text, false);
-  }
+  const paths = [
+    {
+      icon: "✦",
+      label: "The Founder Journey",
+      color: "31,166,122",
+      heading: "Idea to first sale",
+      body: "Seven structured steps, one focused task at a time. Problem discovery, validation, build, and first revenue — with an AI mentor beside you.",
+      delay: 0.35,
+    },
+    {
+      icon: "◈",
+      label: "90 Days at YC",
+      color: "255,102,0",
+      heading: "YC-style execution",
+      body: "The exact playbook Y Combinator gives their best companies. Daily check-ins, weekly milestones, a clear path to $1M.",
+      delay: 0.48,
+    },
+    {
+      icon: "◉",
+      label: "Founder Community",
+      color: "99,102,241",
+      heading: "Builders at your stage",
+      body: "Connect with founders on the same journey. Share wins, get unstuck, find your co-founder, and move faster together.",
+      delay: 0.61,
+    },
+  ];
 
   return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:"32px 24px", position:"relative", overflow:"hidden" }}>
-      <div style={{ position:"absolute", inset:0, opacity:.02, backgroundImage:"radial-gradient(rgba(255,255,255,.7) 1px,transparent 1px)", backgroundSize:"28px 28px" }} />
-      <div style={{ position:"absolute", top:"-25%", right:"-10%", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,rgba(31,166,122,.06) 0%,transparent 70%)", filter:"blur(80px)" }} />
-      <div style={{ width:"100%", maxWidth:1020, display:"grid", gap:24, gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))", position:"relative", zIndex:1, alignItems:"start" }}>
+    <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", background:"var(--edai-bg)", position:"relative", overflow:"hidden" }}>
+      {/* Background orbs */}
+      <div style={{ position:"absolute", top:"-15%", right:"-8%", width:700, height:700, borderRadius:"50%", background:"radial-gradient(circle,rgba(31,166,122,.09) 0%,transparent 65%)", pointerEvents:"none", animation:"ffFloat 14s ease-in-out infinite" }} />
+      <div style={{ position:"absolute", bottom:"-20%", left:"-5%", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,rgba(0,102,204,.07) 0%,transparent 65%)", pointerEvents:"none", animation:"ffFloat 18s ease-in-out infinite reverse" }} />
+      <div style={{ position:"absolute", inset:0, opacity:.015, backgroundImage:"radial-gradient(rgba(255,255,255,.9) 1px,transparent 1px)", backgroundSize:"26px 26px", pointerEvents:"none" }} />
 
-        {/* LEFT: Branding */}
-        <div style={{ padding:28, borderRadius:18, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.06)" }}>
-          <div style={{ width:56, height:56, borderRadius:14, marginBottom:18, background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(31,166,122,.3)" }}>F</div>
-          <div style={{ fontSize:10, fontWeight:700, letterSpacing:".3em", color:"rgba(255,255,255,.18)", marginBottom:12, fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>AI Startup Mentor</div>
-          <h1 style={{ fontSize:"clamp(32px,5vw,46px)", fontWeight:400, lineHeight:1.05, margin:"0 0 12px", fontFamily:"var(--ff-heading)", letterSpacing:"-.02em" }}>Founder<span style={{ color:"var(--ff-accent)" }}>Forge</span></h1>
-          <p style={{ fontSize:20, lineHeight:1.35, color:"#fff", margin:"0 0 12px", fontFamily:"var(--ff-heading)" }}>Get a validated startup hypothesis in 5 minutes.</p>
-          <p style={{ fontSize:14, lineHeight:1.7, color:"rgba(255,255,255,.45)", margin:"0 0 20px" }}>
-            Try the first task before signup. You will see exactly how the workflow feels before creating an account.
-          </p>
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:18 }}>
-            <button
-              onClick={() => signIn("google")}
-              style={{ padding:"9px 14px", borderRadius:8, border:"none", background:"var(--ff-accent-grad)", color:"#fff", cursor:"pointer", fontSize:12, fontWeight:700 }}
-            >
-              Sign in with Google now
-            </button>
-            <span style={{ fontSize:12, color:"rgba(255,255,255,.4)", alignSelf:"center" }}>
-              or use the chat preview first
-            </span>
-          </div>
-          <div style={{ display:"grid", gap:8, marginBottom:20 }}>
-            {[
-              "Step-by-step startup guidance (one focused question at a time)",
-              "A concrete deliverable saved at every task",
-              "A campaign and execution plan you can follow daily",
-            ].map(item => (
-              <div key={item} style={{ fontSize:12.5, color:"rgba(255,255,255,.55)", padding:"8px 10px", borderRadius:8, border:"1px solid rgba(255,255,255,.06)", background:"rgba(255,255,255,.015)" }}>
-                {item}
-              </div>
-            ))}
-          </div>
-          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-            {CURRICULUM.map(s => <span key={s.id} style={{ fontSize:9, padding:"3px 8px", borderRadius:4, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.03)", color:"rgba(255,255,255,.18)", fontFamily:"var(--ff-body)", fontWeight:600 }}>{s.icon} {s.title}</span>)}
-          </div>
+      {/* Nav */}
+      <nav style={{ padding:"22px 48px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"relative", zIndex:10, flexShrink:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ width:34, height:34, borderRadius:10, background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:800, color:"#fff", fontFamily:"var(--ff-display)", boxShadow:"0 4px 20px rgba(31,166,122,.35)", animation:"ffGlow 4s ease-in-out infinite" }}>F</div>
+          <span style={{ fontSize:19, fontFamily:"var(--ff-display)", fontWeight:700, letterSpacing:"-.02em", color:"var(--edai-text)" }}>FounderForge</span>
+        </div>
+        <button
+          onClick={() => signIn("google")}
+          style={{ padding:"9px 22px", borderRadius:99, border:"1px solid rgba(255,255,255,.14)", background:"transparent", color:"rgba(255,255,255,.65)", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", transition:"border-color .2s, color .2s" }}
+          onMouseOver={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,.35)"; e.currentTarget.style.color = "#fff"; }}
+          onMouseOut={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,.14)"; e.currentTarget.style.color = "rgba(255,255,255,.65)"; }}
+        >
+          Sign in
+        </button>
+      </nav>
+
+      {/* Hero */}
+      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"48px 24px 60px", position:"relative", zIndex:1, textAlign:"center" }}>
+        <div style={{ ...fade(0.05), marginBottom:20 }}>
+          <span style={{ fontSize:11, fontWeight:700, letterSpacing:".28em", color:"var(--ff-accent)", fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>AI Startup Mentor</span>
         </div>
 
-        {/* RIGHT: Chat */}
-        <div style={{ display:"flex", flexDirection:"column", borderRadius:18, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.06)", overflow:"hidden", minHeight:480 }}>
-          {/* Header */}
-          <div style={{ padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,.05)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <div style={{ width:7, height:7, borderRadius:"50%", background:"#10B981" }} />
-              <span style={{ fontSize:10, color:"rgba(255,255,255,.3)", fontFamily:"var(--ff-body)", fontWeight:700, letterSpacing:".08em", textTransform:"uppercase" }}>Step 1 · Problem Hypothesis · Live Preview</span>
-            </div>
-            <button onClick={() => signIn("google")} style={{ fontSize:11, color:"rgba(255,255,255,.35)", background:"none", border:"1px solid rgba(255,255,255,.08)", borderRadius:6, padding:"4px 10px", cursor:"pointer", fontFamily:"var(--ff-body)" }}>
-              Sign in
-            </button>
-          </div>
+        <h1 style={{ ...fade(0.15), fontSize:"clamp(44px,6.5vw,86px)", fontFamily:"var(--ff-display)", fontWeight:700, lineHeight:1.04, letterSpacing:"-.035em", margin:"0 0 24px", maxWidth:860 }}>
+          Build something<br />
+          <em style={{ color:"var(--ff-accent)", fontStyle:"italic" }}>the world needs.</em>
+        </h1>
 
-          {/* Messages */}
-          <div style={{ flex:1, overflowY:"auto", padding:"16px 20px", display:"flex", flexDirection:"column", gap:4, minHeight:320, maxHeight:440 }}>
-            {messages.length === 0 && loading && <TypingDots />}
-            {messages.map((m, i) => <ChatBubble key={i} role={m.role} content={m.content} />)}
-            {messages.length > 0 && loading && <TypingDots />}
-            <div ref={btmRef} />
-          </div>
+        <p style={{ ...fade(0.28), fontSize:18, lineHeight:1.72, color:"rgba(255,255,255,.45)", maxWidth:520, margin:"0 auto 56px", fontFamily:"var(--ff-body)" }}>
+          Structured guidance, a real founder community, and a clear path from idea to your first customer.
+        </p>
 
-          {/* Input or Sign-in CTA */}
-          {isComplete ? (
-            <div style={{ padding:"16px 20px", borderTop:"1px solid rgba(255,255,255,.06)", background:"rgba(16,185,129,.04)" }}>
-              <div style={{ fontSize:11, fontWeight:700, color:"#10B981", letterSpacing:".08em", textTransform:"uppercase", marginBottom:6 }}>
-                ✓ Task 1.1 Complete
-              </div>
-              <p style={{ fontSize:13, lineHeight:1.6, color:"rgba(255,255,255,.55)", margin:"0 0 12px" }}>
-                Your hypothesis is ready. Sign in to save it and continue to <strong style={{ color:"rgba(255,255,255,.8)" }}>Interview Targets</strong> — the next task in Step 1.
-              </p>
-              <button
-                onClick={() => signIn("google")}
-                style={{ width:"100%", padding:"11px 16px", borderRadius:10, border:"none", background:"var(--ff-accent-grad)", color:"#fff", cursor:"pointer", fontSize:13, fontWeight:700 }}
-              >
-                Save & Continue with Google →
-              </button>
+        {/* Three path cards */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))", gap:16, width:"100%", maxWidth:880, margin:"0 auto 52px" }}>
+          {paths.map(p => (
+            <div key={p.label} style={{ ...fade(p.delay), padding:"28px 24px 30px", borderRadius:20, background:`rgba(${p.color},.06)`, border:`1px solid rgba(${p.color},.2)`, textAlign:"left", backdropFilter:"blur(8px)" }}>
+              <div style={{ fontSize:22, fontFamily:"var(--ff-display)", color:`rgb(${p.color})`, marginBottom:14, lineHeight:1 }}>{p.icon}</div>
+              <div style={{ fontSize:10, fontWeight:700, letterSpacing:".22em", color:`rgb(${p.color})`, fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:8 }}>{p.label}</div>
+              <div style={{ fontSize:20, fontFamily:"var(--ff-display)", fontWeight:700, color:"rgba(255,255,255,.93)", marginBottom:12, lineHeight:1.2 }}>{p.heading}</div>
+              <div style={{ fontSize:13, lineHeight:1.75, color:"rgba(255,255,255,.38)", fontFamily:"var(--ff-body)" }}>{p.body}</div>
             </div>
-          ) : (
-            <>
-              <div style={{ padding:"12px 16px", borderTop:"1px solid rgba(255,255,255,.04)", display:"flex", gap:8, alignItems:"flex-end" }}>
-                <textarea
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-                  placeholder={loading ? "Mentor is thinking…" : "Type your answer… (Enter to send)"}
-                  disabled={loading}
-                  rows={2}
-                  style={{ flex:1, padding:"10px 12px", borderRadius:10, border:"1px solid rgba(255,255,255,.1)", background:"rgba(255,255,255,.03)", color:"#fff", fontSize:13, lineHeight:1.5, resize:"none", outline:"none", fontFamily:"var(--ff-body)", opacity:loading ? 0.5 : 1 }}
-                />
-                <button
-                  onClick={send}
-                  disabled={!input.trim() || loading}
-                  style={{ padding:"10px 16px", borderRadius:10, border:"none", background:input.trim() && !loading ? "var(--ff-accent-grad)" : "rgba(255,255,255,.05)", color:input.trim() && !loading ? "#fff" : "rgba(255,255,255,.2)", cursor:input.trim() && !loading ? "pointer" : "not-allowed", fontSize:13, fontWeight:700, whiteSpace:"nowrap", alignSelf:"stretch" }}
-                >
-                  Send
-                </button>
-              </div>
-              <div style={{ padding:"0 16px 12px", textAlign:"center" }}>
-                <button onClick={() => signIn("google")} style={{ fontSize:11, color:"rgba(255,255,255,.2)", background:"none", border:"none", cursor:"pointer", textDecoration:"underline", fontFamily:"var(--ff-body)" }}>
-                  Already have an account? Sign in
-                </button>
-              </div>
-            </>
-          )}
+          ))}
         </div>
+
+        {/* CTA */}
+        <div style={{ ...fade(0.72), display:"flex", flexDirection:"column", alignItems:"center", gap:14 }}>
+          <button
+            onClick={() => signIn("google")}
+            className="ff-btn-accent"
+            style={{ padding:"17px 44px", borderRadius:99, border:"none", background:"var(--ff-accent-grad)", color:"#fff", fontSize:16, fontWeight:700, cursor:"pointer", fontFamily:"var(--ff-body)", boxShadow:"0 8px 40px rgba(31,166,122,.38)", letterSpacing:".01em" }}
+          >
+            Begin Your Journey →
+          </button>
+          <span style={{ fontSize:12, color:"rgba(255,255,255,.2)", fontFamily:"var(--ff-body)" }}>Free to start · No credit card required</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Mode Selection ──
+function ModeSelection({ session, onChoose }) {
+  const [vis, setVis] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setVis(true), 80); return () => clearTimeout(t); }, []);
+
+  const fade = (delay = 0) => ({
+    opacity: vis ? 1 : 0,
+    transform: vis ? "translateY(0)" : "translateY(24px)",
+    transition: `opacity 0.65s ease ${delay}s, transform 0.65s ease ${delay}s`,
+  });
+
+  const modes = [
+    {
+      id: "journey",
+      icon: "✦",
+      label: "The Founder Journey",
+      sub: "7 steps · idea to first sale",
+      desc: "Start with problem discovery and move through validation, building, and deployment — one focused task at a time with your AI mentor guiding every step.",
+      points: ["Problem & market validation", "MVP build & user testing", "First revenue milestones"],
+      color: "31,166,122",
+      grad: "linear-gradient(135deg,#1FA67A,#0E8A63)",
+    },
+    {
+      id: "yc",
+      icon: "◈",
+      label: "90 Days at YC",
+      sub: "Daily check-ins · $1M path",
+      desc: "Follow the exact playbook Y Combinator gives their best companies. Daily execution check-ins and weekly reviews drive you from zero to traction.",
+      points: ["Daily YC-style check-ins", "Weekly milestone reviews", "Path to $1M ARR"],
+      color: "255,102,0",
+      grad: "linear-gradient(135deg,#FF6600,#FF8534)",
+    },
+  ];
+
+  return (
+    <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", position:"relative", overflow:"hidden", background:"var(--edai-bg)" }}>
+      <div style={{ position:"absolute", inset:0, opacity:.016, backgroundImage:"radial-gradient(rgba(255,255,255,.85) 1px,transparent 1px)", backgroundSize:"26px 26px", pointerEvents:"none" }} />
+      <div style={{ position:"absolute", top:"-20%", right:"-5%", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,rgba(31,166,122,.07),transparent 65%)", pointerEvents:"none" }} />
+
+      <div style={{ ...fade(0), textAlign:"center", marginBottom:52, position:"relative", zIndex:1 }}>
+        <p style={{ fontSize:13, color:"var(--ff-accent)", fontFamily:"var(--ff-body)", fontWeight:600, marginBottom:10 }}>
+          Welcome, {session?.user?.name?.split(" ")[0] || "Founder"} 👋
+        </p>
+        <h1 style={{ fontSize:"clamp(34px,5vw,58px)", fontFamily:"var(--ff-display)", fontWeight:700, letterSpacing:"-.03em", lineHeight:1.08, margin:"0 0 16px" }}>
+          How do you want<br />to build?
+        </h1>
+        <p style={{ fontSize:15, color:"rgba(255,255,255,.4)", fontFamily:"var(--ff-body)", maxWidth:400, margin:"0 auto", lineHeight:1.65 }}>
+          Choose your path. You can switch anytime, and the founder community is available on both.
+        </p>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:20, maxWidth:700, width:"100%", position:"relative", zIndex:1 }}>
+        {modes.map((m, i) => (
+          <button
+            key={m.id}
+            onClick={() => onChoose(m.id)}
+            style={{
+              ...fade(0.18 + i * 0.12),
+              padding:"34px 30px",
+              borderRadius:22,
+              border:`1px solid rgba(${m.color},.22)`,
+              background:`rgba(${m.color},.06)`,
+              textAlign:"left",
+              cursor:"pointer",
+              display:"flex",
+              flexDirection:"column",
+              backdropFilter:"blur(8px)",
+              transition:"border-color .2s, background .2s, transform .2s",
+            }}
+            onMouseOver={e => { e.currentTarget.style.borderColor = `rgba(${m.color},.45)`; e.currentTarget.style.background = `rgba(${m.color},.1)`; e.currentTarget.style.transform = "translateY(-3px)"; }}
+            onMouseOut={e => { e.currentTarget.style.borderColor = `rgba(${m.color},.22)`; e.currentTarget.style.background = `rgba(${m.color},.06)`; e.currentTarget.style.transform = "translateY(0)"; }}
+          >
+            <div style={{ fontSize:26, fontFamily:"var(--ff-display)", color:`rgb(${m.color})`, marginBottom:16 }}>{m.icon}</div>
+            <div style={{ fontSize:10, fontWeight:700, letterSpacing:".22em", color:`rgb(${m.color})`, fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:6 }}>{m.sub}</div>
+            <div style={{ fontSize:22, fontFamily:"var(--ff-display)", fontWeight:700, color:"rgba(255,255,255,.95)", marginBottom:12, lineHeight:1.18 }}>{m.label}</div>
+            <div style={{ fontSize:13, lineHeight:1.72, color:"rgba(255,255,255,.42)", fontFamily:"var(--ff-body)", marginBottom:22 }}>{m.desc}</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:7, marginBottom:26 }}>
+              {m.points.map(pt => (
+                <div key={pt} style={{ display:"flex", alignItems:"center", gap:9, fontSize:12, color:"rgba(255,255,255,.5)", fontFamily:"var(--ff-body)" }}>
+                  <div style={{ width:5, height:5, borderRadius:"50%", background:`rgb(${m.color})`, flexShrink:0 }} />
+                  {pt}
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop:"auto", padding:"11px 0", borderRadius:99, background:m.grad, color:"#fff", fontSize:13, fontWeight:700, fontFamily:"var(--ff-body)", textAlign:"center", letterSpacing:".01em" }}>
+              Choose This Path →
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <div style={{ ...fade(0.5), marginTop:32, display:"flex", alignItems:"center", gap:8, fontSize:12.5, color:"rgba(255,255,255,.22)", fontFamily:"var(--ff-body)", position:"relative", zIndex:1 }}>
+        <span style={{ fontSize:14 }}>🤝</span>
+        Founder Community is included on both paths
       </div>
     </div>
   );
@@ -365,6 +375,10 @@ export default function Home() {
   const [showCommunity, setShowCommunity] = useState(false);
   const [showDiscovery, setShowDiscovery] = useState(false);
   const [showYC, setShowYC] = useState(false);
+  const [appMode, setAppMode] = useState(() => {
+    if (typeof window === "undefined") return null;
+    try { return localStorage.getItem("ff_mode") || null; } catch { return null; }
+  });
   const [sharePrompt, setSharePrompt] = useState(null); // {body, milestone, taskId, stepId}
   const btmRef = useRef(null);
   const needsInitRef = useRef(false);
@@ -618,7 +632,7 @@ export default function Home() {
 
   // Auth states
   if (status === "loading") return <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}><TypingDots /></div>;
-  if (status === "unauthenticated") return <PreSignInExperience />;
+  if (status === "unauthenticated") return <LandingPage />;
   if (!dataLoaded) return <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}><TypingDots /></div>;
 
   const isRevisiting = project && task && (project.completedTasks?.[step?.id]||0) > taskIdx;
@@ -698,20 +712,60 @@ export default function Home() {
     );
   }
 
+  // Mode selection (first-time chooser)
+  function chooseMode(mode) {
+    setAppMode(mode);
+    try { localStorage.setItem("ff_mode", mode); } catch {}
+    if (mode === "yc") setShowYC(true);
+  }
+
+  if (personalityChecked && !appMode) {
+    return <ModeSelection session={session} onChoose={chooseMode} />;
+  }
+
   // No projects yet (after personality or skip)
+  // In YC mode — skip project creation, go straight to YC program
+  if (!project && appMode === "yc") {
+    return (
+      <div style={{ height:"100vh", display:"flex" }}>
+        <div style={{ width:256, minWidth:256, height:"100vh", background:"rgba(255,255,255,.012)", borderRight:"1px solid rgba(255,255,255,.05)", display:"flex", flexDirection:"column", padding:"16px 12px" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:16 }}>
+            <div style={{ width:30, height:30, borderRadius:9, background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:"#fff", fontFamily:"var(--ff-display)" }}>F</div>
+            <span style={{ fontSize:17, fontFamily:"var(--ff-display)", fontWeight:700, letterSpacing:"-.02em" }}>FounderForge</span>
+          </div>
+          <div style={{ padding:"6px 8px", borderRadius:8, background:"rgba(255,102,0,.08)", border:"1px solid rgba(255,102,0,.2)", marginBottom:12 }}>
+            <div style={{ fontSize:10, fontWeight:700, letterSpacing:".18em", color:"#FF8534", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:2 }}>Active path</div>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,.75)", fontFamily:"var(--ff-body)", fontWeight:600 }}>🚀 90 Days at YC</div>
+          </div>
+          <button onClick={() => { setAppMode(null); try { localStorage.removeItem("ff_mode"); } catch {} }} style={{ fontSize:11, color:"rgba(255,255,255,.25)", background:"none", border:"1px solid rgba(255,255,255,.07)", borderRadius:6, padding:"5px 10px", cursor:"pointer", fontFamily:"var(--ff-body)", marginBottom:"auto" }}>Switch path</button>
+          <button onClick={() => { setShowCommunity(true); }} style={{ width:"100%", padding:"10px 12px", borderRadius:9, border:"1px solid rgba(99,102,241,.25)", background:"rgba(99,102,241,.07)", color:"rgba(160,160,255,.8)", fontSize:12.5, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:8, marginTop:8 }}>
+            <span style={{ fontSize:15 }}>🤝</span> Community
+          </button>
+        </div>
+        <div style={{ flex:1, height:"100vh", overflow:"hidden" }}>
+          {showCommunity ? (
+            <CommunityTab session={session} sharePrompt={null} onShareDone={() => {}} />
+          ) : (
+            <NinetyDayYC />
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (!project) {
     return (
       <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:32, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", inset:0, opacity:.02, backgroundImage:"radial-gradient(rgba(255,255,255,.7) 1px,transparent 1px)", backgroundSize:"28px 28px" }} />
         <div style={{ textAlign:"center", maxWidth:460, position:"relative", zIndex:1 }}>
-          <div style={{ width:60, height:60, borderRadius:16, margin:"0 auto 24px", background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 8px 40px rgba(31,166,122,.3)" }}>F</div>
+          <div style={{ width:60, height:60, borderRadius:16, margin:"0 auto 24px", background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:800, color:"#fff", fontFamily:"var(--ff-display)", boxShadow:"0 8px 40px rgba(31,166,122,.3)" }}>F</div>
           <p style={{ fontSize:13, color:"rgba(255,255,255,.35)", marginBottom:4 }}>Welcome, {session.user.name}</p>
           {personality && (
             <p style={{ fontSize:10, color:"rgba(31,166,122,.6)", marginBottom:12, fontFamily:"var(--ff-body)", fontWeight:600 }}>
               {getPersonalitySummary(personality)}
             </p>
           )}
-          <h1 style={{ fontSize:32, fontFamily:"var(--ff-heading)", margin:"0 0 24px" }}>Start your first project</h1>
+          <h1 style={{ fontSize:34, fontFamily:"var(--ff-display)", fontWeight:700, letterSpacing:"-.025em", margin:"0 0 24px", lineHeight:1.1 }}>Name your startup idea</h1>
           {showNewForm ? (
             <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
               <input value={newName} onChange={e => setNewName(e.target.value)} autoFocus
@@ -732,12 +786,18 @@ export default function Home() {
   return (
     <div style={{ height:"100vh", display:"flex" }}>
       {/* Sidebar */}
-      <div style={{ width:280, minWidth:280, height:"100vh", background:"rgba(255,255,255,.012)", borderRight:"1px solid rgba(255,255,255,.05)", display:"flex", flexDirection:"column" }}>
-        <div style={{ padding:"14px 16px", borderBottom:"1px solid rgba(255,255,255,.05)" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:12 }}>
-            <div style={{ width:30, height:30, minWidth:30, borderRadius:9, background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 2px 10px var(--ff-accent-glow)" }}>F</div>
-            <div style={{ fontSize:18, fontFamily:"var(--ff-heading)", fontWeight:600 }}>Founder<span style={{ color:"var(--ff-accent)" }}>Forge</span></div>
+      <div style={{ width:268, minWidth:268, height:"100vh", background:"rgba(255,255,255,.012)", borderRight:"1px solid rgba(255,255,255,.05)", display:"flex", flexDirection:"column" }}>
+        <div style={{ padding:"14px 14px", borderBottom:"1px solid rgba(255,255,255,.05)" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:10 }}>
+            <div style={{ width:30, height:30, minWidth:30, borderRadius:9, background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:"#fff", fontFamily:"var(--ff-display)", boxShadow:"0 2px 10px var(--ff-accent-glow)" }}>F</div>
+            <div style={{ fontSize:17, fontFamily:"var(--ff-display)", fontWeight:700, letterSpacing:"-.02em" }}>FounderForge</div>
           </div>
+          {appMode && (
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10, padding:"5px 8px", borderRadius:7, background:appMode==="yc"?"rgba(255,102,0,.08)":"var(--ff-accent-soft)", border:`1px solid ${appMode==="yc"?"rgba(255,102,0,.2)":"var(--ff-accent-border)"}` }}>
+              <span style={{ fontSize:11.5, color:appMode==="yc"?"#FF8534":"var(--ff-accent)", fontFamily:"var(--ff-body)", fontWeight:600 }}>{appMode==="yc"?"🚀 90 Days at YC":"🛤 The Journey"}</span>
+              <button onClick={() => { setAppMode(null); try { localStorage.removeItem("ff_mode"); } catch {} }} style={{ fontSize:9.5, color:"rgba(255,255,255,.25)", background:"none", border:"none", cursor:"pointer", fontFamily:"var(--ff-body)" }}>switch</button>
+            </div>
+          )}
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:12, padding:"6px 8px", borderRadius:8, background:"rgba(255,255,255,.025)", border:"1px solid var(--edai-border)" }}>
             <span style={{ fontSize:12, color:"var(--edai-muted)", fontFamily:"var(--ff-body)", fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{session.user.name}</span>
             <button onClick={() => signOut()} title="Sign out" className="ff-ghost" style={{ fontSize:14, lineHeight:1, padding:"4px 6px", borderRadius:6, border:"none", background:"transparent", color:"rgba(255,255,255,.3)", cursor:"pointer", fontFamily:"var(--ff-body)", flexShrink:0 }}>⏏</button>
@@ -889,16 +949,18 @@ export default function Home() {
         </div>
         <Timeline steps={CURRICULUM} project={project} activeStepId={step.id} activeTaskIdx={taskIdx} onNav={(si,ti) => { setStepIdx(si); setTaskIdx(ti); setShowCommunity(false); }} />
 
-        {/* Community + Discovery + YC nav buttons */}
-        <div style={{ padding:"14px 12px 12px", borderTop:"1px solid rgba(255,255,255,.06)", flexShrink:0, display:"flex", flexDirection:"column", gap:6 }}>
-          <div style={{ fontSize:11, fontWeight:700, letterSpacing:".14em", color:"var(--edai-muted)", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:4, paddingLeft:4 }}>Explore</div>
+        {/* Bottom nav */}
+        <div style={{ padding:"12px 10px 14px", borderTop:"1px solid rgba(255,255,255,.06)", flexShrink:0, display:"flex", flexDirection:"column", gap:5 }}>
+          <div style={{ fontSize:10, fontWeight:700, letterSpacing:".16em", color:"var(--edai-muted)", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:3, paddingLeft:4 }}>Explore</div>
           {[
-            { key:"community", label:"Community", icon:"🤝", on:showCommunity, accent:"31,166,122", text:"var(--ff-accent)", toggle:() => { setShowCommunity(c => !c); setShowDiscovery(false); setShowYC(false); } },
-            { key:"discover", label:"Discover an Idea", icon:"🔍", on:showDiscovery, accent:"0,102,204", text:"#4D9BE8", toggle:() => { setShowDiscovery(d => !d); setShowCommunity(false); setShowYC(false); } },
-            { key:"yc", label:"90 Days at YC", icon:"🚀", on:showYC, accent:"255,102,0", text:"#FF8534", toggle:() => { setShowYC(y => !y); setShowCommunity(false); setShowDiscovery(false); } },
+            { key:"community", label:"Founder Community", icon:"🤝", on:showCommunity, color:"99,102,241", text:"rgba(160,160,255,.85)", toggle:() => { setShowCommunity(c => !c); setShowDiscovery(false); setShowYC(false); } },
+            { key:"discover", label:"Discover an Idea", icon:"🔍", on:showDiscovery, color:"0,102,204", text:"#4D9BE8", toggle:() => { setShowDiscovery(d => !d); setShowCommunity(false); setShowYC(false); } },
+            { key:"yc", label:"90 Days at YC", icon:"🚀", on:showYC, color:"255,102,0", text:"#FF8534", toggle:() => { setShowYC(y => !y); setShowCommunity(false); setShowDiscovery(false); } },
           ].map(n => (
-            <button key={n.key} onClick={n.toggle} className={n.on?"":"ff-row-hover"} style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1px solid ${n.on?`rgba(${n.accent},.4)`:"transparent"}`, borderLeft:`3px solid ${n.on?`rgb(${n.accent})`:"transparent"}`, background:n.on?`rgba(${n.accent},.1)`:"transparent", color:n.on?n.text:"rgba(255,255,255,.45)", fontSize:12.5, fontWeight:n.on?700:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:8, transition:"all .15s" }}>
-              <span style={{ fontSize:15 }}>{n.icon}</span> {n.label}
+            <button key={n.key} onClick={n.toggle} className={n.on?"":"ff-row-hover"}
+              style={{ width:"100%", padding:"9px 11px", borderRadius:9, border:`1px solid ${n.on?`rgba(${n.color},.35)`:"rgba(255,255,255,.0)"}`, background:n.on?`rgba(${n.color},.09)`:"transparent", color:n.on?n.text:"rgba(255,255,255,.4)", fontSize:12.5, fontWeight:n.on?700:500, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:8, transition:"all .15s", borderLeft:`2.5px solid ${n.on?`rgb(${n.color})`:"transparent"}` }}
+            >
+              <span style={{ fontSize:14 }}>{n.icon}</span> {n.label}
             </button>
           ))}
         </div>
