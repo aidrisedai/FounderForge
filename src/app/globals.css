@@ -114,11 +114,17 @@ textarea::placeholder, input::placeholder {
 }
 
 /* ── Hover utilities ── */
-.ff-task-row:hover { background: rgba(255,255,255,.045); }
+.ff-task-row:hover { background: rgba(255,255,255,.038); }
 .ff-row-hover { transition: background .15s, border-color .15s; }
 .ff-row-hover:hover { background: rgba(255,255,255,.04); }
 .ff-btn-accent { transition: transform .12s ease, box-shadow .15s ease, filter .15s ease; }
-.ff-btn-accent:hover:not(:disabled) { filter: brightness(1.08); box-shadow: 0 4px 18px var(--ff-accent-glow); }
+.ff-btn-accent:hover:not(:disabled) { filter: brightness(1.1); box-shadow: 0 4px 22px var(--ff-accent-glow); }
 .ff-btn-accent:active:not(:disabled) { transform: translateY(1px); }
 .ff-ghost { transition: background .15s, border-color .15s, color .15s; }
 .ff-ghost:hover { background: rgba(255,255,255,.05); color: var(--edai-text); }
+.ff-pill { transition: background .14s, border-color .14s; }
+.ff-pill:hover { background: rgba(31,166,122,.13); border-color: rgba(31,166,122,.38) !important; }
+.ff-icon-btn { transition: background .14s, color .14s; }
+.ff-icon-btn:hover { background: rgba(255,255,255,.08) !important; color: rgba(255,255,255,.7) !important; }
+.ff-step-row:hover { background: rgba(255,255,255,.03); }
+.ff-nav-btn:hover { background: rgba(255,255,255,.05) !important; color: rgba(255,255,255,.6) !important; }

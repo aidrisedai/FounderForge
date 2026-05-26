@@ -79,64 +79,104 @@ function getQuickReplies(task, messages) {
 function ChatBubble({ role, content }) {
   const isBot = role === "assistant";
   return (
-    <div style={{ display:"flex", gap:10, padding:"5px 0", flexDirection:isBot?"row":"row-reverse", alignItems:"flex-start", animation:"ffSlide .3s ease-out" }}>
-      {isBot && <div style={{ width:32, height:32, minWidth:32, borderRadius:9, background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", boxShadow:"0 2px 8px rgba(31,166,122,.25)", marginTop:2 }}>F</div>}
-      <div style={{ padding:"12px 16px", borderRadius:14, borderTopLeftRadius:isBot?3:14, borderTopRightRadius:isBot?14:3, background:isBot?"rgba(255,255,255,.04)":"rgba(31,166,122,.1)", border:`1px solid ${isBot?"rgba(255,255,255,.06)":"rgba(31,166,122,.15)"}`, fontSize:14, lineHeight:1.75, color:"rgba(255,255,255,.85)", fontFamily:"var(--ff-body)", whiteSpace:"pre-wrap", maxWidth:"85%" }}>{renderInlineMarkdown(content)}</div>
+    <div style={{ display:"flex", gap:14, padding:"10px 0", flexDirection:isBot?"row":"row-reverse", alignItems:"flex-start", animation:"ffSlide .35s ease-out" }}>
+      {isBot && (
+        <div style={{ width:38, height:38, minWidth:38, borderRadius:12, background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:17, fontWeight:700, color:"#fff", fontFamily:"var(--ff-display)", boxShadow:"0 4px 18px rgba(31,166,122,.3)", marginTop:2, flexShrink:0 }}>F</div>
+      )}
+      <div style={{
+        padding: isBot ? "16px 20px" : "13px 18px",
+        borderRadius: 20,
+        borderTopLeftRadius: isBot ? 5 : 20,
+        borderTopRightRadius: isBot ? 20 : 5,
+        background: isBot ? "rgba(255,255,255,.05)" : "rgba(31,166,122,.12)",
+        border: `1px solid ${isBot ? "rgba(255,255,255,.08)" : "rgba(31,166,122,.22)"}`,
+        fontSize: 14.5,
+        lineHeight: 1.85,
+        color: isBot ? "rgba(255,255,255,.88)" : "rgba(255,255,255,.92)",
+        fontFamily: "var(--ff-body)",
+        whiteSpace: "pre-wrap",
+        maxWidth: "78%",
+        letterSpacing: ".006em"
+      }}>
+        {renderInlineMarkdown(content)}
+      </div>
     </div>
   );
 }
 
 function Timeline({ steps, project, activeStepId, activeTaskIdx, onNav }) {
   const ct = project.completedTasks || {};
-  const dels = project.deliverables || {};
   const done = Object.values(ct).reduce((a,v) => a+v, 0);
   const pct = TOTAL_TASKS ? Math.round(done/TOTAL_TASKS*100) : 0;
 
   return (
-    <div style={{ flex:1, overflowY:"auto" }}>
-      <div style={{ padding:"18px 16px 12px", borderTop:"1px solid rgba(255,255,255,.06)", marginTop:8 }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:9 }}>
-          <span style={{ fontSize:11, fontWeight:700, letterSpacing:".14em", color:"var(--edai-muted)", fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>Your Journey</span>
-          <span style={{ fontSize:11, fontWeight:600, color:"var(--ff-accent)", fontFamily:"var(--ff-body)" }}>{done}/{TOTAL_TASKS} tasks</span>
+    <div style={{ flex:1, overflowY:"auto", padding:"4px 0 8px" }}>
+      {/* Compact progress */}
+      <div style={{ margin:"0 12px 6px", padding:"10px 12px", borderRadius:10, background:"rgba(255,255,255,.022)", border:"1px solid rgba(255,255,255,.06)" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7 }}>
+          <span style={{ fontSize:10, fontWeight:700, letterSpacing:".14em", color:"rgba(255,255,255,.22)", fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>Journey</span>
+          <span style={{ fontSize:11.5, fontWeight:700, color:"var(--ff-accent)", fontFamily:"var(--ff-body)" }}>{pct}%</span>
         </div>
-        <div style={{ position:"relative", height:8, borderRadius:99, background:"rgba(255,255,255,.06)", overflow:"hidden" }}>
-          <div style={{ position:"absolute", inset:0, height:"100%", borderRadius:99, background:"var(--ff-accent-grad)", width:`${pct}%`, transition:"width .6s ease", boxShadow:pct>0?"0 0 12px var(--ff-accent-glow)":"none" }} />
+        <div style={{ height:3, borderRadius:99, background:"rgba(255,255,255,.06)", overflow:"hidden" }}>
+          <div style={{ height:"100%", borderRadius:99, background:"var(--ff-accent-grad)", width:`${pct}%`, transition:"width .7s cubic-bezier(.4,0,.2,1)", boxShadow:pct>0?"0 0 8px rgba(31,166,122,.5)":"none" }} />
         </div>
-        <div style={{ marginTop:6, fontSize:10.5, color:"rgba(255,255,255,.3)", fontFamily:"var(--ff-body)" }}>{pct}% complete</div>
+        <div style={{ marginTop:5, fontSize:10, color:"rgba(255,255,255,.18)", fontFamily:"var(--ff-body)" }}>{done} of {TOTAL_TASKS} tasks</div>
       </div>
+
       {steps.map((s, si) => {
         const sd = ct[s.id] || 0;
         const isActive = s.id === activeStepId;
         const stepDone = sd >= s.tasks.length;
+
         return (
           <div key={s.id}>
-            <div onClick={() => onNav(si, Math.min(sd, s.tasks.length-1))} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 16px", cursor:"pointer", background:isActive?"rgba(255,255,255,.025)":"transparent", borderLeft:`3px solid ${isActive?s.color:stepDone?s.color+"50":"transparent"}` }}>
-              <span style={{ fontSize:15 }}>{stepDone?"✅":s.icon}</span>
+            {/* Step row */}
+            <div
+              onClick={() => onNav(si, Math.min(sd, s.tasks.length-1))}
+              className="ff-step-row"
+              style={{ display:"flex", alignItems:"center", gap:9, padding:"8px 14px", cursor:"pointer", position:"relative", background:isActive?"rgba(255,255,255,.028)":"transparent", transition:"background .15s" }}
+            >
+              {/* Left accent bar */}
+              <div style={{ position:"absolute", left:0, top:"50%", transform:"translateY(-50%)", width:2.5, height:isActive?26:0, borderRadius:99, background:s.color, transition:"height .3s cubic-bezier(.4,0,.2,1)", boxShadow:isActive?`0 0 10px ${s.color}55`:"none" }} />
+
+              {/* Icon bubble */}
+              <div style={{ width:30, height:30, minWidth:30, borderRadius:9, background:stepDone?`${s.color}22`:isActive?`${s.color}18`:"rgba(255,255,255,.04)", border:`1.5px solid ${stepDone||isActive?s.color+"45":"rgba(255,255,255,.07)"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, transition:"all .2s", flexShrink:0 }}>
+                {stepDone ? <span style={{ fontSize:12, color:s.color }}>✓</span> : s.icon}
+              </div>
+
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:".12em", color:isActive?s.color:stepDone?"rgba(255,255,255,.4)":"rgba(255,255,255,.3)", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:1 }}>STEP {s.id} · {sd}/{s.tasks.length}</div>
-                <div style={{ fontSize:13.5, color:isActive?"var(--edai-text)":"rgba(255,255,255,.45)", fontFamily:"var(--ff-heading)", fontWeight:isActive?700:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.title}</div>
+                <div style={{ fontSize:12, fontWeight:isActive?600:400, color:isActive?s.color:stepDone?"rgba(255,255,255,.45)":"rgba(255,255,255,.28)", fontFamily:"var(--ff-body)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", letterSpacing:"-.005em" }}>
+                  {s.title}
+                </div>
+                <div style={{ fontSize:9.5, color:"rgba(255,255,255,.18)", fontFamily:"var(--ff-body)", marginTop:1 }}>{sd}/{s.tasks.length} tasks</div>
               </div>
             </div>
-            {(isActive || sd > 0) && <div style={{ padding:"2px 16px 4px 30px" }}>
-              {s.tasks.map((t, ti) => {
-                const tdone = ti < sd;
-                const curr = isActive && ti === activeTaskIdx;
-                const d = dels[t.id];
-                return (
-                  <div key={t.id} style={{ position:"relative", paddingLeft:16, paddingBottom:1 }}>
-                    {ti < s.tasks.length-1 && <div style={{ position:"absolute", left:4, top:10, bottom:0, width:1, background:tdone?`${s.color}35`:"rgba(255,255,255,.04)" }} />}
-                    <div style={{ position:"absolute", left:-1, top:6, width:tdone?12:curr?12:10, height:tdone?12:curr?12:10, borderRadius:"50%", background:tdone?s.color:curr?"transparent":"transparent", border:curr?`2px solid ${s.color}`:tdone?"none":"1.5px solid rgba(255,255,255,.18)", display:"flex", alignItems:"center", justifyContent:"center", animation:curr?"ffPulse 2s infinite":"none" }}>
-                      {tdone && <span style={{ fontSize:7, color:"#fff", fontWeight:800 }}>✓</span>}
-                      {curr && <div style={{ width:5, height:5, borderRadius:"50%", background:s.color }} />}
+
+            {/* Tasks — only show for active or started steps */}
+            {(isActive || sd > 0) && (
+              <div style={{ padding:"2px 14px 4px 42px" }}>
+                {s.tasks.map((t, ti) => {
+                  const tdone = ti < sd;
+                  const curr = isActive && ti === activeTaskIdx;
+                  return (
+                    <div
+                      key={t.id}
+                      onClick={() => onNav(si, ti)}
+                      className="ff-task-row"
+                      style={{ display:"flex", alignItems:"center", gap:9, padding:"4px 8px", borderRadius:7, cursor:"pointer", transition:"background .12s", marginBottom:1 }}
+                    >
+                      {/* Task dot */}
+                      <div style={{ width:8, height:8, minWidth:8, borderRadius:"50%", background:tdone?s.color:curr?"transparent":"rgba(255,255,255,.1)", border:curr?`2px solid ${s.color}`:tdone?"none":"1.5px solid rgba(255,255,255,.12)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:curr?`0 0 7px ${s.color}90`:"none", animation:curr?"ffPulse 2.2s infinite":"none", flexShrink:0, transition:"all .2s" }}>
+                        {curr && <div style={{ width:3, height:3, borderRadius:"50%", background:s.color }} />}
+                      </div>
+                      <span style={{ fontSize:12, color:tdone?"rgba(255,255,255,.38)":curr?"rgba(255,255,255,.9)":"rgba(255,255,255,.3)", fontFamily:"var(--ff-body)", fontWeight:curr?600:400, lineHeight:1.3 }}>
+                        {t.title}
+                      </span>
                     </div>
-                    <div onClick={() => onNav(si, ti)} className="ff-task-row" style={{ padding:"4px 6px", margin:"0 -6px", borderRadius:6, cursor:"pointer", transition:"background .15s" }}>
-                      <div style={{ fontSize:11.5, fontWeight:curr?700:tdone?500:500, color:tdone?"rgba(255,255,255,.5)":curr?"var(--edai-text)":"rgba(255,255,255,.32)", fontFamily:"var(--ff-body)" }}>{t.title}</div>
-                      {tdone && d && <div style={{ marginTop:3, padding:"5px 8px", borderRadius:5, background:"rgba(255,255,255,.018)", border:"1px solid rgba(255,255,255,.03)", fontSize:10.5, lineHeight:1.45, color:"rgba(255,255,255,.28)", fontFamily:"var(--ff-body)" }}>{d.length > 150 ? d.slice(0,150)+"…" : d}</div>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>}
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
       })}
@@ -785,184 +825,116 @@ export default function Home() {
 
   return (
     <div style={{ height:"100vh", display:"flex" }}>
-      {/* Sidebar */}
-      <div style={{ width:268, minWidth:268, height:"100vh", background:"rgba(255,255,255,.012)", borderRight:"1px solid rgba(255,255,255,.05)", display:"flex", flexDirection:"column" }}>
-        <div style={{ padding:"14px 14px", borderBottom:"1px solid rgba(255,255,255,.05)" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:10 }}>
-            <div style={{ width:30, height:30, minWidth:30, borderRadius:9, background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:"#fff", fontFamily:"var(--ff-display)", boxShadow:"0 2px 10px var(--ff-accent-glow)" }}>F</div>
-            <div style={{ fontSize:17, fontFamily:"var(--ff-display)", fontWeight:700, letterSpacing:"-.02em" }}>FounderForge</div>
+      {/* ── Sidebar ── */}
+      <div style={{ width:252, minWidth:252, height:"100vh", background:"rgba(13,26,23,0.95)", borderRight:"1px solid rgba(255,255,255,.055)", display:"flex", flexDirection:"column" }}>
+
+        {/* Sidebar header */}
+        <div style={{ padding:"16px 14px 12px", flexShrink:0 }}>
+          {/* Logo */}
+          <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:14 }}>
+            <div style={{ width:32, height:32, minWidth:32, borderRadius:9, background:"var(--ff-accent-grad)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:700, color:"#fff", fontFamily:"var(--ff-display)", boxShadow:"0 3px 14px rgba(31,166,122,.32)" }}>F</div>
+            <span style={{ fontSize:16, fontFamily:"var(--ff-display)", fontWeight:700, letterSpacing:"-.02em", color:"var(--edai-text)" }}>FounderForge</span>
           </div>
+
+          {/* Mode chip */}
           {appMode && (
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10, padding:"5px 8px", borderRadius:7, background:appMode==="yc"?"rgba(255,102,0,.08)":"var(--ff-accent-soft)", border:`1px solid ${appMode==="yc"?"rgba(255,102,0,.2)":"var(--ff-accent-border)"}` }}>
-              <span style={{ fontSize:11.5, color:appMode==="yc"?"#FF8534":"var(--ff-accent)", fontFamily:"var(--ff-body)", fontWeight:600 }}>{appMode==="yc"?"🚀 90 Days at YC":"🛤 The Journey"}</span>
-              <button onClick={() => { setAppMode(null); try { localStorage.removeItem("ff_mode"); } catch {} }} style={{ fontSize:9.5, color:"rgba(255,255,255,.25)", background:"none", border:"none", cursor:"pointer", fontFamily:"var(--ff-body)" }}>switch</button>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12, padding:"6px 10px", borderRadius:8, background:appMode==="yc"?"rgba(255,102,0,.07)":"rgba(31,166,122,.07)", border:`1px solid ${appMode==="yc"?"rgba(255,102,0,.2)":"rgba(31,166,122,.2)"}` }}>
+              <span style={{ fontSize:11.5, color:appMode==="yc"?"#FF8534":"var(--ff-accent)", fontFamily:"var(--ff-body)", fontWeight:600 }}>
+                {appMode==="yc"?"🚀 90 Days at YC":"🛤 The Journey"}
+              </span>
+              <button onClick={() => { setAppMode(null); try { localStorage.removeItem("ff_mode"); } catch {} }}
+                style={{ fontSize:9.5, color:"rgba(255,255,255,.2)", background:"none", border:"none", cursor:"pointer", fontFamily:"var(--ff-body)", padding:"2px 0" }}>
+                switch
+              </button>
             </div>
           )}
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:12, padding:"6px 8px", borderRadius:8, background:"rgba(255,255,255,.025)", border:"1px solid var(--edai-border)" }}>
-            <span style={{ fontSize:12, color:"var(--edai-muted)", fontFamily:"var(--ff-body)", fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{session.user.name}</span>
-            <button onClick={() => signOut()} title="Sign out" className="ff-ghost" style={{ fontSize:14, lineHeight:1, padding:"4px 6px", borderRadius:6, border:"none", background:"transparent", color:"rgba(255,255,255,.3)", cursor:"pointer", fontFamily:"var(--ff-body)", flexShrink:0 }}>⏏</button>
-          </div>
-          {personality && (
-            <button
-              onClick={() => setShowPersonality(true)}
-              className="ff-row-hover"
-              style={{
-                fontSize:13,
-                padding:"8px 11px",
-                borderRadius:9,
-                border:"1px solid var(--ff-accent-border)",
-                background:"var(--ff-accent-soft)",
-                color:"var(--ff-accent)",
-                cursor:"pointer",
-                fontFamily:"var(--ff-body)",
-                fontWeight:600,
-                marginBottom:16,
-                width:"100%",
-                textAlign:"left",
-                display:"flex",
-                alignItems:"center",
-                gap:7,
-                lineHeight:1.3
-              }}
-            >
-              <span style={{ fontSize:14 }}>✨</span>
-              <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{getPersonalitySummary(personality).split(" • ").slice(0, 2).join(" • ")}</span>
-            </button>
-          )}
-          {!personality && personalityChecked && (
-            <button
-              onClick={() => setShowPersonality(true)}
-              className="ff-row-hover"
-              style={{
-                fontSize:12,
-                padding:"7px 10px",
-                borderRadius:8,
-                border:"1px dashed rgba(255,255,255,.14)",
-                background:"transparent",
-                color:"rgba(255,255,255,.35)",
-                cursor:"pointer",
-                fontFamily:"var(--ff-body)",
-                fontWeight:600,
-                marginBottom:16,
-                width:"100%"
-              }}
-            >
-              + Add personality profile
-            </button>
-          )}
-          <div style={{ fontSize:11, fontWeight:700, letterSpacing:".14em", color:"var(--edai-muted)", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:8 }}>Projects</div>
+
+          {/* Projects label */}
+          <div style={{ fontSize:9.5, fontWeight:700, letterSpacing:".18em", color:"rgba(255,255,255,.2)", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:5, paddingLeft:1 }}>Projects</div>
+
+          {/* Project list */}
           {projects.map(p => {
             const active = p.id === activeId;
             return (
-            <div key={p.id} onClick={() => setActiveId(p.id)} className={active?"":"ff-row-hover"} style={{ padding:"7px 10px", borderRadius:7, cursor:"pointer", marginBottom:3, background:active?"var(--ff-accent-soft)":"transparent", borderLeft:`3px solid ${active?"var(--ff-accent)":"transparent"}`, display:"flex", alignItems:"center", justifyContent:"space-between", transition:"background .15s" }}>
-              <span style={{ fontSize:12.5, color:active?"var(--edai-text)":"rgba(255,255,255,.5)", fontWeight:active?700:500, fontFamily:"var(--ff-body)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
-              <button onClick={e => { e.stopPropagation(); setProjects(prev => prev.filter(x => x.id !== p.id)); if (activeId === p.id) setActiveId(projects.find(x => x.id !== p.id)?.id || null); }}
-                style={{ background:"none", border:"none", color:"rgba(255,255,255,.18)", cursor:"pointer", fontSize:14, padding:2, flexShrink:0 }}>×</button>
-            </div>
+              <div key={p.id}
+                onClick={() => { setActiveId(p.id); setShowCommunity(false); setShowDiscovery(false); setShowYC(false); }}
+                className={active?"":"ff-row-hover"}
+                style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 9px", borderRadius:8, cursor:"pointer", marginBottom:2, background:active?"rgba(31,166,122,.09)":"transparent", border:`1px solid ${active?"rgba(31,166,122,.22)":"transparent"}`, transition:"all .15s" }}
+              >
+                <span style={{ fontSize:12.5, color:active?"var(--edai-text)":"rgba(255,255,255,.42)", fontWeight:active?600:400, fontFamily:"var(--ff-body)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
+                <button onClick={e => { e.stopPropagation(); setProjects(prev => prev.filter(x => x.id !== p.id)); if (activeId === p.id) setActiveId(projects.find(x => x.id !== p.id)?.id || null); }}
+                  style={{ background:"none", border:"none", color:"rgba(255,255,255,.15)", cursor:"pointer", fontSize:15, padding:2, flexShrink:0, lineHeight:1 }}>×</button>
+              </div>
             );
           })}
+
+          {/* New project */}
           {showSidebarNewProject ? (
-            <div style={{ marginTop:4, padding:"8px", borderRadius:6, background:"rgba(255,255,255,.03)", border:"1px solid rgba(255,255,255,.08)" }}>
-              <input 
-                value={sidebarProjectName} 
-                onChange={e => setSidebarProjectName(e.target.value)} 
-                autoFocus
-                onKeyDown={e => { 
-                  if (e.key==="Enter" && sidebarProjectName.trim()) { 
-                    createProject(sidebarProjectName.trim()); 
-                    setSidebarProjectName(""); 
-                    setShowSidebarNewProject(false); 
-                  } else if (e.key==="Escape") {
-                    setSidebarProjectName("");
-                    setShowSidebarNewProject(false);
-                  }
-                }}
-                onBlur={() => {
-                  if (!sidebarProjectName.trim()) {
-                    setSidebarProjectName("");
-                    setShowSidebarNewProject(false);
-                  }
-                }}
+            <div style={{ marginTop:4, padding:"8px", borderRadius:8, background:"rgba(255,255,255,.025)", border:"1px solid rgba(255,255,255,.07)" }}>
+              <input value={sidebarProjectName} onChange={e => setSidebarProjectName(e.target.value)} autoFocus
+                onKeyDown={e => { if (e.key==="Enter" && sidebarProjectName.trim()) { createProject(sidebarProjectName.trim()); setSidebarProjectName(""); setShowSidebarNewProject(false); } else if (e.key==="Escape") { setSidebarProjectName(""); setShowSidebarNewProject(false); } }}
+                onBlur={() => { if (!sidebarProjectName.trim()) { setSidebarProjectName(""); setShowSidebarNewProject(false); } }}
                 placeholder="Project name..."
-                style={{ 
-                  width:"100%", 
-                  padding:"6px 8px", 
-                  borderRadius:4, 
-                  border:"1px solid rgba(255,255,255,.1)", 
-                  background:"rgba(255,255,255,.02)", 
-                  color:"#fff", 
-                  fontSize:11, 
-                  outline:"none", 
-                  fontFamily:"var(--ff-body)",
-                  marginBottom:4
-                }} 
-              />
+                style={{ width:"100%", padding:"6px 8px", borderRadius:5, border:"1px solid rgba(255,255,255,.08)", background:"transparent", color:"#fff", fontSize:11.5, outline:"none", fontFamily:"var(--ff-body)", marginBottom:6 }} />
               <div style={{ display:"flex", gap:4 }}>
-                <button 
-                  onClick={() => { 
-                    if (sidebarProjectName.trim()) { 
-                      createProject(sidebarProjectName.trim()); 
-                      setSidebarProjectName(""); 
-                      setShowSidebarNewProject(false); 
-                    } 
-                  }} 
-                  disabled={!sidebarProjectName.trim()}
-                  style={{ 
-                    flex:1, 
-                    padding:"4px 8px", 
-                    borderRadius:3, 
-                    border:"none", 
-                    background:sidebarProjectName.trim()?"var(--ff-accent)":"rgba(255,255,255,.05)", 
-                    color:sidebarProjectName.trim()?"#fff":"rgba(255,255,255,.2)", 
-                    fontSize:10, 
-                    fontWeight:600, 
-                    cursor:sidebarProjectName.trim()?"pointer":"not-allowed", 
-                    fontFamily:"var(--ff-body)" 
-                  }}
-                >
-                  Create
-                </button>
-                <button 
-                  onClick={() => { 
-                    setSidebarProjectName(""); 
-                    setShowSidebarNewProject(false); 
-                  }}
-                  style={{ 
-                    padding:"4px 8px", 
-                    borderRadius:3, 
-                    border:"1px solid rgba(255,255,255,.08)", 
-                    background:"transparent", 
-                    color:"rgba(255,255,255,.3)", 
-                    fontSize:10, 
-                    cursor:"pointer", 
-                    fontFamily:"var(--ff-body)" 
-                  }}
-                >
-                  Cancel
-                </button>
+                <button onClick={() => { if (sidebarProjectName.trim()) { createProject(sidebarProjectName.trim()); setSidebarProjectName(""); setShowSidebarNewProject(false); } }} disabled={!sidebarProjectName.trim()}
+                  style={{ flex:1, padding:"5px 8px", borderRadius:5, border:"none", background:sidebarProjectName.trim()?"var(--ff-accent)":"rgba(255,255,255,.04)", color:sidebarProjectName.trim()?"#fff":"rgba(255,255,255,.2)", fontSize:11, fontWeight:600, cursor:sidebarProjectName.trim()?"pointer":"not-allowed", fontFamily:"var(--ff-body)" }}>Create</button>
+                <button onClick={() => { setSidebarProjectName(""); setShowSidebarNewProject(false); }}
+                  style={{ padding:"5px 10px", borderRadius:5, border:"1px solid rgba(255,255,255,.07)", background:"transparent", color:"rgba(255,255,255,.25)", fontSize:11, cursor:"pointer", fontFamily:"var(--ff-body)" }}>×</button>
               </div>
             </div>
           ) : (
             <button onClick={() => setShowSidebarNewProject(true)}
-              style={{ width:"100%", padding:"6px", borderRadius:5, border:"1px dashed rgba(255,255,255,.08)", background:"transparent", color:"rgba(255,255,255,.2)", fontSize:10, cursor:"pointer", fontFamily:"var(--ff-body)", fontWeight:600, marginTop:4 }}>+ New Project</button>
+              style={{ width:"100%", padding:"5px 9px", borderRadius:7, border:"1px dashed rgba(255,255,255,.07)", background:"transparent", color:"rgba(255,255,255,.18)", fontSize:11, cursor:"pointer", fontFamily:"var(--ff-body)", marginTop:3, textAlign:"left" }}>
+              + New project
+            </button>
           )}
-        </div>
-        <Timeline steps={CURRICULUM} project={project} activeStepId={step.id} activeTaskIdx={taskIdx} onNav={(si,ti) => { setStepIdx(si); setTaskIdx(ti); setShowCommunity(false); }} />
 
-        {/* Bottom nav */}
-        <div style={{ padding:"12px 10px 14px", borderTop:"1px solid rgba(255,255,255,.06)", flexShrink:0, display:"flex", flexDirection:"column", gap:5 }}>
-          <div style={{ fontSize:10, fontWeight:700, letterSpacing:".16em", color:"var(--edai-muted)", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:3, paddingLeft:4 }}>Explore</div>
+          {/* Personality tag */}
+          {personality ? (
+            <button onClick={() => setShowPersonality(true)} className="ff-row-hover"
+              style={{ marginTop:10, fontSize:11.5, padding:"7px 10px", borderRadius:8, border:"1px solid rgba(31,166,122,.18)", background:"rgba(31,166,122,.06)", color:"rgba(31,166,122,.85)", cursor:"pointer", fontFamily:"var(--ff-body)", fontWeight:500, width:"100%", textAlign:"left", display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ fontSize:13 }}>✦</span>
+              <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{getPersonalitySummary(personality).split(" • ")[0]}</span>
+            </button>
+          ) : personalityChecked ? (
+            <button onClick={() => setShowPersonality(true)} className="ff-row-hover"
+              style={{ marginTop:10, fontSize:11, padding:"6px 10px", borderRadius:7, border:"1px dashed rgba(255,255,255,.09)", background:"transparent", color:"rgba(255,255,255,.25)", cursor:"pointer", fontFamily:"var(--ff-body)", width:"100%" }}>
+              + Personalize my journey
+            </button>
+          ) : null}
+        </div>
+
+        {/* Journey timeline — takes remaining space */}
+        <Timeline steps={CURRICULUM} project={project} activeStepId={step.id} activeTaskIdx={taskIdx} onNav={(si,ti) => { setStepIdx(si); setTaskIdx(ti); setShowCommunity(false); setShowDiscovery(false); setShowYC(false); }} />
+
+        {/* Bottom: Explore nav + user row */}
+        <div style={{ padding:"10px 10px 0", borderTop:"1px solid rgba(255,255,255,.05)", flexShrink:0 }}>
           {[
-            { key:"community", label:"Founder Community", icon:"🤝", on:showCommunity, color:"99,102,241", text:"rgba(160,160,255,.85)", toggle:() => { setShowCommunity(c => !c); setShowDiscovery(false); setShowYC(false); } },
-            { key:"discover", label:"Discover an Idea", icon:"🔍", on:showDiscovery, color:"0,102,204", text:"#4D9BE8", toggle:() => { setShowDiscovery(d => !d); setShowCommunity(false); setShowYC(false); } },
+            { key:"community", label:"Community", icon:"🤝", on:showCommunity, color:"99,102,241", text:"rgba(170,170,255,.9)", toggle:() => { setShowCommunity(c => !c); setShowDiscovery(false); setShowYC(false); } },
             { key:"yc", label:"90 Days at YC", icon:"🚀", on:showYC, color:"255,102,0", text:"#FF8534", toggle:() => { setShowYC(y => !y); setShowCommunity(false); setShowDiscovery(false); } },
+            { key:"discover", label:"Discover an Idea", icon:"🔍", on:showDiscovery, color:"0,102,204", text:"#5BA3E8", toggle:() => { setShowDiscovery(d => !d); setShowCommunity(false); setShowYC(false); } },
           ].map(n => (
-            <button key={n.key} onClick={n.toggle} className={n.on?"":"ff-row-hover"}
-              style={{ width:"100%", padding:"9px 11px", borderRadius:9, border:`1px solid ${n.on?`rgba(${n.color},.35)`:"rgba(255,255,255,.0)"}`, background:n.on?`rgba(${n.color},.09)`:"transparent", color:n.on?n.text:"rgba(255,255,255,.4)", fontSize:12.5, fontWeight:n.on?700:500, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:8, transition:"all .15s", borderLeft:`2.5px solid ${n.on?`rgb(${n.color})`:"transparent"}` }}
+            <button key={n.key} onClick={n.toggle}
+              style={{ width:"100%", padding:"8px 10px", borderRadius:8, border:"none", background:n.on?`rgba(${n.color},.08)`:"transparent", color:n.on?n.text:"rgba(255,255,255,.35)", fontSize:12.5, fontWeight:n.on?600:400, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:8, marginBottom:3, transition:"all .15s", borderLeft:`2px solid ${n.on?`rgb(${n.color})`:"transparent"}` }}
+              className={n.on?"":"ff-nav-btn"}
             >
               <span style={{ fontSize:14 }}>{n.icon}</span> {n.label}
             </button>
           ))}
+
+          {/* User row */}
+          <div style={{ display:"flex", alignItems:"center", gap:9, padding:"10px 4px 12px", borderTop:"1px solid rgba(255,255,255,.04)", marginTop:4 }}>
+            {session.user?.image
+              ? <img src={session.user.image} alt="" style={{ width:28, height:28, borderRadius:"50%", objectFit:"cover", border:"1.5px solid rgba(255,255,255,.1)", flexShrink:0 }} />
+              : <div style={{ width:28, height:28, borderRadius:"50%", background:"rgba(255,255,255,.07)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"rgba(255,255,255,.4)", fontFamily:"var(--ff-body)", flexShrink:0 }}>{session.user?.name?.[0]}</div>
+            }
+            <span style={{ flex:1, fontSize:12, color:"rgba(255,255,255,.35)", fontFamily:"var(--ff-body)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{session.user?.name}</span>
+            <button onClick={() => signOut()} title="Sign out" className="ff-icon-btn"
+              style={{ width:28, height:28, borderRadius:7, border:"none", background:"transparent", color:"rgba(255,255,255,.22)", cursor:"pointer", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              ⏏
+            </button>
+          </div>
         </div>
       </div>
 
@@ -994,135 +966,115 @@ export default function Home() {
           onComplete={handleSimulationComplete}
         />
       ) : (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", height:"100vh", minWidth:0 }}>
-        <div style={{ padding:"10px 20px", borderBottom:"1px solid rgba(255,255,255,.05)", background:"rgba(255,255,255,.012)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:11 }}>
-            <span style={{ fontSize:18, width:34, height:34, borderRadius:9, display:"flex", alignItems:"center", justifyContent:"center", background:`${step.color}1A`, border:`1px solid ${step.color}33` }}>{step.icon}</span>
-            <div>
-              <div style={{ fontSize:10, fontWeight:600, fontFamily:"var(--ff-body)", color:"rgba(255,255,255,.4)", display:"flex", alignItems:"center", gap:5, marginBottom:1 }}>
-                <span style={{ color:step.color, fontWeight:700 }}>Step {step.id}: {step.title}</span>
-                <span style={{ opacity:.4 }}>›</span>
-                <span>Task {taskIdx+1}/{step.tasks.length}</span>
-                {isRevisiting && <span style={{ fontSize:8.5, fontWeight:700, letterSpacing:".08em", padding:"1px 6px", borderRadius:99, background:"var(--ff-blue-soft)", color:"var(--ff-blue)", textTransform:"uppercase" }}>Revisiting</span>}
+      <div style={{ flex:1, display:"flex", flexDirection:"column", height:"100vh", minWidth:0, background:"var(--edai-bg)" }}>
+
+        {/* ── Task header ── */}
+        <div style={{ padding:"18px 32px 16px", borderBottom:"1px solid rgba(255,255,255,.05)", background:"rgba(255,255,255,.008)", flexShrink:0, position:"relative" }}>
+          {/* Step color accent bar */}
+          <div style={{ position:"absolute", left:0, top:0, bottom:0, width:3, background:step.color, boxShadow:`0 0 14px ${step.color}55`, borderRadius:"0 2px 2px 0" }} />
+
+          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:16 }}>
+            <div style={{ flex:1, minWidth:0 }}>
+              {/* Breadcrumb */}
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+                <span style={{ fontSize:10.5, fontWeight:700, letterSpacing:".16em", color:step.color, fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>{step.icon} {step.title}</span>
+                <span style={{ color:"rgba(255,255,255,.18)", fontSize:10 }}>·</span>
+                <span style={{ fontSize:10.5, color:"rgba(255,255,255,.28)", fontFamily:"var(--ff-body)" }}>Task {taskIdx+1} of {step.tasks.length}</span>
+                {isRevisiting && <span style={{ fontSize:9, fontWeight:700, letterSpacing:".08em", padding:"2px 8px", borderRadius:99, background:"rgba(0,102,204,.12)", color:"#5BA3E8", textTransform:"uppercase" }}>Revisiting</span>}
               </div>
-              <div style={{ fontSize:15, fontFamily:"var(--ff-heading)", fontWeight:600, color:"var(--edai-text)" }}>{task.title}</div>
+              {/* Task title */}
+              <h2 style={{ fontSize:22, fontFamily:"var(--ff-display)", fontWeight:700, letterSpacing:"-.025em", color:"var(--edai-text)", margin:0, lineHeight:1.18 }}>{task.title}</h2>
+            </div>
+
+            {/* Action buttons — icon-only */}
+            <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+              <button onClick={() => setShowMemory(true)} title="Memory & Insights" className="ff-icon-btn"
+                style={{ width:36, height:36, borderRadius:9, border:"1px solid rgba(255,255,255,.08)", background:"rgba(255,255,255,.02)", color:"rgba(255,255,255,.35)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>
+                🧠
+              </button>
+              <button onClick={() => setShowProfile(true)} title="Profile & Stats" className="ff-icon-btn"
+                style={{ width:36, height:36, borderRadius:9, border:"1px solid rgba(255,255,255,.08)", background:"rgba(255,255,255,.02)", color:"rgba(255,255,255,.35)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>
+                🏆
+              </button>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              onClick={() => setShowMemory(true)}
-              title="Memory & Insights"
-              className="ff-ghost"
-              style={{
-                padding: "7px 13px",
-                borderRadius: 9,
-                border: "1px solid var(--edai-border)",
-                background: "rgba(255,255,255,.025)",
-                color: "var(--edai-muted)",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "var(--ff-body)",
-                display: "flex",
-                alignItems: "center",
-                gap: 6
-              }}
-            >
-              <span style={{ fontSize: 14 }}>🧠</span>
-              Memory
-            </button>
-            <button
-              onClick={() => setShowProfile(true)}
-              title="Profile & Stats"
-              className="ff-ghost"
-              style={{
-                padding: "7px 13px",
-                borderRadius: 9,
-                border: "1px solid var(--edai-border)",
-                background: "rgba(255,255,255,.025)",
-                color: "var(--edai-muted)",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "var(--ff-body)",
-                display: "flex",
-                alignItems: "center",
-                gap: 6
-              }}
-            >
-              <span style={{ fontSize: 14 }}>🏆</span>
-              Profile
-            </button>
-          </div>
-        </div>
-        <div style={{ padding:"10px 20px", borderBottom:"1px solid rgba(255,255,255,.03)" }}>
+
+          {/* Goal + Output inline strip */}
           {(() => {
             const del = (project.deliverables || {})[task.id];
             return (
-          <div style={{ maxWidth:660, margin:"0 auto", display:"flex", gap:8, flexWrap:"wrap" }}>
-            <div style={{ flex:1, minWidth:200, padding:"9px 12px", borderRadius:9, background:`${step.color}0D`, border:"1px solid var(--edai-border)", borderLeft:`3px solid ${step.color}`, display:"flex", flexDirection:"column", gap:4 }}>
-              <span style={{ fontSize:9, fontWeight:700, letterSpacing:".12em", color:step.color, fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>Goal</span>
-              <span style={{ fontSize:12, color:"rgba(255,255,255,.7)", fontFamily:"var(--ff-body)", lineHeight:1.45 }}>{task.goal}</span>
-            </div>
-            <div style={{ flex:1, minWidth:200, padding:"9px 12px", borderRadius:9, background:del?"var(--ff-blue-soft)":"rgba(255,255,255,.02)", border:"1px solid var(--edai-border)", borderLeft:`3px solid ${del?"var(--ff-blue)":"rgba(255,255,255,.14)"}`, display:"flex", flexDirection:"column", gap:4 }}>
-              <span style={{ fontSize:9, fontWeight:700, letterSpacing:".12em", color:del?"#4D9BE8":"rgba(255,255,255,.3)", fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>Output</span>
-              {del ? (
-                <span style={{ fontSize:12, color:"rgba(255,255,255,.7)", fontFamily:"var(--ff-body)", lineHeight:1.45 }}>{del.length > 140 ? del.slice(0,140)+"…" : del}</span>
-              ) : (
-                <span style={{ fontSize:11.5, color:"rgba(255,255,255,.3)", fontFamily:"var(--ff-body)", lineHeight:1.45, fontStyle:"italic" }}>Your output will appear here as you work through this task.</span>
-              )}
-            </div>
-          </div>
+              <div style={{ marginTop:12, display:"flex", alignItems:"flex-start", gap:10, padding:"10px 14px", borderRadius:10, background:`${step.color}09`, border:`1px solid ${step.color}20`, flexWrap:"wrap" }}>
+                <div style={{ display:"flex", alignItems:"flex-start", gap:7, flex:1, minWidth:200 }}>
+                  <span style={{ fontSize:9, fontWeight:700, letterSpacing:".16em", color:step.color, fontFamily:"var(--ff-body)", textTransform:"uppercase", paddingTop:2, flexShrink:0 }}>Goal</span>
+                  <span style={{ fontSize:13, color:"rgba(255,255,255,.65)", fontFamily:"var(--ff-body)", lineHeight:1.55 }}>{task.goal}</span>
+                </div>
+                {del && (
+                  <>
+                    <div style={{ width:1, alignSelf:"stretch", background:"rgba(255,255,255,.07)", flexShrink:0 }} />
+                    <div style={{ display:"flex", alignItems:"flex-start", gap:7, flex:1, minWidth:200 }}>
+                      <span style={{ fontSize:9, fontWeight:700, letterSpacing:".16em", color:"#5BA3E8", fontFamily:"var(--ff-body)", textTransform:"uppercase", paddingTop:2, flexShrink:0 }}>Output</span>
+                      <span style={{ fontSize:13, color:"rgba(255,255,255,.58)", fontFamily:"var(--ff-body)", lineHeight:1.55 }}>{del.length > 120 ? del.slice(0,120)+"…" : del}</span>
+                    </div>
+                  </>
+                )}
+              </div>
             );
           })()}
         </div>
-        <div style={{ flex:1, overflowY:"auto", padding:"12px 20px 8px" }}>
-          <div style={{ maxWidth:660, margin:"0 auto" }}>
+
+        {/* ── Messages ── */}
+        <div style={{ flex:1, overflowY:"auto", padding:"20px 32px 8px" }}>
+          <div style={{ maxWidth:700, margin:"0 auto" }}>
             {messages.map((m,i) => <ChatBubble key={i} role={m.role} content={m.content} />)}
             {loading && <TypingDots />}
-            {banner && <div style={{ margin:"10px 0", padding:"10px 16px", borderRadius:8, background:`${step.color}0D`, border:`1px solid ${step.color}20`, display:"flex", alignItems:"center", gap:8, animation:"ffSlide .4s" }}><span style={{ fontSize:16 }}>✅</span><div><div style={{ fontSize:10, fontWeight:700, color:step.color, fontFamily:"var(--ff-body)", fontWeight:600 }}>TASK COMPLETE</div><div style={{ fontSize:11, color:"rgba(255,255,255,.4)", fontFamily:"var(--ff-body)" }}>{banner} — saved</div></div></div>}
+            {banner && (
+              <div style={{ margin:"16px 0", padding:"14px 20px", borderRadius:14, background:`${step.color}0E`, border:`1px solid ${step.color}30`, display:"flex", alignItems:"center", gap:12, animation:"ffSlide .4s" }}>
+                <span style={{ fontSize:20 }}>✅</span>
+                <div>
+                  <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:".1em", color:step.color, fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>Task Complete</div>
+                  <div style={{ fontSize:12.5, color:"rgba(255,255,255,.45)", fontFamily:"var(--ff-body)", marginTop:2 }}>{banner} — saved to your journey</div>
+                </div>
+              </div>
+            )}
             <div ref={btmRef} />
           </div>
         </div>
-        <div style={{ padding:"12px 20px 14px", borderTop:"1px solid rgba(255,255,255,.05)", background:"rgba(255,255,255,.012)" }}>
-          <div style={{ maxWidth:660, margin:"0 auto" }}>
+
+        {/* ── Input area ── */}
+        <div style={{ padding:"8px 32px 24px", flexShrink:0 }}>
+          <div style={{ maxWidth:700, margin:"0 auto" }}>
+            {/* Quick reply pills */}
             {!input.trim() && messages.length > 0 && !loading && (() => {
               const suggestions = getQuickReplies(task, messages);
               return suggestions.length > 0 ? (
-                <div style={{ display:"flex", gap:7, marginBottom:9, flexWrap:"wrap" }}>
+                <div style={{ display:"flex", gap:7, marginBottom:10, flexWrap:"wrap" }}>
                   {suggestions.map((s, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setInput(s)}
-                      style={{
-                        padding:"6px 13px",
-                        borderRadius:99,
-                        border:"1px solid var(--ff-accent-border)",
-                        background:"var(--ff-accent-soft)",
-                        color:"var(--ff-accent)",
-                        fontSize:12.5,
-                        fontWeight:500,
-                        cursor:"pointer",
-                        fontFamily:"var(--ff-body)",
-                        lineHeight:1,
-                        transition:"background .15s, border-color .15s, opacity .15s",
-                        whiteSpace:"nowrap"
-                      }}
-                    >
+                    <button key={i} onClick={() => setInput(s)} className="ff-pill"
+                      style={{ padding:"7px 15px", borderRadius:99, border:"1px solid rgba(31,166,122,.22)", background:"rgba(31,166,122,.07)", color:"rgba(31,166,122,.9)", fontSize:12.5, fontWeight:500, cursor:"pointer", fontFamily:"var(--ff-body)", whiteSpace:"nowrap" }}>
                       {s}
                     </button>
                   ))}
                 </div>
               ) : null;
             })()}
-            <div style={{ display:"flex", gap:8, alignItems:"flex-end" }}>
-              <div style={{ flex:1, position:"relative" }}>
-                <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if ((e.key==="Enter" && !e.shiftKey) || (e.key==="Enter" && (e.metaKey||e.ctrlKey))) { e.preventDefault(); handleSend(); } }} placeholder={loading ? "Mentor is thinking…" : "Reply to your mentor — share what you found or ask a question…"} rows={2}
-                  style={{ width:"100%", padding:"11px 14px 22px", borderRadius:12, border:"1px solid var(--edai-border)", background:"var(--edai-surface)", color:"var(--edai-text)", fontSize:13.5, lineHeight:1.6, resize:"none", outline:"none", fontFamily:"var(--ff-body)" }} />
-                <span style={{ position:"absolute", right:12, bottom:8, fontSize:10, color:"rgba(255,255,255,.22)", fontFamily:"var(--ff-body)", pointerEvents:"none" }}>⌘ + Enter to send</span>
+
+            {/* Input box — editorial style */}
+            <div style={{ display:"flex", alignItems:"flex-end", gap:10, padding:"14px 16px 14px 18px", borderRadius:16, border:"1px solid rgba(255,255,255,.1)", background:"rgba(255,255,255,.035)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" }}>
+              <textarea
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key==="Enter" && (e.metaKey||e.ctrlKey)) { e.preventDefault(); handleSend(); } }}
+                placeholder={loading ? "Mentor is thinking…" : "Share what you found, or ask a question…"}
+                rows={2}
+                style={{ flex:1, background:"transparent", border:"none", color:"var(--edai-text)", fontSize:14.5, lineHeight:1.7, resize:"none", outline:"none", fontFamily:"var(--ff-body)" }}
+              />
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, flexShrink:0 }}>
+                <button onClick={handleSend} disabled={!input.trim()||loading} className="ff-btn-accent"
+                  style={{ width:40, height:40, borderRadius:11, border:"none", background:input.trim()&&!loading?"var(--ff-accent-grad)":"rgba(255,255,255,.05)", color:input.trim()&&!loading?"#fff":"rgba(255,255,255,.2)", cursor:input.trim()&&!loading?"pointer":"not-allowed", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
+                  ↑
+                </button>
+                <span style={{ fontSize:9, color:"rgba(255,255,255,.14)", fontFamily:"var(--ff-body)", whiteSpace:"nowrap" }}>⌘↵</span>
               </div>
-              <button onClick={handleSend} disabled={!input.trim()||loading} className="ff-btn-accent"
-                style={{ padding:"11px 20px", borderRadius:12, border:"none", background:input.trim()&&!loading?"var(--ff-accent-grad)":"rgba(255,255,255,.04)", color:input.trim()&&!loading?"#fff":"rgba(255,255,255,.2)", fontSize:13, fontWeight:700, cursor:input.trim()&&!loading?"pointer":"not-allowed", fontFamily:"var(--ff-body)", minWidth:72, alignSelf:"stretch" }}>Send</button>
             </div>
           </div>
         </div>
