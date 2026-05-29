@@ -525,6 +525,7 @@ export default function NinetyDayYC() {
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => setView("today")} style={tabStyle(view === "today")}>Today</button>
                 <button onClick={() => setView("roadmap")} style={tabStyle(view === "roadmap")}>90-Day Roadmap</button>
+                <button onClick={() => setView("about")} style={tabStyle(view === "about")}>About</button>
               </div>
             </div>
 
@@ -552,6 +553,8 @@ export default function NinetyDayYC() {
               <p style={{ color: "var(--edai-muted)", fontSize: 15, marginBottom: 8 }}>You finished the sprint at {fmtMoney(arr)} ARR run-rate.</p>
               <button onClick={() => setView("roadmap")} className="ff-btn-accent" style={{ marginTop: 16, background: YC_GRAD, color: "#fff", border: "none", borderRadius: 9, padding: "11px 22px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)" }}>Review your 90 days →</button>
             </div>
+          ) : view === "about" ? (
+            <AboutPanel program={program} />
           ) : view === "today" && currentDay ? (
             <TodayPanel program={program} day={currentDay} onToggleTask={handleToggleTask} onOpenCheckin={() => setCheckinOpen(true)} />
           ) : (
@@ -570,4 +573,93 @@ export default function NinetyDayYC() {
 
 function tabStyle(active) {
   return { background: active ? YC_GRAD : "var(--edai-surface-2)", color: active ? "#fff" : "rgba(255,255,255,.65)", border: active ? "none" : "1px solid var(--edai-border)", borderRadius: 8, padding: "7px 14px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "var(--ff-body)" };
+}
+
+// ─── About Panel ─────────────────────────────────────────────────────────────────
+
+function AboutPanel({ program }) {
+  const stageLabel = STAGES.find((s) => s.value === program.stage)?.label || program.stage;
+  const phases = program.phases || [];
+  const doneCount = program.days.filter((d) => d.status === "done").length;
+  const latestRevenue = [...program.days].reverse().find((d) => d.report?.revenue != null)?.report?.revenue ?? program.startingRevenue;
+  const arr = latestRevenue * 12;
+  const progress = Math.min(100, (arr / (program.targetRevenue || 1_000_000)) * 100);
+  const dayProgress = Math.round((program.currentDay / 90) * 100);
+
+  const statCard = (label, value, sub) => (
+    <div style={{ flex: 1, minWidth: 130, padding: "14px 16px", borderRadius: 12, background: "var(--edai-surface-2)", border: "1px solid var(--edai-border)" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".14em", color: "var(--edai-muted)", textTransform: "uppercase", marginBottom: 6, fontFamily: "var(--ff-body)" }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color: "var(--edai-text)", fontFamily: "var(--ff-display)", letterSpacing: "-.02em" }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, color: "var(--edai-muted)", marginTop: 3, fontFamily: "var(--ff-body)" }}>{sub}</div>}
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth: 720, margin: "0 auto", padding: "8px 24px 48px" }}>
+      {/* Project identity */}
+      <div style={{ padding: "24px 28px", borderRadius: 16, background: "var(--edai-surface)", border: "1px solid var(--edai-border)", marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: YC_GRAD, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🚀</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".16em", color: "#FF8534", textTransform: "uppercase", marginBottom: 5, fontFamily: "var(--ff-body)" }}>YC · 90-Day Sprint</div>
+            <h2 style={{ fontSize: 26, fontFamily: "var(--ff-display)", fontWeight: 700, color: "var(--edai-text)", margin: "0 0 8px", letterSpacing: "-.02em", lineHeight: 1.15 }}>{program.startupName}</h2>
+            <p style={{ fontSize: 15, color: "rgba(255,255,255,.65)", fontFamily: "var(--ff-body)", lineHeight: 1.65, margin: 0 }}>{program.oneLiner}</p>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, padding: "4px 11px", borderRadius: 99, background: "rgba(255,102,0,.1)", border: "1px solid rgba(255,102,0,.25)", color: "#FF8534", fontFamily: "var(--ff-body)", fontWeight: 600 }}>{stageLabel}</span>
+          <span style={{ fontSize: 12, padding: "4px 11px", borderRadius: 99, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "var(--edai-muted)", fontFamily: "var(--ff-body)" }}>Started at {fmtMoney(program.startingRevenue)}/mo MRR</span>
+          <span style={{ fontSize: 12, padding: "4px 11px", borderRadius: 99, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "var(--edai-muted)", fontFamily: "var(--ff-body)" }}>Target: $1M ARR</span>
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+        {statCard("Current day", `${program.currentDay}/90`, `${dayProgress}% of sprint`)}
+        {statCard("Days done", doneCount, `${90 - program.currentDay} remaining`)}
+        {statCard("Current ARR", fmtMoney(arr), `${progress.toFixed(0)}% of $1M target`)}
+        {statCard("MRR now", fmtMoney(latestRevenue), "latest check-in")}
+      </div>
+
+      {/* ARR progress */}
+      <div style={{ padding: "18px 20px", borderRadius: 12, background: "var(--edai-surface)", border: "1px solid var(--edai-border)", marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--edai-muted)", fontFamily: "var(--ff-body)", textTransform: "uppercase", letterSpacing: ".1em" }}>Revenue to $1M ARR</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#FF8534", fontFamily: "var(--ff-body)" }}>{progress.toFixed(1)}%</span>
+        </div>
+        <div style={{ height: 10, borderRadius: 99, background: "rgba(255,255,255,.07)", overflow: "hidden" }}>
+          <div style={{ width: `${progress}%`, height: "100%", background: YC_GRAD, borderRadius: 99, transition: "width .6s ease" }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,.25)", fontFamily: "var(--ff-body)" }}>{fmtMoney(arr)} today</span>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,.25)", fontFamily: "var(--ff-body)" }}>$1,000,000 goal</span>
+        </div>
+      </div>
+
+      {/* Phases */}
+      {phases.length > 0 && (
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".16em", color: "rgba(255,255,255,.25)", textTransform: "uppercase", marginBottom: 12, fontFamily: "var(--ff-body)" }}>Program Phases</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {phases.map((ph, i) => {
+              const phDone = program.currentDay > ph.dayEnd;
+              const phCurrent = program.currentDay >= ph.dayStart && program.currentDay <= ph.dayEnd;
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", borderRadius: 10, background: phCurrent ? "rgba(255,102,0,.07)" : "var(--edai-surface)", border: `1px solid ${phCurrent ? "rgba(255,102,0,.25)" : "var(--edai-border)"}` }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: phDone ? "var(--ff-accent-soft)" : phCurrent ? YC_GRAD : "rgba(255,255,255,.05)", border: phDone ? "1px solid var(--ff-accent-border)" : "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: phDone ? "var(--ff-accent)" : phCurrent ? "#fff" : "rgba(255,255,255,.3)", flexShrink: 0 }}>
+                    {phDone ? "✓" : i + 1}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: phCurrent ? "var(--edai-text)" : phDone ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.6)", fontFamily: "var(--ff-body)" }}>{ph.name}</div>
+                    <div style={{ fontSize: 11, color: "var(--edai-muted)", fontFamily: "var(--ff-body)", marginTop: 2 }}>Days {ph.dayStart}–{ph.dayEnd} · {ph.milestone}</div>
+                  </div>
+                  {phCurrent && <span style={{ fontSize: 10, background: YC, color: "#fff", padding: "2px 7px", borderRadius: 4, fontWeight: 700, flexShrink: 0 }}>NOW</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
