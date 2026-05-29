@@ -48,6 +48,8 @@ model User {
   discoveredProblems     DiscoveredProblem[]
   // 90 Days at YC
   ycPrograms             YCProgram[]
+  // Expert Hire
+  expertSprints          ExpertSprint[]
 
   @@index([email])
 }
@@ -615,4 +617,46 @@ model YCDay {
 
   @@unique([programId, dayNumber])
   @@index([programId])
+}
+
+// ── Expert Hire Sprints ────────────────────────────────────────────────────────
+
+model ExpertSprint {
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String           // "marketing"|"sales"|"engineering"|"design"|"finance"|"ops"|"growth"|"custom"
+  roleName       String           // e.g. "Head of Marketing"
+  expertName     String           // AI persona first name
+  goal           String           @db.Text
+  timeline       Int              // sprint length in days (7, 14, 30, 60, 90)
+  startupContext String?          @db.Text
+  currentDay     Int              @default(1)
+  status         String           @default("active") // "active"|"completed"|"abandoned"
+  phases         Json?
+  days           ExpertSprintDay[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([userId])
+}
+
+model ExpertSprintDay {
+  id          String       @id @default(cuid())
+  sprintId    String
+  sprint      ExpertSprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  dayNumber   Int
+  theme       String
+  objective   String       @db.Text
+  tasks       Json         @default("[]")  // [{text, done}]
+  expertNote  String?      @db.Text
+  rationale   String?      @db.Text
+  detailed    Boolean      @default(false)
+  status      String       @default("pending") // "pending"|"active"|"done"
+  report      Json?        // {summary, blockers, metric, mood, feedback}
+  reportedAt  DateTime?
+  createdAt   DateTime     @default(now())
+
+  @@unique([sprintId, dayNumber])
+  @@index([sprintId])
 }

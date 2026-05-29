@@ -12,6 +12,7 @@ import PersonaSimulation from "@/components/PersonaSimulation";
 import CommunityTab from "@/components/CommunityTab";
 import DiscoveryModule from "@/components/DiscoveryModule";
 import NinetyDayYC from "@/components/NinetyDayYC";
+import ExpertHire from "@/components/ExpertHire";
 
 // ── API helpers ──
 async function apiGet(url) {
@@ -415,6 +416,7 @@ export default function Home() {
   const [showCommunity, setShowCommunity] = useState(false);
   const [showDiscovery, setShowDiscovery] = useState(false);
   const [showYC, setShowYC] = useState(false);
+  const [showExpert, setShowExpert] = useState(false);
   const [appMode, setAppMode] = useState(() => {
     if (typeof window === "undefined") return null;
     try { return localStorage.getItem("ff_mode") || null; } catch { return null; }
@@ -778,13 +780,20 @@ export default function Home() {
             <div style={{ fontSize:13, color:"rgba(255,255,255,.75)", fontFamily:"var(--ff-body)", fontWeight:600 }}>🚀 90 Days at YC</div>
           </div>
           <button onClick={() => { setAppMode(null); try { localStorage.removeItem("ff_mode"); } catch {} }} style={{ fontSize:11, color:"rgba(255,255,255,.25)", background:"none", border:"1px solid rgba(255,255,255,.07)", borderRadius:6, padding:"5px 10px", cursor:"pointer", fontFamily:"var(--ff-body)", marginBottom:"auto" }}>Switch path</button>
-          <button onClick={() => { setShowCommunity(true); }} style={{ width:"100%", padding:"10px 12px", borderRadius:9, border:"1px solid rgba(99,102,241,.25)", background:"rgba(99,102,241,.07)", color:"rgba(160,160,255,.8)", fontSize:12.5, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:8, marginTop:8 }}>
-            <span style={{ fontSize:15 }}>🤝</span> Community
-          </button>
+          <div style={{ display:"flex", flexDirection:"column", gap:6, marginTop:8 }}>
+            <button onClick={() => { setShowExpert(e => !e); setShowCommunity(false); }} style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1px solid ${showExpert?"rgba(139,92,246,.35)":"rgba(139,92,246,.18)"}`, background:showExpert?"rgba(139,92,246,.1)":"transparent", color:showExpert?"#A78BFA":"rgba(160,130,255,.6)", fontSize:12.5, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ fontSize:14 }}>🎯</span> Expert Hire
+            </button>
+            <button onClick={() => { setShowCommunity(c => !c); setShowExpert(false); }} style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1px solid ${showCommunity?"rgba(99,102,241,.35)":"rgba(99,102,241,.18)"}`, background:showCommunity?"rgba(99,102,241,.08)":"transparent", color:showCommunity?"rgba(170,170,255,.9)":"rgba(160,160,255,.6)", fontSize:12.5, fontWeight:600, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ fontSize:14 }}>🤝</span> Community
+            </button>
+          </div>
         </div>
         <div style={{ flex:1, height:"100vh", overflow:"hidden" }}>
           {showCommunity ? (
             <CommunityTab session={session} sharePrompt={null} onShareDone={() => {}} />
+          ) : showExpert ? (
+            <ExpertHire />
           ) : (
             <NinetyDayYC />
           )}
@@ -857,7 +866,7 @@ export default function Home() {
             const active = p.id === activeId;
             return (
               <div key={p.id}
-                onClick={() => { setActiveId(p.id); setShowCommunity(false); setShowDiscovery(false); setShowYC(false); }}
+                onClick={() => { setActiveId(p.id); setShowCommunity(false); setShowDiscovery(false); setShowYC(false); setShowExpert(false); }}
                 className={active?"":"ff-row-hover"}
                 style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 9px", borderRadius:8, cursor:"pointer", marginBottom:2, background:active?"rgba(31,166,122,.09)":"transparent", border:`1px solid ${active?"rgba(31,166,122,.22)":"transparent"}`, transition:"all .15s" }}
               >
@@ -906,14 +915,15 @@ export default function Home() {
         </div>
 
         {/* Journey timeline — takes remaining space */}
-        <Timeline steps={CURRICULUM} project={project} activeStepId={step.id} activeTaskIdx={taskIdx} onNav={(si,ti) => { setStepIdx(si); setTaskIdx(ti); setShowCommunity(false); setShowDiscovery(false); setShowYC(false); }} />
+        <Timeline steps={CURRICULUM} project={project} activeStepId={step.id} activeTaskIdx={taskIdx} onNav={(si,ti) => { setStepIdx(si); setTaskIdx(ti); setShowCommunity(false); setShowDiscovery(false); setShowYC(false); setShowExpert(false); }} />
 
         {/* Bottom: Explore nav + user row */}
         <div style={{ padding:"10px 10px 0", borderTop:"1px solid rgba(255,255,255,.05)", flexShrink:0 }}>
           {[
-            { key:"community", label:"Community", icon:"🤝", on:showCommunity, color:"99,102,241", text:"rgba(170,170,255,.9)", toggle:() => { setShowCommunity(c => !c); setShowDiscovery(false); setShowYC(false); } },
-            { key:"yc", label:"90 Days at YC", icon:"🚀", on:showYC, color:"255,102,0", text:"#FF8534", toggle:() => { setShowYC(y => !y); setShowCommunity(false); setShowDiscovery(false); } },
-            { key:"discover", label:"Discover an Idea", icon:"🔍", on:showDiscovery, color:"0,102,204", text:"#5BA3E8", toggle:() => { setShowDiscovery(d => !d); setShowCommunity(false); setShowYC(false); } },
+            { key:"community", label:"Community",      icon:"🤝", on:showCommunity, color:"99,102,241",  text:"rgba(170,170,255,.9)", toggle:() => { setShowCommunity(c => !c); setShowDiscovery(false); setShowYC(false); setShowExpert(false); } },
+            { key:"yc",        label:"90 Days at YC",  icon:"🚀", on:showYC,        color:"255,102,0",   text:"#FF8534",              toggle:() => { setShowYC(y => !y); setShowCommunity(false); setShowDiscovery(false); setShowExpert(false); } },
+            { key:"expert",    label:"Expert Hire",    icon:"🎯", on:showExpert,    color:"139,92,246",  text:"#A78BFA",              toggle:() => { setShowExpert(e => !e); setShowCommunity(false); setShowDiscovery(false); setShowYC(false); } },
+            { key:"discover",  label:"Discover an Idea", icon:"🔍", on:showDiscovery, color:"0,102,204", text:"#5BA3E8",              toggle:() => { setShowDiscovery(d => !d); setShowCommunity(false); setShowYC(false); setShowExpert(false); } },
           ].map(n => (
             <button key={n.key} onClick={n.toggle}
               style={{ width:"100%", padding:"8px 10px", borderRadius:8, border:"none", background:n.on?`rgba(${n.color},.08)`:"transparent", color:n.on?n.text:"rgba(255,255,255,.35)", fontSize:12.5, fontWeight:n.on?600:400, cursor:"pointer", fontFamily:"var(--ff-body)", display:"flex", alignItems:"center", gap:8, marginBottom:3, transition:"all .15s", borderLeft:`2px solid ${n.on?`rgb(${n.color})`:"transparent"}` }}
@@ -942,6 +952,10 @@ export default function Home() {
       {showYC ? (
         <div style={{ flex:1, height:"100vh", overflow:"hidden", background:"var(--edai-bg)" }}>
           <NinetyDayYC />
+        </div>
+      ) : showExpert ? (
+        <div style={{ flex:1, height:"100vh", overflow:"hidden", background:"var(--edai-bg)" }}>
+          <ExpertHire />
         </div>
       ) : showDiscovery ? (
         <div style={{ flex:1, height:"100vh", overflow:"hidden", background:"var(--edai-bg)" }}>
