@@ -20,7 +20,7 @@ function fmtMoney(n) {
 
 // ─── Onboarding ───────────────────────────────────────────────────────────────
 
-function Onboarding({ onCreate, creating }) {
+function Onboarding({ onCreate, creating, onBack, error }) {
   const [startupName, setStartupName] = useState("");
   const [oneLiner, setOneLiner] = useState("");
   const [stage, setStage] = useState("idea");
@@ -47,6 +47,11 @@ function Onboarding({ onCreate, creating }) {
 
   return (
     <div style={{ maxWidth: 600, margin: "0 auto", padding: "40px 24px" }}>
+      {onBack && (
+        <button onClick={onBack} style={{ marginBottom: 20, background: "none", border: "none", color: "rgba(255,255,255,.35)", fontSize: 13, cursor: "pointer", fontFamily: "var(--ff-body)", display: "flex", alignItems: "center", gap: 5, padding: 0 }}>
+          ← Back to projects
+        </button>
+      )}
       <div style={{ textAlign: "center", marginBottom: 36 }}>
         <div style={{ display: "inline-block", background: YC_GRAD, color: "#fff", fontWeight: 700, fontSize: 13, padding: "5px 13px", borderRadius: 99, marginBottom: 16, letterSpacing: ".06em" }}>
           Y COMBINATOR · 90 DAYS
@@ -78,6 +83,11 @@ function Onboarding({ onCreate, creating }) {
         <label style={labelStyle}>Current monthly revenue (USD)</label>
         <input value={startingRevenue} onChange={(e) => setStartingRevenue(e.target.value.replace(/[^0-9]/g, ""))} placeholder="0" inputMode="numeric" style={inputStyle} />
 
+        {error && (
+          <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "rgba(224,90,71,.12)", border: "1px solid rgba(224,90,71,.3)", fontSize: 13, color: "#FF8888", fontFamily: "var(--ff-body)" }}>
+            {error}
+          </div>
+        )}
         <button
           onClick={() => canSubmit && onCreate({ startupName, oneLiner, stage, startingRevenue })}
           disabled={!canSubmit}
@@ -317,24 +327,38 @@ function DayDetailModal({ day, onClose }) {
 
 // ─── Top-level ───────────────────────────────────────────────────────────────────
 
+const MAX_PROJECTS = 5;
+
 export default function NinetyDayYC() {
-  const [program, setProgram] = useState(null);
+  const [programs, setPrograms] = useState([]);
+  const [activeId, setActiveId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [view, setView] = useState("today"); // "today" | "roadmap"
+  const [showNew, setShowNew] = useState(false);
+  const [view, setView] = useState("today");
   const [checkinOpen, setCheckinOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [pickedDay, setPickedDay] = useState(null);
+  const [createError, setCreateError] = useState(null);
+
+  const program = programs.find((p) => p.id === activeId) || null;
+  const atLimit = programs.length >= MAX_PROJECTS;
 
   useEffect(() => {
     fetch("/api/yc/program")
       .then((r) => r.json())
-      .then((d) => { setProgram(d && d.id ? d : null); setLoading(false); })
+      .then((d) => {
+        const progs = d.programs || [];
+        setPrograms(progs);
+        if (progs.length > 0) setActiveId(progs[0].id);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, []);
 
   async function handleCreate(form) {
     setCreating(true);
+    setCreateError(null);
     try {
       const res = await fetch("/api/yc/program", {
         method: "POST",
@@ -343,26 +367,34 @@ export default function NinetyDayYC() {
       });
       if (res.ok) {
         const p = await res.json();
-        setProgram(p);
+        setPrograms((prev) => [p, ...prev]);
+        setActiveId(p.id);
+        setShowNew(false);
         setView("today");
+      } else {
+        const err = await res.json();
+        setCreateError(err.error || "Failed to create project.");
       }
     } finally {
       setCreating(false);
     }
   }
 
+  function updateProgram(updater) {
+    setPrograms((prev) => prev.map((p) => (p.id === activeId ? updater(p) : p)));
+  }
+
   async function handleToggleTask(dayNumber, taskIndex, done) {
-    // optimistic
-    setProgram((prev) => {
-      const days = prev.days.map((d) => {
+    updateProgram((prev) => ({
+      ...prev,
+      days: prev.days.map((d) => {
         if (d.dayNumber !== dayNumber) return d;
         const tasks = [...(d.tasks || [])];
         tasks[taskIndex] = { ...tasks[taskIndex], done };
         return { ...d, tasks };
-      });
-      return { ...prev, days };
-    });
-    await fetch(`/api/yc/program/${program.id}/day/${dayNumber}`, {
+      }),
+    }));
+    await fetch(`/api/yc/program/${activeId}/day/${dayNumber}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ taskIndex, done }),
@@ -372,14 +404,14 @@ export default function NinetyDayYC() {
   async function handleCheckin(report) {
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/yc/program/${program.id}/checkin`, {
+      const res = await fetch(`/api/yc/program/${activeId}/checkin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(report),
       });
       if (res.ok) {
         const data = await res.json();
-        setProgram(data.program);
+        setPrograms((prev) => prev.map((p) => (p.id === activeId ? data.program : p)));
         setCheckinOpen(false);
         setView("today");
       }
@@ -394,66 +426,139 @@ export default function NinetyDayYC() {
         <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 14 }}>
           {[0, 1, 2].map((i) => <div key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: YC, animation: `ffBounce 1.2s ${i * 0.15}s infinite` }} />)}
         </div>
-        Loading your program…
+        Loading your programs…
       </div>
     );
   }
 
-  if (!program) {
+  // No programs or user clicked "+ New" — show onboarding
+  if (programs.length === 0 || showNew) {
     return (
       <div style={{ height: "100%", overflow: "auto" }}>
-        <Onboarding onCreate={handleCreate} creating={creating} />
+        <Onboarding
+          onCreate={handleCreate}
+          creating={creating}
+          error={createError}
+          onBack={programs.length > 0 ? () => { setShowNew(false); setCreateError(null); } : null}
+        />
       </div>
     );
   }
 
-  const currentDay = program.days.find((d) => d.dayNumber === program.currentDay);
-  const latestRevenue = [...program.days].reverse().find((d) => d.report?.revenue != null)?.report?.revenue ?? program.startingRevenue;
+  const currentDay = program?.days.find((d) => d.dayNumber === program.currentDay);
+  const latestRevenue = program ? ([...program.days].reverse().find((d) => d.report?.revenue != null)?.report?.revenue ?? program.startingRevenue) : 0;
   const arr = latestRevenue * 12;
-  const progress = Math.min(100, (arr / (program.targetRevenue || 1000000)) * 100);
-  const isComplete = program.status === "completed";
+  const progress = program ? Math.min(100, (arr / (program.targetRevenue || 1000000)) * 100) : 0;
+  const isComplete = program?.status === "completed";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* Header */}
-      <div style={{ background: "var(--edai-surface)", borderBottom: "1px solid var(--edai-border)", padding: "14px 24px", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ background: YC_GRAD, color: "#fff", fontWeight: 700, fontSize: 12, padding: "3px 9px", borderRadius: 5 }}>YC · 90 DAYS</span>
-            <span style={{ fontFamily: "var(--ff-heading)", fontSize: 17, fontWeight: 700, color: "var(--edai-text)" }}>{program.startupName}</span>
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => setView("today")} style={tabStyle(view === "today")}>Today</button>
-            <button onClick={() => setView("roadmap")} style={tabStyle(view === "roadmap")}>90-Day Roadmap</button>
-          </div>
+      <div style={{ background: "var(--edai-surface)", borderBottom: "1px solid var(--edai-border)", padding: "12px 24px 0", flexShrink: 0 }}>
+
+        {/* Project switcher row */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, overflowX: "auto", paddingBottom: 2 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".16em", color: "rgba(255,255,255,.25)", textTransform: "uppercase", fontFamily: "var(--ff-body)", flexShrink: 0, marginRight: 4 }}>Projects</span>
+          {programs.map((p) => {
+            const isActive = p.id === activeId;
+            const pArr = ([...p.days].reverse().find((d) => d.report?.revenue != null)?.report?.revenue ?? p.startingRevenue) * 12;
+            return (
+              <button
+                key={p.id}
+                onClick={() => { setActiveId(p.id); setView("today"); }}
+                style={{
+                  flexShrink: 0,
+                  padding: "5px 12px",
+                  borderRadius: 99,
+                  border: `1.5px solid ${isActive ? YC : "var(--edai-border)"}`,
+                  background: isActive ? "rgba(255,102,0,.12)" : "transparent",
+                  color: isActive ? "#FF8534" : "rgba(255,255,255,.5)",
+                  fontSize: 12.5,
+                  fontWeight: isActive ? 700 : 500,
+                  cursor: "pointer",
+                  fontFamily: "var(--ff-body)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  transition: "all .15s",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {p.startupName}
+                <span style={{ fontSize: 10, opacity: .65 }}>Day {p.currentDay}/90</span>
+                {p.status === "completed" && <span style={{ fontSize: 9, background: "var(--ff-accent)", color: "#fff", padding: "1px 5px", borderRadius: 4 }}>✓</span>}
+              </button>
+            );
+          })}
+
+          {/* New project button */}
+          <button
+            onClick={() => !atLimit && setShowNew(true)}
+            title={atLimit ? `Max ${MAX_PROJECTS} projects reached` : "Start a new 90-day sprint"}
+            style={{
+              flexShrink: 0,
+              padding: "5px 11px",
+              borderRadius: 99,
+              border: "1.5px dashed rgba(255,255,255,.18)",
+              background: "transparent",
+              color: atLimit ? "rgba(255,255,255,.18)" : "rgba(255,255,255,.4)",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: atLimit ? "not-allowed" : "pointer",
+              fontFamily: "var(--ff-body)",
+              whiteSpace: "nowrap",
+              transition: "all .15s",
+            }}
+          >
+            + New {atLimit && <span style={{ fontSize: 10, opacity: .6 }}>({programs.length}/{MAX_PROJECTS})</span>}
+          </button>
         </div>
-        {/* Progress bar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ fontSize: 12, color: "var(--edai-muted)", fontWeight: 700, whiteSpace: "nowrap" }}>Day {program.currentDay}/90</div>
-          <div style={{ flex: 1, height: 8, background: "rgba(255,255,255,.07)", borderRadius: 99, overflow: "hidden", position: "relative" }}>
-            <div style={{ width: `${(program.currentDay / 90) * 100}%`, height: "100%", background: YC_GRAD, borderRadius: 99 }} />
-          </div>
-          <div style={{ fontSize: 12, color: "var(--edai-muted)", fontWeight: 700, whiteSpace: "nowrap" }}>
-            {fmtMoney(arr)} ARR / $1M <span style={{ color: "#FF8534" }}>({progress.toFixed(0)}%)</span>
-          </div>
-        </div>
+
+        {/* Active program name + tabs */}
+        {program && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ background: YC_GRAD, color: "#fff", fontWeight: 700, fontSize: 12, padding: "3px 9px", borderRadius: 5 }}>YC · 90 DAYS</span>
+                <span style={{ fontFamily: "var(--ff-heading)", fontSize: 17, fontWeight: 700, color: "var(--edai-text)" }}>{program.startupName}</span>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setView("today")} style={tabStyle(view === "today")}>Today</button>
+                <button onClick={() => setView("roadmap")} style={tabStyle(view === "roadmap")}>90-Day Roadmap</button>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14, paddingBottom: 14 }}>
+              <div style={{ fontSize: 12, color: "var(--edai-muted)", fontWeight: 700, whiteSpace: "nowrap" }}>Day {program.currentDay}/90</div>
+              <div style={{ flex: 1, height: 8, background: "rgba(255,255,255,.07)", borderRadius: 99, overflow: "hidden" }}>
+                <div style={{ width: `${(program.currentDay / 90) * 100}%`, height: "100%", background: YC_GRAD, borderRadius: 99 }} />
+              </div>
+              <div style={{ fontSize: 12, color: "var(--edai-muted)", fontWeight: 700, whiteSpace: "nowrap" }}>
+                {fmtMoney(arr)} ARR / $1M <span style={{ color: "#FF8534" }}>({progress.toFixed(0)}%)</span>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, overflow: "auto", paddingTop: 20 }}>
-        {isComplete ? (
-          <div style={{ maxWidth: 560, margin: "0 auto", padding: "60px 24px", textAlign: "center" }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🏁</div>
-            <h2 style={{ fontFamily: "var(--ff-heading)", fontSize: 26, fontWeight: 700, color: "var(--edai-text)", margin: "0 0 10px" }}>90 days done.</h2>
-            <p style={{ color: "var(--edai-muted)", fontSize: 15, marginBottom: 8 }}>You finished the sprint at {fmtMoney(arr)} ARR run-rate.</p>
-            <button onClick={() => setView("roadmap")} className="ff-btn-accent" style={{ marginTop: 16, background: YC_GRAD, color: "#fff", border: "none", borderRadius: 9, padding: "11px 22px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)" }}>Review your 90 days →</button>
-          </div>
-        ) : view === "today" && currentDay ? (
-          <TodayPanel program={program} day={currentDay} onToggleTask={handleToggleTask} onOpenCheckin={() => setCheckinOpen(true)} />
-        ) : (
-          <Roadmap program={program} onPickDay={setPickedDay} />
-        )}
-      </div>
+      {program && (
+        <div style={{ flex: 1, overflow: "auto", paddingTop: 20 }}>
+          {isComplete ? (
+            <div style={{ maxWidth: 560, margin: "0 auto", padding: "60px 24px", textAlign: "center" }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>🏁</div>
+              <h2 style={{ fontFamily: "var(--ff-heading)", fontSize: 26, fontWeight: 700, color: "var(--edai-text)", margin: "0 0 10px" }}>90 days done.</h2>
+              <p style={{ color: "var(--edai-muted)", fontSize: 15, marginBottom: 8 }}>You finished the sprint at {fmtMoney(arr)} ARR run-rate.</p>
+              <button onClick={() => setView("roadmap")} className="ff-btn-accent" style={{ marginTop: 16, background: YC_GRAD, color: "#fff", border: "none", borderRadius: 9, padding: "11px 22px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)" }}>Review your 90 days →</button>
+            </div>
+          ) : view === "today" && currentDay ? (
+            <TodayPanel program={program} day={currentDay} onToggleTask={handleToggleTask} onOpenCheckin={() => setCheckinOpen(true)} />
+          ) : (
+            <Roadmap program={program} onPickDay={setPickedDay} />
+          )}
+        </div>
+      )}
 
       {checkinOpen && currentDay && (
         <CheckinModal day={currentDay} onClose={() => setCheckinOpen(false)} onSubmit={handleCheckin} submitting={submitting} />

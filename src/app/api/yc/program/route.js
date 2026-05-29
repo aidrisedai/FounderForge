@@ -4,27 +4,29 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/prisma";
 import { generateSkeleton, generateDetail, applyDetail } from "@/lib/ycCoach";
 
-const DETAIL_WINDOW = 7; // how many upcoming days to flesh out at a time
+const DETAIL_WINDOW = 7;
+const MAX_PROGRAMS = 5;
 
-// GET: the user's active program with all days
+// GET: all non-abandoned programs for the user
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const program = await prisma.yCProgram.findFirst({
-      where: { userId: session.user.id, status: "active" },
+    const programs = await prisma.yCProgram.findMany({
+      where: { userId: session.user.id, status: { not: "abandoned" } },
       include: { days: { orderBy: { dayNumber: "asc" } } },
       orderBy: { createdAt: "desc" },
+      take: MAX_PROGRAMS,
     });
-    return NextResponse.json(program || null);
+    return NextResponse.json({ programs });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: "Failed to load program" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to load programs" }, { status: 500 });
   }
 }
 
-// POST: create a new 90-day program and generate the plan
+// POST: create a new 90-day program (max 5, no longer abandons existing ones)
 export async function POST(req) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -36,11 +38,16 @@ export async function POST(req) {
       return NextResponse.json({ error: "Startup name and description are required" }, { status: 400 });
     }
 
-    // Abandon any existing active program (one active program per user)
-    await prisma.yCProgram.updateMany({
-      where: { userId: session.user.id, status: "active" },
-      data: { status: "abandoned" },
+    // Enforce 5-project limit
+    const count = await prisma.yCProgram.count({
+      where: { userId: session.user.id, status: { not: "abandoned" } },
     });
+    if (count >= MAX_PROGRAMS) {
+      return NextResponse.json(
+        { error: `You can have at most ${MAX_PROGRAMS} active projects. Archive one to create a new one.` },
+        { status: 400 }
+      );
+    }
 
     const startRev = Math.max(0, parseInt(startingRevenue, 10) || 0);
 
@@ -94,3 +101,4 @@ export async function POST(req) {
     return NextResponse.json({ error: "Failed to create program" }, { status: 500 });
   }
 }
+
