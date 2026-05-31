@@ -196,31 +196,11 @@ function LandingPage() {
     transition: `opacity 0.75s ease ${delay}s, transform 0.75s ease ${delay}s`,
   });
 
-  const paths = [
-    {
-      icon: "✦",
-      label: "The Founder Journey",
-      color: "31,166,122",
-      heading: "Idea to first sale",
-      body: "Seven structured steps, one focused task at a time. Problem discovery, validation, build, and first revenue — with an AI mentor beside you.",
-      delay: 0.35,
-    },
-    {
-      icon: "◈",
-      label: "90 Days at YC",
-      color: "255,102,0",
-      heading: "YC-style execution",
-      body: "The exact playbook Y Combinator gives their best companies. Daily check-ins, weekly milestones, a clear path to $1M.",
-      delay: 0.48,
-    },
-    {
-      icon: "◉",
-      label: "Founder Community",
-      color: "99,102,241",
-      heading: "Builders at your stage",
-      body: "Connect with founders on the same journey. Share wins, get unstuck, find your co-founder, and move faster together.",
-      delay: 0.61,
-    },
+  const steps = [
+    { icon: "🔍", label: "Discover", desc: "Validate a real problem" },
+    { icon: "✏️", label: "Define", desc: "Design what they'll pay for" },
+    { icon: "🛠️", label: "Build", desc: "Ship the simplest thing" },
+    { icon: "🚀", label: "First Sale", desc: "Get someone to pay you" },
   ];
 
   return (
@@ -257,18 +237,23 @@ function LandingPage() {
           <em style={{ color:"var(--ff-accent)", fontStyle:"italic" }}>the world needs.</em>
         </h1>
 
-        <p style={{ ...fade(0.28), fontSize:18, lineHeight:1.72, color:"rgba(255,255,255,.45)", maxWidth:520, margin:"0 auto 56px", fontFamily:"var(--ff-body)" }}>
-          Structured guidance, a real founder community, and a clear path from idea to your first customer.
+        <p style={{ ...fade(0.28), fontSize:18, lineHeight:1.72, color:"rgba(255,255,255,.45)", maxWidth:480, margin:"0 auto 52px", fontFamily:"var(--ff-body)" }}>
+          From raw idea to your first paying customer — one focused task at a time, with an AI mentor guiding every step.
         </p>
 
-        {/* Three path cards */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))", gap:16, width:"100%", maxWidth:880, margin:"0 auto 52px" }}>
-          {paths.map(p => (
-            <div key={p.label} style={{ ...fade(p.delay), padding:"28px 24px 30px", borderRadius:20, background:`rgba(${p.color},.06)`, border:`1px solid rgba(${p.color},.2)`, textAlign:"left", backdropFilter:"blur(8px)" }}>
-              <div style={{ fontSize:22, fontFamily:"var(--ff-display)", color:`rgb(${p.color})`, marginBottom:14, lineHeight:1 }}>{p.icon}</div>
-              <div style={{ fontSize:10, fontWeight:700, letterSpacing:".22em", color:`rgb(${p.color})`, fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:8 }}>{p.label}</div>
-              <div style={{ fontSize:20, fontFamily:"var(--ff-display)", fontWeight:700, color:"rgba(255,255,255,.93)", marginBottom:12, lineHeight:1.2 }}>{p.heading}</div>
-              <div style={{ fontSize:13, lineHeight:1.75, color:"rgba(255,255,255,.38)", fontFamily:"var(--ff-body)" }}>{p.body}</div>
+        {/* 4-step journey */}
+        <div style={{ ...fade(0.38), display:"flex", alignItems:"flex-start", gap:0, width:"100%", maxWidth:720, margin:"0 auto 52px", position:"relative" }}>
+          {steps.map((s, i) => (
+            <div key={s.label} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", position:"relative" }}>
+              {/* connector line */}
+              {i < steps.length - 1 && (
+                <div style={{ position:"absolute", top:22, left:"50%", width:"100%", height:1, background:"linear-gradient(90deg,rgba(31,166,122,.4),rgba(31,166,122,.1))", zIndex:0 }} />
+              )}
+              <div style={{ width:44, height:44, borderRadius:14, background:"rgba(31,166,122,.1)", border:"1px solid rgba(31,166,122,.25)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, marginBottom:12, position:"relative", zIndex:1, backdropFilter:"blur(8px)" }}>
+                {s.icon}
+              </div>
+              <div style={{ fontSize:13, fontWeight:700, color:"rgba(255,255,255,.82)", fontFamily:"var(--ff-body)", marginBottom:4, textAlign:"center" }}>{s.label}</div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,.28)", fontFamily:"var(--ff-body)", textAlign:"center", lineHeight:1.45, padding:"0 8px" }}>{s.desc}</div>
             </div>
           ))}
         </div>
