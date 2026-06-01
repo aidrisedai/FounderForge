@@ -185,9 +185,24 @@ function Timeline({ steps, project, activeStepId, activeTaskIdx, onNav }) {
   );
 }
 
+// ── Embedded browser detection ──
+function useIsEmbeddedBrowser() {
+  const [embedded, setEmbedded] = useState(false);
+  useEffect(() => {
+    const ua = navigator.userAgent || "";
+    const isEmbedded =
+      /FBAN|FBAV|Instagram|LinkedInApp|Twitter|Snapchat|TikTok|Pinterest|Line\/|MicroMessenger|GSA\//.test(ua) ||
+      (/iPhone|iPad|iPod/.test(ua) && !/Safari\//.test(ua) && /AppleWebKit/.test(ua)) ||
+      /\bwv\b/.test(ua);
+    setEmbedded(isEmbedded);
+  }, []);
+  return embedded;
+}
+
 // ── Landing Page ──
 function LandingPage() {
   const [vis, setVis] = useState(false);
+  const isEmbedded = useIsEmbeddedBrowser();
   useEffect(() => { const t = setTimeout(() => setVis(true), 80); return () => clearTimeout(t); }, []);
 
   const fade = (delay = 0) => ({
@@ -225,6 +240,21 @@ function LandingPage() {
           Sign in
         </button>
       </nav>
+
+      {/* Embedded browser warning */}
+      {isEmbedded && (
+        <div style={{ margin:"0 24px", padding:"16px 20px", borderRadius:14, background:"rgba(255,180,0,.08)", border:"1px solid rgba(255,180,0,.25)", display:"flex", alignItems:"flex-start", gap:14, position:"relative", zIndex:10 }}>
+          <span style={{ fontSize:22, flexShrink:0, lineHeight:1 }}>⚠️</span>
+          <div>
+            <div style={{ fontSize:14, fontWeight:700, color:"rgba(255,200,0,.9)", fontFamily:"var(--ff-body)", marginBottom:5 }}>
+              Open in your browser to sign in
+            </div>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,.45)", fontFamily:"var(--ff-body)", lineHeight:1.55 }}>
+              Google sign-in doesn&apos;t work inside apps. Copy the link and open it in <strong style={{ color:"rgba(255,255,255,.65)" }}>Safari</strong> or <strong style={{ color:"rgba(255,255,255,.65)" }}>Chrome</strong> to continue.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hero */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"48px 24px 60px", position:"relative", zIndex:1, textAlign:"center" }}>
