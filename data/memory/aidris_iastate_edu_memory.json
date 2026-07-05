@@ -1,0 +1,29 @@
+{
+  "userId": "aidris_iastate_edu",
+  "createdAt": "2026-07-05T05:00:35.853Z",
+  "lastActive": "2026-07-05T05:02:48.758Z",
+  "profile": {
+    "goals": [],
+    "challenges": [],
+    "strengths": [],
+    "preferences": [],
+    "background": null
+  },
+  "projects": {},
+  "insights": [],
+  "decisions": [],
+  "patterns": {
+    "commonQuestions": [],
+    "stickingPoints": [
+      {
+        "pattern": "Problem Hypothesis: Students in high school we need help studying for college as they are sport athletes",
+        "frequency": 2,
+        "firstSeen": "2026-07-05T05:00:36.067Z",
+        "lastSeen": "2026-07-05T05:02:48.758Z"
+      }
+    ],
+    "successPatterns": []
+  },
+  "milestones": [],
+  "sessions": []
+}
