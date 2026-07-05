@@ -77,6 +77,28 @@ function getQuickReplies(task, messages) {
   return ["Here's what I found", "Can you give me an example?", "I'm stuck — help me think through this"];
 }
 
+// ── Progress gating ──
+// Tasks unlock strictly in order: the frontier step is the first step with
+// unfinished tasks; within it, only tasks up to the next incomplete one are
+// reachable. Everything past that is locked until the current task is done.
+function frontierStepIdx(ct) {
+  for (let i = 0; i < CURRICULUM.length; i++) {
+    if ((ct[CURRICULUM[i].id] || 0) < CURRICULUM[i].tasks.length) return i;
+  }
+  return CURRICULUM.length - 1;
+}
+
+function isStepLocked(ct, si) {
+  return si > frontierStepIdx(ct);
+}
+
+function isTaskLocked(ct, si, ti) {
+  const f = frontierStepIdx(ct);
+  if (si > f) return true;
+  if (si < f) return false; // fully completed step — revisiting allowed
+  return ti > (ct[CURRICULUM[si].id] || 0);
+}
+
 function ChatBubble({ role, content }) {
   const isBot = role === "assistant";
   return (
@@ -128,6 +150,7 @@ function Timeline({ steps, project, activeStepId, activeTaskIdx, onNav }) {
         const sd = ct[s.id] || 0;
         const isActive = s.id === activeStepId;
         const stepDone = sd >= s.tasks.length;
+        const sLocked = isStepLocked(ct, si);
 
         return (
           <div key={s.id}>
@@ -135,21 +158,21 @@ function Timeline({ steps, project, activeStepId, activeTaskIdx, onNav }) {
             <div
               onClick={() => onNav(si, Math.min(sd, s.tasks.length-1))}
               className="ff-step-row"
-              style={{ display:"flex", alignItems:"center", gap:9, padding:"8px 14px", cursor:"pointer", position:"relative", background:isActive?"rgba(255,255,255,.028)":"transparent", transition:"background .15s" }}
+              style={{ display:"flex", alignItems:"center", gap:9, padding:"8px 14px", cursor:"pointer", position:"relative", background:isActive?"rgba(255,255,255,.028)":"transparent", transition:"background .15s", opacity:sLocked?.55:1 }}
             >
               {/* Left accent bar */}
               <div style={{ position:"absolute", left:0, top:"50%", transform:"translateY(-50%)", width:2.5, height:isActive?26:0, borderRadius:99, background:s.color, transition:"height .3s cubic-bezier(.4,0,.2,1)", boxShadow:isActive?`0 0 10px ${s.color}55`:"none" }} />
 
               {/* Icon bubble */}
               <div style={{ width:30, height:30, minWidth:30, borderRadius:9, background:stepDone?`${s.color}22`:isActive?`${s.color}18`:"rgba(255,255,255,.04)", border:`1.5px solid ${stepDone||isActive?s.color+"45":"rgba(255,255,255,.07)"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, transition:"all .2s", flexShrink:0 }}>
-                {stepDone ? <span style={{ fontSize:12, color:s.color }}>✓</span> : s.icon}
+                {stepDone ? <span style={{ fontSize:12, color:s.color }}>✓</span> : sLocked ? <span style={{ fontSize:11, opacity:.7 }}>🔒</span> : s.icon}
               </div>
 
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:12, fontWeight:isActive?600:400, color:isActive?s.color:stepDone?"rgba(255,255,255,.45)":"rgba(255,255,255,.28)", fontFamily:"var(--ff-body)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", letterSpacing:"-.005em" }}>
                   {s.title}
                 </div>
-                <div style={{ fontSize:9.5, color:"rgba(255,255,255,.18)", fontFamily:"var(--ff-body)", marginTop:1 }}>{sd}/{s.tasks.length} tasks</div>
+                <div style={{ fontSize:9.5, color:"rgba(255,255,255,.18)", fontFamily:"var(--ff-body)", marginTop:1 }}>{sLocked ? "Locked" : `${sd}/${s.tasks.length} tasks`}</div>
               </div>
             </div>
 
@@ -159,20 +182,22 @@ function Timeline({ steps, project, activeStepId, activeTaskIdx, onNav }) {
                 {s.tasks.map((t, ti) => {
                   const tdone = ti < sd;
                   const curr = isActive && ti === activeTaskIdx;
+                  const tLocked = isTaskLocked(ct, si, ti);
                   return (
                     <div
                       key={t.id}
                       onClick={() => onNav(si, ti)}
                       className="ff-task-row"
-                      style={{ display:"flex", alignItems:"center", gap:9, padding:"4px 8px", borderRadius:7, cursor:"pointer", transition:"background .12s", marginBottom:1 }}
+                      style={{ display:"flex", alignItems:"center", gap:9, padding:"4px 8px", borderRadius:7, cursor:"pointer", transition:"background .12s", marginBottom:1, opacity:tLocked?.5:1 }}
                     >
                       {/* Task dot */}
                       <div style={{ width:8, height:8, minWidth:8, borderRadius:"50%", background:tdone?s.color:curr?"transparent":"rgba(255,255,255,.1)", border:curr?`2px solid ${s.color}`:tdone?"none":"1.5px solid rgba(255,255,255,.12)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:curr?`0 0 7px ${s.color}90`:"none", animation:curr?"ffPulse 2.2s infinite":"none", flexShrink:0, transition:"all .2s" }}>
                         {curr && <div style={{ width:3, height:3, borderRadius:"50%", background:s.color }} />}
                       </div>
-                      <span style={{ fontSize:12, color:tdone?"rgba(255,255,255,.38)":curr?"rgba(255,255,255,.9)":"rgba(255,255,255,.3)", fontFamily:"var(--ff-body)", fontWeight:curr?600:400, lineHeight:1.3 }}>
+                      <span style={{ fontSize:12, color:tdone?"rgba(255,255,255,.38)":curr?"rgba(255,255,255,.9)":"rgba(255,255,255,.3)", fontFamily:"var(--ff-body)", fontWeight:curr?600:400, lineHeight:1.3, flex:1, minWidth:0 }}>
                         {t.title}
                       </span>
+                      {tLocked && <span style={{ fontSize:9, opacity:.5, flexShrink:0 }}>🔒</span>}
                     </div>
                   );
                 })}
@@ -437,6 +462,7 @@ export default function Home() {
     try { return localStorage.getItem("ff_mode") || null; } catch { return null; }
   });
   const [sharePrompt, setSharePrompt] = useState(null); // {body, milestone, taskId, stepId}
+  const [lockedInfo, setLockedInfo] = useState(null); // {step, task|null} — preview of a locked step/task
   const btmRef = useRef(null);
   const needsInitRef = useRef(false);
 
@@ -930,7 +956,15 @@ export default function Home() {
         </div>
 
         {/* Journey timeline — takes remaining space */}
-        <Timeline steps={CURRICULUM} project={project} activeStepId={step.id} activeTaskIdx={taskIdx} onNav={(si,ti) => { setStepIdx(si); setTaskIdx(ti); setShowCommunity(false); setShowDiscovery(false); setShowYC(false); setShowExpert(false); }} />
+        <Timeline steps={CURRICULUM} project={project} activeStepId={step.id} activeTaskIdx={taskIdx} onNav={(si,ti) => {
+          const ct = project.completedTasks || {};
+          if (isTaskLocked(ct, si, ti)) {
+            // Locked — describe what's ahead instead of navigating
+            setLockedInfo({ step: CURRICULUM[si], task: isStepLocked(ct, si) ? null : CURRICULUM[si].tasks[ti] });
+            return;
+          }
+          setStepIdx(si); setTaskIdx(ti); setShowCommunity(false); setShowDiscovery(false); setShowYC(false); setShowExpert(false);
+        }} />
 
         {/* Bottom: Explore nav + user row */}
         <div style={{ padding:"10px 10px 0", borderTop:"1px solid rgba(255,255,255,.05)", flexShrink:0 }}>
@@ -1109,6 +1143,63 @@ export default function Home() {
         </div>
       </div>
       )}
+
+      {/* Locked step/task preview modal */}
+      {lockedInfo && (() => {
+        const ls = lockedInfo.step, lt = lockedInfo.task;
+        const ct = project?.completedTasks || {};
+        const fSi = frontierStepIdx(ct);
+        const fStep = CURRICULUM[fSi];
+        const fTi = Math.min(ct[fStep.id] || 0, fStep.tasks.length - 1);
+        const fTask = fStep.tasks[fTi];
+        return (
+          <div onClick={() => setLockedInfo(null)} style={{ position:"fixed", inset:0, zIndex:2200, background:"rgba(0,0,0,.62)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", padding:24, animation:"ffSlide .25s" }}>
+            <div onClick={e => e.stopPropagation()} style={{ maxWidth:460, width:"100%", borderRadius:18, background:"#101214", border:`1px solid ${ls.color}35`, padding:"26px 28px", position:"relative", boxShadow:"0 20px 60px rgba(0,0,0,.55)" }}>
+              <button onClick={() => setLockedInfo(null)} style={{ position:"absolute", top:14, right:16, background:"none", border:"none", color:"rgba(255,255,255,.3)", cursor:"pointer", fontSize:20, lineHeight:1 }}>×</button>
+
+              <div style={{ display:"inline-flex", alignItems:"center", gap:7, padding:"4px 12px", borderRadius:99, background:"rgba(255,255,255,.05)", border:"1px solid rgba(255,255,255,.1)", marginBottom:16 }}>
+                <span style={{ fontSize:12 }}>🔒</span>
+                <span style={{ fontSize:10, fontWeight:700, letterSpacing:".14em", color:"rgba(255,255,255,.45)", fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>Locked</span>
+              </div>
+
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+                <div style={{ width:38, height:38, borderRadius:11, background:`${ls.color}18`, border:`1.5px solid ${ls.color}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:17, flexShrink:0 }}>{ls.icon}</div>
+                <div>
+                  <div style={{ fontSize:10, fontWeight:700, letterSpacing:".14em", color:ls.color, fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>{lt ? `Step ${ls.id} · ${ls.title}` : `Step ${ls.id}`}</div>
+                  <div style={{ fontSize:19, fontFamily:"var(--ff-display)", fontWeight:700, color:"rgba(255,255,255,.94)", letterSpacing:"-.02em", lineHeight:1.2 }}>{lt ? lt.title : ls.title}</div>
+                </div>
+              </div>
+
+              <p style={{ fontSize:13.5, lineHeight:1.75, color:"rgba(255,255,255,.55)", fontFamily:"var(--ff-body)", margin:"0 0 10px" }}>
+                {lt ? lt.goal : ls.overview}
+              </p>
+              {lt ? (
+                <p style={{ fontSize:12.5, lineHeight:1.7, color:"rgba(255,255,255,.38)", fontFamily:"var(--ff-body)", margin:"0 0 18px" }}>
+                  <strong style={{ color:"rgba(255,255,255,.5)" }}>You&apos;ll produce:</strong> {lt.output}
+                </p>
+              ) : (
+                <p style={{ fontSize:12.5, lineHeight:1.7, color:"rgba(255,255,255,.38)", fontFamily:"var(--ff-body)", margin:"0 0 18px", fontStyle:"italic" }}>
+                  &ldquo;{ls.tagline}&rdquo; · {ls.tasks.length} tasks
+                </p>
+              )}
+
+              <div style={{ padding:"12px 14px", borderRadius:11, background:"rgba(255,255,255,.03)", border:"1px solid rgba(255,255,255,.07)", marginBottom:16 }}>
+                <div style={{ fontSize:12, color:"rgba(255,255,255,.5)", fontFamily:"var(--ff-body)", lineHeight:1.6 }}>
+                  The journey unlocks one task at a time. Finish <strong style={{ color:fStep.color }}>{fTask.title}</strong>{fSi !== CURRICULUM.indexOf(ls) ? ` and the rest of ${fStep.title}` : ""} to get here.
+                </div>
+              </div>
+
+              <button
+                onClick={() => { setStepIdx(fSi); setTaskIdx(fTi); setLockedInfo(null); setShowCommunity(false); setShowDiscovery(false); setShowYC(false); setShowExpert(false); }}
+                className="ff-btn-accent"
+                style={{ width:"100%", padding:"12px 0", borderRadius:10, border:"none", background:"var(--ff-accent-grad)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"var(--ff-body)" }}
+              >
+                Continue current task →
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Memory Dashboard Modal */}
       {showMemory && (
