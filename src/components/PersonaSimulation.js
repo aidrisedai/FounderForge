@@ -38,6 +38,8 @@ export default function PersonaSimulation({ project, task, step, onComplete }) {
   const [loading, setLoading] = useState(false);
   const [interviewWrapped, setInterviewWrapped] = useState(false);
   const [debrief, setDebrief] = useState(null);
+  const [questionLimits, setQuestionLimits] = useState([15, 15]); // per-persona question budget: 10 or 15
+  const [briefingIdx, setBriefingIdx] = useState(0); // which call the briefing screen introduces
   const btmRef = useRef(null);
   const initRef = useRef(false);
   const transcriptsRef = useRef([]);
@@ -65,6 +67,8 @@ export default function PersonaSimulation({ project, task, step, onComplete }) {
       const data = await res.json();
       if (data.personas?.length >= 2) {
         setPersonas(data.personas);
+        // Each interviewee gets a random question budget of 10 or 15
+        setQuestionLimits(data.personas.map(() => (Math.random() < 0.5 ? 10 : 15)));
         setPhase("setup");
       } else {
         setPhase("error");
@@ -99,11 +103,13 @@ export default function PersonaSimulation({ project, task, step, onComplete }) {
       const res = await fetch("/api/simulate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "interview", persona, messages: newMsgs }),
+        body: JSON.stringify({ mode: "interview", persona, messages: newMsgs, questionLimit: questionLimits[currentPersonaIdx] }),
       });
       const data = await res.json();
       const raw = (data.content || []).map(c => c.text || "").join("") || "...";
-      const wrapped = raw.includes("[INTERVIEW_WRAP]");
+      // The call ends when the persona wraps up naturally OR the question budget is spent
+      const askedCount = newMsgs.filter(m => m.role === "user").length;
+      const wrapped = raw.includes("[INTERVIEW_WRAP]") || askedCount >= questionLimits[currentPersonaIdx];
       const clean = raw.replace(/\[INTERVIEW_WRAP\]/g, "").trim();
 
       const finalMsgs = [...newMsgs, { role: "assistant", content: clean }];
@@ -130,10 +136,12 @@ export default function PersonaSimulation({ project, task, step, onComplete }) {
 
   function continueAfterInterview() {
     if (currentPersonaIdx === 0) {
-      startInterview(1);
+      // Brief the user on Call 2's goal — they confirm before it starts
+      setBriefingIdx(1);
+      setPhase("briefing");
     } else {
-      setPhase("debrief_loading");
-      generateDebrief();
+      // Explain what the debrief is for — user confirms before it runs
+      setPhase("debrief_brief");
     }
   }
 
@@ -228,7 +236,8 @@ export default function PersonaSimulation({ project, task, step, onComplete }) {
                 "You only know their name and what you're trying to learn — treat it like a cold call",
                 "Ask about past behavior and current reality, not hypotheticals or product ideas",
                 "They may deflect or push back — that's realistic, work through it",
-                "The call ends naturally once the core insight has surfaced",
+                "Each call has a question limit (10 or 15, it varies by person) — the call ends when you use them up, or sooner if the core insight surfaces",
+                "Before each call starts, you'll get a briefing on its goal — confirm you understand, then dial",
               ].map((rule, i) => (
                 <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
                   <div style={{ width:17, height:17, minWidth:17, borderRadius:4, background:`${step.color}15`, border:`1px solid ${step.color}20`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:700, color:step.color, fontFamily:"var(--ff-body)", marginTop:1 }}>{i+1}</div>
@@ -264,10 +273,105 @@ export default function PersonaSimulation({ project, task, step, onComplete }) {
           </div>
 
           <button
-            onClick={() => startInterview(0)}
+            onClick={() => { setBriefingIdx(0); setPhase("briefing"); }}
             style={{ width:"100%", padding:"13px 20px", borderRadius:10, border:"none", background:`linear-gradient(135deg,${PERSONA_COLORS[0]},${PERSONA_COLORS[0]}cc)`, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"var(--ff-body)", boxShadow:`0 4px 20px ${PERSONA_COLORS[0]}30` }}
           >
-            Begin Call 1 with {personas[0].name} →
+            I understand — prepare Call 1 →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Session briefing before each call — explains the goal, user must confirm to start
+  if (phase === "briefing" && personas) {
+    const p = personas[briefingIdx];
+    const color = PERSONA_COLORS[briefingIdx];
+    const limit = questionLimits[briefingIdx];
+    return (
+      <div style={{ flex:1, overflowY:"auto", padding:"32px 40px" }}>
+        <div style={{ maxWidth:560, margin:"0 auto" }}>
+          <div style={{ fontSize:10, fontWeight:700, letterSpacing:".12em", color, textTransform:"uppercase", fontFamily:"var(--ff-body)", marginBottom:8 }}>
+            Call {briefingIdx + 1} of 2 · Session Briefing
+          </div>
+          <h2 style={{ fontSize:22, fontFamily:"var(--ff-heading)", margin:"0 0 20px", color:"rgba(255,255,255,.9)", fontWeight:400 }}>
+            Before you dial {p.name}…
+          </h2>
+
+          {/* Goal of this session */}
+          <div style={{ padding:"16px 20px", borderRadius:12, background:`${color}0A`, border:`1px solid ${color}28`, marginBottom:16 }}>
+            <div style={{ fontSize:9, fontWeight:700, color, letterSpacing:".1em", textTransform:"uppercase", fontFamily:"var(--ff-body)", marginBottom:8 }}>Goal of this session</div>
+            <div style={{ fontSize:14, color:"rgba(255,255,255,.72)", lineHeight:1.7, fontFamily:"var(--ff-body)" }}>{p.callObjective}</div>
+          </div>
+
+          {/* Who you're calling */}
+          <div style={{ padding:"14px 18px", borderRadius:12, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.05)", marginBottom:16, display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ width:36, height:36, borderRadius:9, background:`linear-gradient(135deg,${color},${color}99)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:"#fff", fontFamily:"var(--ff-heading)", flexShrink:0 }}>
+              {p.name[0]}
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"rgba(255,255,255,.82)", fontFamily:"var(--ff-body)" }}>{p.name}</div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,.3)", fontFamily:"var(--ff-body)" }}>{p.role}</div>
+            </div>
+            <div style={{ textAlign:"center", padding:"6px 12px", borderRadius:8, background:`${color}12`, border:`1px solid ${color}30`, flexShrink:0 }}>
+              <div style={{ fontSize:16, fontWeight:800, color, fontFamily:"var(--ff-heading)", lineHeight:1 }}>{limit}</div>
+              <div style={{ fontSize:8.5, fontWeight:700, letterSpacing:".08em", color:"rgba(255,255,255,.3)", textTransform:"uppercase", marginTop:3, fontFamily:"var(--ff-body)" }}>questions max</div>
+            </div>
+          </div>
+
+          {/* How this session works */}
+          <div style={{ padding:"14px 18px", borderRadius:10, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.05)", marginBottom:24 }}>
+            <div style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,.2)", letterSpacing:".1em", textTransform:"uppercase", fontFamily:"var(--ff-body)", marginBottom:10 }}>How this session works</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {[
+                `You have a maximum of ${limit} questions — after that, ${p.name} has to go`,
+                "The call ends earlier if you surface their core frustration through good questions",
+                "Make every question count: past behavior, specific events, real numbers",
+                "Success = uncovering how they actually deal with this problem today",
+              ].map((rule, i) => (
+                <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                  <div style={{ width:17, height:17, minWidth:17, borderRadius:4, background:`${color}15`, border:`1px solid ${color}20`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:700, color, fontFamily:"var(--ff-body)", marginTop:1 }}>{i+1}</div>
+                  <div style={{ fontSize:13, color:"rgba(255,255,255,.45)", lineHeight:1.55, fontFamily:"var(--ff-body)" }}>{rule}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => startInterview(briefingIdx)}
+            style={{ width:"100%", padding:"13px 20px", borderRadius:10, border:"none", background:`linear-gradient(135deg,${color},${color}cc)`, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"var(--ff-body)", boxShadow:`0 4px 20px ${color}30` }}
+          >
+            I understand — begin Call {briefingIdx + 1} with {p.name} →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Briefing before the debrief section — user confirms before the review runs
+  if (phase === "debrief_brief") {
+    return (
+      <div style={{ flex:1, overflowY:"auto", padding:"32px 40px", display:"flex", alignItems:"center" }}>
+        <div style={{ maxWidth:560, margin:"0 auto", width:"100%" }}>
+          <div style={{ fontSize:10, fontWeight:700, letterSpacing:".12em", color:"#10B981", textTransform:"uppercase", fontFamily:"var(--ff-body)", marginBottom:8 }}>
+            Debrief · Session Briefing
+          </div>
+          <h2 style={{ fontSize:22, fontFamily:"var(--ff-heading)", margin:"0 0 20px", color:"rgba(255,255,255,.9)", fontWeight:400 }}>
+            Both calls are done — time to review
+          </h2>
+
+          <div style={{ padding:"16px 20px", borderRadius:12, background:"rgba(16,185,129,.05)", border:"1px solid rgba(16,185,129,.18)", marginBottom:24 }}>
+            <div style={{ fontSize:9, fontWeight:700, color:"#10B981", letterSpacing:".1em", textTransform:"uppercase", fontFamily:"var(--ff-body)", marginBottom:8 }}>Goal of this section</div>
+            <div style={{ fontSize:14, color:"rgba(255,255,255,.72)", lineHeight:1.75, fontFamily:"var(--ff-body)" }}>
+              Your coach will review both conversations — what worked, what you missed, and whether you surfaced each person's core frustration. You'll get a readiness score and one concrete thing to fix before you interview real people.
+            </div>
+          </div>
+
+          <button
+            onClick={() => { setPhase("debrief_loading"); generateDebrief(); }}
+            style={{ width:"100%", padding:"13px 20px", borderRadius:10, border:"none", background:"var(--ff-accent-grad)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"var(--ff-body)", boxShadow:"0 4px 24px rgba(31,166,122,.25)" }}
+          >
+            I understand — review my calls →
           </button>
         </div>
       </div>
@@ -277,6 +381,9 @@ export default function PersonaSimulation({ project, task, step, onComplete }) {
   if (phase === "interview" && personas) {
     const persona = personas[currentPersonaIdx];
     const personaColor = PERSONA_COLORS[currentPersonaIdx];
+    const qLimit = questionLimits[currentPersonaIdx];
+    const qAsked = currentMessages.filter(m => m.role === "user").length;
+    const qLeft = Math.max(0, qLimit - qAsked);
 
     return (
       <div style={{ flex:1, display:"flex", flexDirection:"column", height:"100vh" }}>
@@ -294,9 +401,15 @@ export default function PersonaSimulation({ project, task, step, onComplete }) {
               </div>
             </div>
           </div>
-          <div style={{ fontSize:11, color:"rgba(255,255,255,.22)", fontFamily:"var(--ff-body)", textAlign:"right", maxWidth:240, lineHeight:1.45 }}>
-            <span style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,.12)", letterSpacing:".08em", display:"block", textTransform:"uppercase", marginBottom:2 }}>Your objective</span>
-            {persona.callObjective}
+          <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,.22)", fontFamily:"var(--ff-body)", textAlign:"right", maxWidth:240, lineHeight:1.45 }}>
+              <span style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,.12)", letterSpacing:".08em", display:"block", textTransform:"uppercase", marginBottom:2 }}>Your objective</span>
+              {persona.callObjective}
+            </div>
+            <div style={{ textAlign:"center", padding:"6px 12px", borderRadius:8, background:qLeft <= 3 ? "rgba(239,68,68,.1)" : `${personaColor}12`, border:`1px solid ${qLeft <= 3 ? "rgba(239,68,68,.3)" : personaColor + "30"}`, flexShrink:0 }}>
+              <div style={{ fontSize:16, fontWeight:800, color:qLeft <= 3 ? "#FCA5A5" : personaColor, fontFamily:"var(--ff-heading)", lineHeight:1 }}>{qLeft}</div>
+              <div style={{ fontSize:8.5, fontWeight:700, letterSpacing:".08em", color:"rgba(255,255,255,.3)", textTransform:"uppercase", marginTop:3, fontFamily:"var(--ff-body)" }}>questions left</div>
+            </div>
           </div>
         </div>
 
@@ -314,7 +427,9 @@ export default function PersonaSimulation({ project, task, step, onComplete }) {
             )}
             {interviewWrapped && (
               <div style={{ margin:"20px 0", padding:"16px 20px", borderRadius:10, background:"rgba(255,255,255,.02)", border:"1px solid rgba(255,255,255,.05)", textAlign:"center" }}>
-                <div style={{ fontSize:11, color:"rgba(255,255,255,.2)", fontFamily:"var(--ff-body)", marginBottom:12 }}>— Call ended —</div>
+                <div style={{ fontSize:11, color:"rgba(255,255,255,.2)", fontFamily:"var(--ff-body)", marginBottom:12 }}>
+                  {qAsked >= qLimit ? `— Call ended: all ${qLimit} questions used —` : "— Call ended —"}
+                </div>
                 <button
                   onClick={continueAfterInterview}
                   style={{ padding:"10px 22px", borderRadius:8, border:"none", background:`linear-gradient(135deg,${currentPersonaIdx===0?PERSONA_COLORS[1]:step.color},${currentPersonaIdx===0?PERSONA_COLORS[1]:step.color}cc)`, color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"var(--ff-body)" }}

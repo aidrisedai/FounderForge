@@ -32,7 +32,7 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
-    const { mode, hypothesis, persona, messages, transcripts } = body;
+    const { mode, hypothesis, persona, messages, transcripts, questionLimit } = body;
 
     if (mode === "generate") {
       const system = `You generate discovery interview personas for a founder doing problem validation research.
@@ -110,7 +110,23 @@ When the founder has meaningfully surfaced your core frustration through their q
 
 Do NOT wrap up early. The founder must work for the key insight. If the conversation is still surface-level after a few turns, keep deflecting until they ask better questions.`;
 
-      const data = await callClaude(system, messages, 400);
+      // Question budget: the founder gets a hard cap of questions on this call
+      const limit = Math.max(1, Math.min(30, Number(questionLimit) || 15));
+      const asked = (messages || []).filter(m => m.role === "user").length;
+      const remaining = limit - asked; // questions left AFTER the one being answered now
+
+      const lengthSection = remaining <= 0
+        ? `
+
+QUESTION LIMIT:
+The founder had a maximum of ${limit} questions on this call, and the message you are answering now is their LAST one. Answer it briefly in character, then end the call naturally (e.g. "I really have to run — good luck with this.") and on a new line write exactly: [INTERVIEW_WRAP]
+Do this even if the founder has not surfaced your core frustration.`
+        : `
+
+QUESTION LIMIT:
+The founder has a maximum of ${limit} questions on this call. After the one you are answering now, they have ${remaining} left.${remaining <= 3 ? " Time is nearly up — let mild time pressure show (shorter answers, mention you need to wrap up soon)." : ""}`;
+
+      const data = await callClaude(system + lengthSection, messages, 400);
       return Response.json(data);
     }
 
