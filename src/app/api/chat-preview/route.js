@@ -73,7 +73,8 @@ COMPLETION FORMAT (ONLY when all 5 criteria met):
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-5",
+        thinking: { type: "disabled" },
         max_tokens: 1024,
         system: systemPrompt,
         messages,
