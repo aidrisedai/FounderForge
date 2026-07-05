@@ -6,7 +6,7 @@ An AI-powered startup mentor app that guides founders from idea to revenue in 6 
 
 - **Framework**: Next.js 14 (App Router)
 - **Auth**: NextAuth.js v4 with Google OAuth
-- **AI**: Anthropic Claude API (claude-sonnet-4-20250514)
+- **AI**: Anthropic Claude API (claude-sonnet-5)
 - **Database**: PostgreSQL via Prisma v5 (Replit built-in)
 - **Styling**: Inline styles (no CSS framework)
 
