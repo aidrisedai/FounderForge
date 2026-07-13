@@ -587,9 +587,12 @@ model YCProgram {
   stage           String   // "idea" | "building" | "launched" | "revenue"
   startingRevenue Int      @default(0)        // monthly revenue at start, USD
   targetRevenue   Int      @default(1000000)  // annual run-rate goal, USD
+  durationDays    Int      @default(90)       // sprint length chosen by the founder
   currentDay      Int      @default(1)
-  status          String   @default("active") // "active" | "completed" | "abandoned"
+  status          String   @default("active") // "planning" | "active" | "completed" | "abandoned"
   phases          Json?    // [{name, dayStart, dayEnd, goal, milestone}]
+  planDays        Json?    // draft skeleton [{day, theme, objective}] while status = "planning"
+  planChat        Json?    // [{role, content}] plan-refinement conversation
   partnerName     String   @default("Michael Seibel")
   startDate       DateTime @default(now())
   days            YCDay[]

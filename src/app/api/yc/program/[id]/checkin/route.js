@@ -18,6 +18,9 @@ export async function POST(req, { params }) {
       include: { days: { orderBy: { dayNumber: "asc" } } },
     });
     if (!program) return NextResponse.json({ error: "Program not found" }, { status: 404 });
+    if (program.status !== "active") {
+      return NextResponse.json({ error: "Program is not active" }, { status: 400 });
+    }
 
     const body = await req.json();
     const { summary = "", blockers = "", revenue, users, mood = "" } = body;
@@ -49,13 +52,14 @@ export async function POST(req, { params }) {
       data: { status: "done", report, reportedAt: new Date() },
     });
 
-    const isComplete = dayNumber >= 90;
+    const durationDays = program.durationDays || 90;
+    const isComplete = dayNumber >= durationDays;
     const nextDay = dayNumber + 1;
 
     await prisma.yCProgram.update({
       where: { id: program.id },
       data: {
-        currentDay: isComplete ? 90 : nextDay,
+        currentDay: isComplete ? durationDays : nextDay,
         status: isComplete ? "completed" : "active",
       },
     });

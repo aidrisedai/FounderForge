@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/prisma";
-import { generateSkeleton, generateDetail, applyDetail } from "@/lib/ycCoach";
+import { generateSkeleton, clampDuration } from "@/lib/ycCoach";
 
-const DETAIL_WINDOW = 7;
 const MAX_PROGRAMS = 5;
 
 // GET: all non-abandoned programs for the user
@@ -26,13 +25,14 @@ export async function GET() {
   }
 }
 
-// POST: create a new 90-day program (max 5, no longer abandons existing ones)
+// POST: create a new program in "planning" status. Seibel drafts the skeleton; the
+// founder reviews and refines it (via /plan) before locking it in (via /start).
 export async function POST(req) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const { startupName, oneLiner, stage, startingRevenue } = await req.json();
+    const { startupName, oneLiner, stage, startingRevenue, durationDays } = await req.json();
 
     if (!startupName?.trim() || !oneLiner?.trim()) {
       return NextResponse.json({ error: "Startup name and description are required" }, { status: 400 });
@@ -50,16 +50,18 @@ export async function POST(req) {
     }
 
     const startRev = Math.max(0, parseInt(startingRevenue, 10) || 0);
+    const duration = clampDuration(durationDays);
 
-    // 1. Generate the 90-day skeleton
+    // 1. Generate the sprint skeleton
     const { phases, days } = await generateSkeleton({
       startupName: startupName.trim(),
       oneLiner: oneLiner.trim(),
       stage: stage || "idea",
       startingRevenue: startRev,
+      durationDays: duration,
     });
 
-    // 2. Create the program + all 90 skeleton days
+    // 2. Create the program as a draft — days are materialized when the founder starts
     const program = await prisma.yCProgram.create({
       data: {
         userId: session.user.id,
@@ -67,38 +69,19 @@ export async function POST(req) {
         oneLiner: oneLiner.trim(),
         stage: stage || "idea",
         startingRevenue: startRev,
+        durationDays: duration,
         currentDay: 1,
+        status: "planning",
         phases,
-        days: {
-          create: days.map((d) => ({
-            dayNumber: d.day,
-            theme: d.theme,
-            objective: d.objective,
-            tasks: [],
-            status: d.day === 1 ? "active" : "pending",
-          })),
-        },
+        planDays: days,
+        planChat: [],
       },
       include: { days: { orderBy: { dayNumber: "asc" } } },
     });
 
-    // 3. Flesh out the first window of days in detail
-    const windowDays = program.days.filter((d) => d.dayNumber <= DETAIL_WINDOW);
-    try {
-      const detail = await generateDetail({ program, windowDays, recentReports: [] });
-      await applyDetail(program.id, detail);
-    } catch (detailErr) {
-      console.error("Detail generation failed (skeleton still saved):", detailErr.message);
-    }
-
-    const fresh = await prisma.yCProgram.findUnique({
-      where: { id: program.id },
-      include: { days: { orderBy: { dayNumber: "asc" } } },
-    });
-    return NextResponse.json(fresh, { status: 201 });
+    return NextResponse.json(program, { status: 201 });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Failed to create program" }, { status: 500 });
   }
 }
-
