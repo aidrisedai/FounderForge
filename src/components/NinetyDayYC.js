@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { MIN_DURATION, MAX_DURATION } from "@/lib/ycConstants";
 
 const YC = "#FF6600";
 const YC_GRAD = "linear-gradient(135deg,#FF6600,#FF8534)";
@@ -31,8 +32,11 @@ function Onboarding({ onCreate, creating, onBack, error }) {
   const [customDuration, setCustomDuration] = useState("");
   const [useCustom, setUseCustom] = useState(false);
 
+  const parsedCustom = parseInt(customDuration, 10);
   const effectiveDuration = useCustom
-    ? Math.min(180, Math.max(14, parseInt(customDuration, 10) || 0)) || null
+    ? (Number.isFinite(parsedCustom) && parsedCustom > 0
+        ? Math.min(MAX_DURATION, Math.max(MIN_DURATION, parsedCustom))
+        : null)
     : duration;
 
   if (creating) {
@@ -106,8 +110,8 @@ function Onboarding({ onCreate, creating, onBack, error }) {
         </div>
         {useCustom && (
           <div style={{ marginBottom: 18 }}>
-            <input value={customDuration} onChange={(e) => setCustomDuration(e.target.value.replace(/[^0-9]/g, ""))} placeholder="Number of days (14–180)" inputMode="numeric" autoFocus style={{ ...inputStyle, marginBottom: 4 }} />
-            <div style={{ fontSize: 11.5, color: "var(--edai-muted)" }}>Anywhere from 14 to 180 days. Shorter sprints mean a more aggressive plan.</div>
+            <input value={customDuration} onChange={(e) => setCustomDuration(e.target.value.replace(/[^0-9]/g, ""))} placeholder={`Number of days (${MIN_DURATION}–${MAX_DURATION})`} inputMode="numeric" autoFocus style={{ ...inputStyle, marginBottom: 4 }} />
+            <div style={{ fontSize: 11.5, color: "var(--edai-muted)" }}>Anywhere from {MIN_DURATION} to {MAX_DURATION} days. Shorter sprints mean a more aggressive plan.</div>
           </div>
         )}
 
@@ -140,7 +144,7 @@ const inputStyle = { width: "100%", border: "1px solid var(--edai-border)", bord
 
 // ─── Plan Review (before Day 1) ────────────────────────────────────────────────
 
-function PlanReview({ program, onUpdate, onStarted }) {
+function PlanReview({ program, onUpdate, onStarted, onDiscard }) {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -178,10 +182,12 @@ function PlanReview({ program, onUpdate, onStarted }) {
         const err = await res.json().catch(() => ({}));
         setError(err.error || "Michael didn't get that — try again.");
         onUpdate({ ...program, planChat: chat });
+        setMessage(text); // don't lose what they typed
       }
     } catch {
       setError("Connection issue — try again.");
       onUpdate({ ...program, planChat: chat });
+      setMessage(text);
     } finally {
       setSending(false);
     }
@@ -234,9 +240,16 @@ function PlanReview({ program, onUpdate, onStarted }) {
           </div>
           <div style={{ fontSize: 12.5, color: "var(--edai-muted)" }}>Review the plan with Michael. Push back, add context, reshape it — then lock it in.</div>
         </div>
-        <button onClick={start} className="ff-btn-accent" style={{ background: YC_GRAD, color: "#fff", border: "none", borderRadius: 10, padding: "12px 22px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)", whiteSpace: "nowrap" }}>
-          Lock it in — start Day 1 →
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {onDiscard && (
+            <button onClick={onDiscard} style={{ background: "none", border: "1px solid var(--edai-border)", borderRadius: 10, padding: "11px 14px", color: "rgba(255,255,255,.45)", fontWeight: 600, fontSize: 12.5, cursor: "pointer", fontFamily: "var(--ff-body)", whiteSpace: "nowrap" }}>
+              Discard draft
+            </button>
+          )}
+          <button onClick={start} className="ff-btn-accent" style={{ background: YC_GRAD, color: "#fff", border: "none", borderRadius: 10, padding: "12px 22px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)", whiteSpace: "nowrap" }}>
+            Lock it in — start Day 1 →
+          </button>
+        </div>
       </div>
 
       {/* Body: plan left, chat right */}
@@ -321,7 +334,7 @@ function PlanReview({ program, onUpdate, onStarted }) {
 
 // ─── Check-in Modal ─────────────────────────────────────────────────────────────
 
-function CheckinModal({ day, onClose, onSubmit, submitting }) {
+function CheckinModal({ day, onClose, onSubmit, submitting, error }) {
   const [summary, setSummary] = useState("");
   const [blockers, setBlockers] = useState("");
   const [revenue, setRevenue] = useState("");
@@ -361,6 +374,11 @@ function CheckinModal({ day, onClose, onSubmit, submitting }) {
           ))}
         </div>
 
+        {error && (
+          <div style={{ marginBottom: 12, padding: "9px 13px", borderRadius: 8, background: "rgba(224,90,71,.12)", border: "1px solid rgba(224,90,71,.3)", fontSize: 13, color: "#FF8888", fontFamily: "var(--ff-body)" }}>
+            {error}
+          </div>
+        )}
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
           <button onClick={onClose} className="ff-ghost" style={{ background: "var(--edai-surface-2)", color: "rgba(255,255,255,.7)", border: "1px solid var(--edai-border)", borderRadius: 9, padding: "10px 18px", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)" }}>Cancel</button>
           <button
@@ -386,12 +404,14 @@ function TodayPanel({ program, day, onToggleTask, onOpenCheckin, onAdjustDay }) 
   const [adjustText, setAdjustText] = useState("");
   const [adjusting, setAdjusting] = useState(false);
   const [adjustReply, setAdjustReply] = useState(null);
+  const [adjustError, setAdjustError] = useState(null);
 
   async function submitAdjust() {
     const text = adjustText.trim();
     if (!text || adjusting) return;
     setAdjusting(true);
     setAdjustReply(null);
+    setAdjustError(null);
     const reply = await onAdjustDay(text);
     setAdjusting(false);
     if (reply != null) {
@@ -399,7 +419,8 @@ function TodayPanel({ program, day, onToggleTask, onOpenCheckin, onAdjustDay }) 
       setAdjustText("");
       setShowAdjust(false);
     } else {
-      setAdjustReply("Couldn't update the plan — try again.");
+      // Keep the composer open with their text so they can retry.
+      setAdjustError("Couldn't update the plan — try again.");
     }
   }
 
@@ -459,11 +480,16 @@ function TodayPanel({ program, day, onToggleTask, onOpenCheckin, onAdjustDay }) 
             </div>
           )}
           {!showAdjust ? (
-            <button onClick={() => { setShowAdjust(true); setAdjustReply(null); }} style={{ background: "none", border: "none", color: "rgba(255,255,255,.45)", fontSize: 12.5, cursor: "pointer", fontFamily: "var(--ff-body)", padding: 0, display: "flex", alignItems: "center", gap: 6 }}>
+            <button onClick={() => { setShowAdjust(true); setAdjustReply(null); setAdjustError(null); }} style={{ background: "none", border: "none", color: "rgba(255,255,255,.45)", fontSize: 12.5, cursor: "pointer", fontFamily: "var(--ff-body)", padding: 0, display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 13 }}>✏️</span> Life happened? Tweak today&apos;s plan
             </button>
           ) : (
             <div>
+              {adjustError && (
+                <div style={{ marginBottom: 8, padding: "8px 12px", borderRadius: 8, background: "rgba(224,90,71,.12)", border: "1px solid rgba(224,90,71,.3)", fontSize: 12.5, color: "#FF8888", fontFamily: "var(--ff-body)" }}>
+                  {adjustError}
+                </div>
+              )}
               <div style={{ display: "flex", alignItems: "flex-end", gap: 8, padding: "9px 11px", borderRadius: 10, border: "1px solid var(--edai-border)", background: "var(--edai-surface-2)" }}>
                 <textarea
                   value={adjustText}
@@ -606,6 +632,7 @@ export default function NinetyDayYC() {
   const [showNew, setShowNew] = useState(false);
   const [view, setView] = useState("today");
   const [checkinOpen, setCheckinOpen] = useState(false);
+  const [checkinError, setCheckinError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [pickedDay, setPickedDay] = useState(null);
   const [createError, setCreateError] = useState(null);
@@ -691,6 +718,7 @@ export default function NinetyDayYC() {
 
   async function handleCheckin(report) {
     setSubmitting(true);
+    setCheckinError(null);
     try {
       const res = await fetch(`/api/yc/program/${activeId}/checkin`, {
         method: "POST",
@@ -702,10 +730,27 @@ export default function NinetyDayYC() {
         setPrograms((prev) => prev.map((p) => (p.id === activeId ? data.program : p)));
         setCheckinOpen(false);
         setView("today");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setCheckinError(err.error || "Check-in failed — try again.");
       }
+    } catch {
+      setCheckinError("Connection issue — try again.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleDiscard(id) {
+    try {
+      const res = await fetch(`/api/yc/program/${id}`, { method: "DELETE" });
+      if (!res.ok) return;
+      setPrograms((prev) => {
+        const rest = prev.filter((p) => p.id !== id);
+        if (id === activeId) setActiveId(rest[0]?.id || null);
+        return rest;
+      });
+    } catch {}
   }
 
   if (loading) {
@@ -845,6 +890,11 @@ export default function NinetyDayYC() {
               setPrograms((prev) => prev.map((x) => (x.id === p.id ? p : x)));
               setView("today");
             }}
+            onDiscard={() => {
+              if (window.confirm("Discard this draft plan? The conversation and plan will be archived.")) {
+                handleDiscard(program.id);
+              }
+            }}
           />
         </div>
       ) : program && (
@@ -867,7 +917,7 @@ export default function NinetyDayYC() {
       )}
 
       {checkinOpen && currentDay && (
-        <CheckinModal day={currentDay} onClose={() => setCheckinOpen(false)} onSubmit={handleCheckin} submitting={submitting} />
+        <CheckinModal day={currentDay} onClose={() => { setCheckinOpen(false); setCheckinError(null); }} onSubmit={handleCheckin} submitting={submitting} error={checkinError} />
       )}
       {pickedDay && <DayDetailModal day={pickedDay} onClose={() => setPickedDay(null)} />}
     </div>

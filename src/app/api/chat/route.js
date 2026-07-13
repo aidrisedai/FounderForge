@@ -180,7 +180,9 @@ COMPLETION FORMAT (ONLY when all criteria met):
       body: JSON.stringify({
         model: "claude-sonnet-5",
         thinking: { type: "disabled" },
-        max_tokens: 700,
+        // Brevity is enforced by the prompt; the cap only needs to protect the
+        // trailing [DELIVERABLE_START]…[TASK_COMPLETE] block from truncation.
+        max_tokens: 1000,
         system: systemPrompt,
         messages,
       }),

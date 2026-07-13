@@ -28,7 +28,7 @@ export async function POST(req, { params }) {
     const chatHistory = Array.isArray(program.planChat) ? program.planChat : [];
     const plan = { phases: program.phases || [], days: program.planDays || [] };
 
-    const { reply, plan: updatedPlan } = await refinePlan({ program, plan, chatHistory, userMessage });
+    const { reply, plan: updatedPlan, durationDays } = await refinePlan({ program, plan, chatHistory, userMessage });
 
     const newChat = [
       ...chatHistory,
@@ -41,6 +41,7 @@ export async function POST(req, { params }) {
       data: {
         planChat: newChat,
         ...(updatedPlan ? { phases: updatedPlan.phases, planDays: updatedPlan.days } : {}),
+        ...(durationDays ? { durationDays } : {}),
       },
       include: { days: { orderBy: { dayNumber: "asc" } } },
     });

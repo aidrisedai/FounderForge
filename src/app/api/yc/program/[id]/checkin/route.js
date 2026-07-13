@@ -3,8 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/prisma";
 import { generateDetail, generateCheckinFeedback, applyDetail } from "@/lib/ycCoach";
-
-const DETAIL_WINDOW = 7;
+import { DETAIL_WINDOW } from "@/lib/ycConstants";
 
 export async function POST(req, { params }) {
   const session = await getServerSession(authOptions);

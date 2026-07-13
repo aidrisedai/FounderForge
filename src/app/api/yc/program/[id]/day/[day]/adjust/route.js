@@ -14,6 +14,10 @@ export async function POST(req, { params }) {
   const dayNumber = parseInt(day, 10);
 
   try {
+    const { request } = await req.json();
+    const trimmed = String(request || "").trim().slice(0, 1000);
+    if (!trimmed) return NextResponse.json({ error: "Tell Michael what to change" }, { status: 400 });
+
     const program = await prisma.yCProgram.findFirst({
       where: { id, userId: session.user.id },
     });
@@ -29,10 +33,6 @@ export async function POST(req, { params }) {
       where: { programId_dayNumber: { programId: id, dayNumber } },
     });
     if (!ycDay) return NextResponse.json({ error: "Day not found" }, { status: 404 });
-
-    const { request } = await req.json();
-    const trimmed = String(request || "").trim().slice(0, 1000);
-    if (!trimmed) return NextResponse.json({ error: "Tell Michael what to change" }, { status: 400 });
 
     const result = await adjustDay({ program, day: ycDay, request: trimmed });
 

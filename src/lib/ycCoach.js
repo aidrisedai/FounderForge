@@ -1,16 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
+import { MIN_DURATION, MAX_DURATION, clampDuration, planMaxTokens } from "@/lib/ycConstants";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-export const MIN_DURATION = 14;
-export const MAX_DURATION = 180;
-
-export function clampDuration(n) {
-  const v = parseInt(n, 10);
-  if (!Number.isFinite(v)) return 90;
-  return Math.min(MAX_DURATION, Math.max(MIN_DURATION, v));
-}
+export { MIN_DURATION, MAX_DURATION, clampDuration };
 
 // Michael Seibel coaching persona — the voice behind every plan and check-in.
 export function seibelPersona(durationDays = 90) {
@@ -30,9 +24,6 @@ Your coaching style is direct, tactical, warm but demanding. Your core beliefs:
 The founder has ${durationDays} days to reach a $1M annual revenue run-rate (about $83K MRR). Treat this like a real YC batch sprint: push hard, stay concrete, give them specific actions — never vague platitudes. Every task should be something a founder can actually DO that day.`;
 }
 
-// Back-compat export (used nowhere critical but kept safe)
-export const SEIBEL_PERSONA = seibelPersona(90);
-
 function parseJSON(raw) {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
@@ -40,15 +31,25 @@ function parseJSON(raw) {
   return JSON.parse(raw.slice(start, end + 1));
 }
 
-// Normalize a {phases, days} plan so days covers exactly 1..durationDays with no gaps.
+// Normalize a {phases, days} plan: days covers exactly 1..durationDays with no gaps,
+// and phases tile 1..durationDays contiguously (the UI renders days only through
+// phase ranges, so a gap between phases would hide real days from the founder).
 export function normalizePlan(data, durationDays) {
   const byDay = {};
   for (const d of data.days || []) byDay[d.day] = d;
-  const phases = (data.phases || []).map((p) => ({
-    ...p,
-    dayStart: Math.max(1, Math.min(durationDays, p.dayStart || 1)),
-    dayEnd: Math.max(1, Math.min(durationDays, p.dayEnd || durationDays)),
-  }));
+  const phases = (data.phases || [])
+    .map((p) => ({
+      ...p,
+      dayStart: Math.max(1, Math.min(durationDays, p.dayStart || 1)),
+      dayEnd: Math.max(1, Math.min(durationDays, p.dayEnd || durationDays)),
+    }))
+    .sort((a, b) => a.dayStart - b.dayStart);
+  for (let i = 0; i < phases.length; i++) {
+    phases[i].dayStart = i === 0 ? 1 : phases[i - 1].dayEnd + 1;
+    phases[i].dayEnd = i === phases.length - 1
+      ? durationDays
+      : Math.min(durationDays, Math.max(phases[i].dayStart, phases[i].dayEnd));
+  }
   const findPhase = (day) => phases.find((p) => day >= p.dayStart && day <= p.dayEnd) || phases[phases.length - 1];
 
   const days = [];
@@ -68,7 +69,7 @@ export function normalizePlan(data, durationDays) {
 export async function generateSkeleton({ startupName, oneLiner, stage, startingRevenue, durationDays = 90 }) {
   const msg = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: durationDays > 100 ? 20000 : 8192,
+    max_tokens: planMaxTokens(durationDays),
     system: seibelPersona(durationDays),
     messages: [
       {
@@ -107,7 +108,8 @@ Rules:
 }
 
 // Plan-review conversation: founder gives feedback on the draft plan, Seibel replies and
-// (when the feedback calls for it) revises the skeleton. Returns { reply, plan|null }.
+// (when the feedback calls for it) revises the skeleton — including changing the sprint
+// length. Returns { reply, plan|null, durationDays|null }.
 export async function refinePlan({ program, plan, chatHistory, userMessage }) {
   const durationDays = program.durationDays || 90;
   const phaseSummary = (plan.phases || [])
@@ -121,7 +123,7 @@ export async function refinePlan({ program, plan, chatHistory, userMessage }) {
 
   const msg = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: durationDays > 100 ? 20000 : 8192,
+    max_tokens: planMaxTokens(Math.max(durationDays, MAX_DURATION)),
     system: `${seibelPersona(durationDays)}
 
 You are in PLAN REVIEW with the founder. They have not started Day 1 yet. Your draft ${durationDays}-day plan is below. The founder will push back, add context, or ask for changes — your job is to sharpen the plan WITH them until they're confident enough to start.
@@ -135,17 +137,20 @@ ${daySummary}
 
 STARTUP: ${program.startupName} — ${program.oneLiner} (stage: ${program.stage}, starting revenue: $${program.startingRevenue}/mo)
 
-Respond ONLY with valid JSON:
+Respond ONLY with valid JSON. (Earlier assistant turns in this conversation show only your prose replies — you must STILL answer with this JSON envelope every time.)
 {
   "reply": "2-5 sentences in your direct voice. React to their input, explain what you changed and why (or push back if their request would hurt them).",
   "planChanged": true|false,
+  "durationDays": ${durationDays},  // total sprint length; change it only if the founder asked to (${MIN_DURATION}-${MAX_DURATION})
   "phases": [...],  // FULL updated phases array — only if planChanged
-  "days": [...]     // FULL updated days array, exactly ${durationDays} entries — only if planChanged
+  "days": [...]     // FULL updated days array, exactly durationDays entries — only if planChanged
 }
 
 Rules:
 - If the founder's message is a question or context that doesn't require plan changes, set planChanged=false and omit phases/days.
-- If you change the plan, return the COMPLETE phases and days arrays (same shape as the draft), not a diff.
+- If you change the plan, return the COMPLETE phases and days arrays (same shape as the draft), not a diff. The days array length MUST equal durationDays.
+- If the founder wants a shorter or longer sprint, set durationDays to the new length (${MIN_DURATION}-${MAX_DURATION}) and rebuild the full plan for it.
+- If they only want phase-level changes (names, goals, milestones), you may return "phases" without "days".
 - Don't be a pushover: if a request is fake work or avoids customers/revenue, say so and propose the sharper version.
 - Keep themes/objectives tight and concrete.`,
     messages: [...history, { role: "user", content: userMessage }],
@@ -153,10 +158,36 @@ Rules:
 
   const data = parseJSON(msg.content[0].text.trim());
   const reply = data.reply || "Got it.";
-  if (data.planChanged && Array.isArray(data.days) && data.days.length) {
-    return { reply, plan: normalizePlan({ phases: data.phases || plan.phases, days: data.days }, durationDays) };
+
+  if (!data.planChanged) return { reply, plan: null, durationDays: null };
+
+  const hasDays = Array.isArray(data.days) && data.days.length > 0;
+  const hasPhases = Array.isArray(data.phases) && data.phases.length > 0;
+
+  if (hasDays) {
+    const declared = parseInt(data.durationDays, 10) || durationDays;
+    // A days array that doesn't match the declared length means the output was
+    // truncated or malformed — refuse it honestly instead of padding with filler.
+    if (data.days.length !== declared || declared < MIN_DURATION || declared > MAX_DURATION) {
+      return {
+        reply: `${reply}\n\n(Heads up — my revision came out incomplete, so I kept the current plan. Ask me again and I'll redo it.)`,
+        plan: null,
+        durationDays: null,
+      };
+    }
+    return {
+      reply,
+      plan: normalizePlan({ phases: hasPhases ? data.phases : plan.phases, days: data.days }, declared),
+      durationDays: declared !== durationDays ? declared : null,
+    };
   }
-  return { reply, plan: null };
+
+  if (hasPhases) {
+    // Phase-only revision: keep the existing days, re-tile the new phases over them.
+    return { reply, plan: normalizePlan({ phases: data.phases, days: plan.days }, durationDays), durationDays: null };
+  }
+
+  return { reply, plan: null, durationDays: null };
 }
 
 // Generate detailed tasks + a Seibel note for a window of days, factoring in recent reports.
@@ -223,20 +254,22 @@ Rules:
 
 // Persist generated detail onto the matching YCDay rows, scoped to one program.
 export async function applyDetail(programId, detail) {
-  for (const d of detail.days || []) {
-    const data = {
-      tasks: (d.tasks || []).map((t) => ({ text: typeof t === "string" ? t : t.text, done: false })),
-      partnerNote: d.partnerNote || null,
-      rationale: d.rationale || null,
-      detailed: true,
-    };
-    if (d.theme) data.theme = d.theme;
-    if (d.objective) data.objective = d.objective;
+  await Promise.all(
+    (detail.days || []).map((d) => {
+      const data = {
+        tasks: (d.tasks || []).map((t) => ({ text: typeof t === "string" ? t : t.text, done: false })),
+        partnerNote: d.partnerNote || null,
+        rationale: d.rationale || null,
+        detailed: true,
+      };
+      if (d.theme) data.theme = d.theme;
+      if (d.objective) data.objective = d.objective;
 
-    await prisma.yCDay
-      .update({ where: { programId_dayNumber: { programId, dayNumber: d.day } }, data })
-      .catch((e) => console.error(`Failed to update day ${d.day}:`, e.message));
-  }
+      return prisma.yCDay
+        .update({ where: { programId_dayNumber: { programId, dayNumber: d.day } }, data })
+        .catch((e) => console.error(`Failed to update day ${d.day}:`, e.message));
+    })
+  );
 }
 
 // Rework a single day's plan based on the founder's live request ("I'm at a conference
@@ -279,13 +312,22 @@ Rules:
   });
 
   const data = parseJSON(msg.content[0].text.trim());
+
+  // Never trust the model to preserve completed work: re-attach any already-done
+  // task it dropped, and restore the done flag on any it re-listed as fresh.
+  let newTasks = Array.isArray(data.tasks) && data.tasks.length
+    ? data.tasks.map((t) => ({ text: typeof t === "string" ? t : t.text, done: !!t.done }))
+    : tasks;
+  const doneTasks = tasks.filter((t) => t.done);
+  newTasks = newTasks.map((t) => (doneTasks.some((dt) => dt.text === t.text) ? { ...t, done: true } : t));
+  const missingDone = doneTasks.filter((dt) => !newTasks.some((t) => t.text === dt.text));
+  newTasks = [...missingDone, ...newTasks];
+
   return {
     reply: data.reply || "Done — plan updated.",
     theme: data.theme || day.theme,
     objective: data.objective || day.objective,
-    tasks: Array.isArray(data.tasks) && data.tasks.length
-      ? data.tasks.map((t) => ({ text: typeof t === "string" ? t : t.text, done: !!t.done }))
-      : tasks,
+    tasks: newTasks,
     partnerNote: data.partnerNote || day.partnerNote,
   };
 }
