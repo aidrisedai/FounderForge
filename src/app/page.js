@@ -127,6 +127,60 @@ function ChatBubble({ role, content }) {
   );
 }
 
+function CompletedDeliverableCard({ step, task, deliverable, reflection, isDraft = false, onContinue, hasNext = true }) {
+  if (!step || !task || !deliverable) return null;
+
+  return (
+    <div style={{ margin:"0 0 18px", padding:"18px 20px", borderRadius:18, background:`linear-gradient(135deg, ${step.color}14, rgba(255,255,255,.035))`, border:`1px solid ${step.color}30`, boxShadow:`0 14px 38px ${step.color}10` }}>
+      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:14, marginBottom:14 }}>
+        <div>
+          <div style={{ display:"inline-flex", alignItems:"center", gap:7, padding:"4px 10px", borderRadius:99, background:`${step.color}18`, border:`1px solid ${step.color}35`, marginBottom:10 }}>
+            <span style={{ fontSize:12 }}>{isDraft ? "✍️" : "✅"}</span>
+            <span style={{ fontSize:10, fontWeight:800, letterSpacing:".12em", color:step.color, fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>{isDraft ? "Draft saved" : "Completed card"}</span>
+          </div>
+          <h3 style={{ fontSize:17, fontFamily:"var(--ff-display)", fontWeight:750, color:"rgba(255,255,255,.94)", margin:"0 0 4px", letterSpacing:"-.02em" }}>{task.title}</h3>
+          <p style={{ fontSize:12.5, lineHeight:1.6, color:"rgba(255,255,255,.5)", fontFamily:"var(--ff-body)", margin:0 }}>{task.goal}</p>
+        </div>
+        <div style={{ width:40, height:40, borderRadius:12, background:`${step.color}18`, border:`1px solid ${step.color}35`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{step.icon}</div>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))", gap:10, marginBottom:12 }}>
+        <div style={{ padding:"11px 12px", borderRadius:12, background:"rgba(0,0,0,.16)", border:"1px solid rgba(255,255,255,.06)" }}>
+          <div style={{ fontSize:9.5, fontWeight:800, letterSpacing:".14em", color:"rgba(255,255,255,.32)", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:5 }}>What was done</div>
+          <div style={{ fontSize:12.5, lineHeight:1.55, color:"rgba(255,255,255,.68)", fontFamily:"var(--ff-body)" }}>{task.title}</div>
+        </div>
+        <div style={{ padding:"11px 12px", borderRadius:12, background:"rgba(0,0,0,.16)", border:"1px solid rgba(255,255,255,.06)" }}>
+          <div style={{ fontSize:9.5, fontWeight:800, letterSpacing:".14em", color:"rgba(255,255,255,.32)", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:5 }}>Outcome</div>
+          <div style={{ fontSize:12.5, lineHeight:1.55, color:"rgba(255,255,255,.68)", fontFamily:"var(--ff-body)" }}>{task.output}</div>
+        </div>
+      </div>
+
+      {reflection && !isDraft && (
+        <div style={{ padding:"12px 13px", borderRadius:12, background:"rgba(91,163,232,.08)", border:"1px solid rgba(91,163,232,.18)", marginBottom:12 }}>
+          <div style={{ fontSize:9.5, fontWeight:800, letterSpacing:".14em", color:"#5BA3E8", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:6 }}>Mentor observed</div>
+          <div style={{ fontSize:12.8, lineHeight:1.65, color:"rgba(218,236,255,.76)", fontFamily:"var(--ff-body)", whiteSpace:"pre-wrap" }}>{reflection}</div>
+        </div>
+      )}
+
+      <details open={isDraft} style={{ borderRadius:12, background:"rgba(255,255,255,.035)", border:"1px solid rgba(255,255,255,.07)", overflow:"hidden" }}>
+        <summary style={{ padding:"11px 13px", cursor:"pointer", color:"rgba(255,255,255,.75)", fontSize:12, fontWeight:800, letterSpacing:".08em", textTransform:"uppercase", fontFamily:"var(--ff-body)" }}>
+          View deliverable
+        </summary>
+        <div style={{ padding:"0 13px 13px", whiteSpace:"pre-wrap", color:"rgba(255,255,255,.72)", fontSize:13, lineHeight:1.7, fontFamily:"var(--ff-body)" }}>{deliverable}</div>
+      </details>
+
+      {!isDraft && onContinue && (
+        <button
+          onClick={onContinue}
+          style={{ marginTop:12, width:"100%", border:"none", borderRadius:12, padding:"11px 14px", background:"var(--ff-accent-grad)", color:"#fff", fontSize:13, fontWeight:800, fontFamily:"var(--ff-body)", cursor:"pointer", boxShadow:"0 8px 24px rgba(31,166,122,.18)" }}
+        >
+          {hasNext ? "Continue to next task →" : "Review final journey →"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function Timeline({ steps, project, activeStepId, activeTaskIdx, onNav }) {
   const ct = project.completedTasks || {};
   const done = Object.values(ct).reduce((a,v) => a+v, 0);
@@ -667,17 +721,7 @@ export default function Home() {
         // Reset task start time for next task
         setTaskStartTime(null);
         
-        setTimeout(() => {
-          setBanner(null);
-          if (taskIdx < step.tasks.length-1) {
-            setTaskIdx(taskIdx+1);
-            setTaskStartTime(Date.now()); // Set start time for new task
-          } else if (stepIdx < CURRICULUM.length-1) { 
-            setStepIdx(stepIdx+1); 
-            setTaskIdx(0);
-            setTaskStartTime(Date.now()); // Set start time for new task
-          }
-        }, 2200);
+        setTimeout(() => setBanner(null), 2200);
       }
     } catch (e) {
       const err = [...displayMsgs, { role: "assistant", content: "Connection issue — try again." }];
@@ -686,7 +730,24 @@ export default function Home() {
     setLoading(false); scroll();
   }
 
-  function handleSend() { if (!input.trim() || loading) return; const t = input.trim(); setInput(""); callMentor(t, false); }
+  function goToNextTask() {
+    if (!step || !task) return;
+    if (taskIdx < step.tasks.length-1) {
+      setTaskIdx(taskIdx+1);
+      setTaskStartTime(Date.now());
+    } else if (stepIdx < CURRICULUM.length-1) {
+      setStepIdx(stepIdx+1);
+      setTaskIdx(0);
+      setTaskStartTime(Date.now());
+    }
+  }
+
+  function handleSend() {
+    if (!input.trim() || loading || activeTaskIsComplete) return;
+    const t = input.trim();
+    setInput("");
+    callMentor(t, false);
+  }
 
   function handleSimulationComplete(deliverableText) {
     updateProject(activeId, p => {
@@ -719,6 +780,13 @@ export default function Home() {
   if (!dataLoaded) return <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}><TypingDots /></div>;
 
   const isRevisiting = project && task && (project.completedTasks?.[step?.id]||0) > taskIdx;
+  const activeDeliverable = project && task ? (project.deliverables || {})[task.id] : null;
+  const activeDeliverableIsDraft = Boolean(activeDeliverable && !isRevisiting);
+  const activeTaskIsComplete = Boolean(project && step && (project.completedTasks?.[step.id] || 0) > taskIdx);
+  const activeReflection = activeTaskIsComplete
+    ? [...messages].reverse().find((m) => m.role === "assistant" && m.content?.trim())?.content
+    : null;
+  const activeTaskHasNext = Boolean(step && (taskIdx < step.tasks.length - 1 || stepIdx < CURRICULUM.length - 1));
 
   // Show personality assessment for first-time users (no personality and checked)
   if (!project && personalityChecked && !personality && !showPersonality) {
@@ -1088,6 +1156,17 @@ export default function Home() {
         {/* ── Messages ── */}
         <div style={{ flex:1, overflowY:"auto", padding:"20px 32px 8px" }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
+            {activeDeliverable && (
+              <CompletedDeliverableCard
+                step={step}
+                task={task}
+                deliverable={activeDeliverable}
+                reflection={activeReflection}
+                isDraft={activeDeliverableIsDraft}
+                onContinue={activeTaskIsComplete ? goToNextTask : null}
+                hasNext={activeTaskHasNext}
+              />
+            )}
             {messages.map((m,i) => <ChatBubble key={i} role={m.role} content={m.content} />)}
             {loading && <TypingDots />}
             {banner && (
@@ -1107,7 +1186,7 @@ export default function Home() {
         <div style={{ padding:"8px 32px 24px", flexShrink:0 }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
             {/* Quick reply pills */}
-            {!input.trim() && messages.length > 0 && !loading && (() => {
+            {!activeTaskIsComplete && !input.trim() && messages.length > 0 && !loading && (() => {
               const suggestions = getQuickReplies(task, messages);
               return suggestions.length > 0 ? (
                 <div style={{ display:"flex", gap:7, marginBottom:10, flexWrap:"wrap" }}>
@@ -1121,24 +1200,35 @@ export default function Home() {
               ) : null;
             })()}
 
-            {/* Input box — editorial style */}
-            <div style={{ display:"flex", alignItems:"flex-end", gap:10, padding:"14px 16px 14px 18px", borderRadius:16, border:"1px solid rgba(255,255,255,.1)", background:"rgba(255,255,255,.035)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" }}>
-              <textarea
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => { if (e.key==="Enter" && (e.metaKey||e.ctrlKey)) { e.preventDefault(); handleSend(); } }}
-                placeholder={loading ? "Mentor is thinking…" : "Share what you found, or ask a question…"}
-                rows={2}
-                style={{ flex:1, background:"transparent", border:"none", color:"var(--edai-text)", fontSize:14.5, lineHeight:1.7, resize:"none", outline:"none", fontFamily:"var(--ff-body)" }}
-              />
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, flexShrink:0 }}>
-                <button onClick={handleSend} disabled={!input.trim()||loading} className="ff-btn-accent"
-                  style={{ width:40, height:40, borderRadius:11, border:"none", background:input.trim()&&!loading?"var(--ff-accent-grad)":"rgba(255,255,255,.05)", color:input.trim()&&!loading?"#fff":"rgba(255,255,255,.2)", cursor:input.trim()&&!loading?"pointer":"not-allowed", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
-                  ↑
-                </button>
-                <span style={{ fontSize:9, color:"rgba(255,255,255,.14)", fontFamily:"var(--ff-body)", whiteSpace:"nowrap" }}>⌘↵</span>
-              </div>
-            </div>
+            {activeTaskIsComplete ? (
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, padding:"14px 16px", borderRadius:16, border:`1px solid ${step.color}26`, background:`${step.color}0B` }}>
+                  <div>
+                    <div style={{ fontSize:10.5, fontWeight:800, letterSpacing:".12em", color:step.color, fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:3 }}>Task locked</div>
+                    <div style={{ fontSize:13, color:"rgba(255,255,255,.55)", fontFamily:"var(--ff-body)" }}>This work is saved. Review the card above or continue when you’re ready.</div>
+                  </div>
+                  <button onClick={goToNextTask} style={{ border:"none", borderRadius:11, padding:"10px 14px", background:"var(--ff-accent-grad)", color:"#fff", fontSize:12.5, fontWeight:800, fontFamily:"var(--ff-body)", cursor:"pointer", whiteSpace:"nowrap" }}>
+                    {activeTaskHasNext ? "Next task →" : "Done"}
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display:"flex", alignItems:"flex-end", gap:10, padding:"14px 16px 14px 18px", borderRadius:16, border:"1px solid rgba(255,255,255,.1)", background:"rgba(255,255,255,.035)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" }}>
+                  <textarea
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => { if (e.key==="Enter" && (e.metaKey||e.ctrlKey)) { e.preventDefault(); handleSend(); } }}
+                    placeholder={loading ? "Mentor is thinking…" : "Share what you found, or ask a question…"}
+                    rows={2}
+                    style={{ flex:1, background:"transparent", border:"none", color:"var(--edai-text)", fontSize:14.5, lineHeight:1.7, resize:"none", outline:"none", fontFamily:"var(--ff-body)" }}
+                  />
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, flexShrink:0 }}>
+                    <button onClick={handleSend} disabled={!input.trim()||loading} className="ff-btn-accent"
+                      style={{ width:40, height:40, borderRadius:11, border:"none", background:input.trim()&&!loading?"var(--ff-accent-grad)":"rgba(255,255,255,.05)", color:input.trim()&&!loading?"#fff":"rgba(255,255,255,.2)", cursor:input.trim()&&!loading?"pointer":"not-allowed", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
+                      ↑
+                    </button>
+                    <span style={{ fontSize:9, color:"rgba(255,255,255,.14)", fontFamily:"var(--ff-body)", whiteSpace:"nowrap" }}>⌘↵</span>
+                  </div>
+                </div>
+              )}
           </div>
         </div>
       </div>
