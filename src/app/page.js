@@ -705,17 +705,7 @@ export default function Home() {
         // Reset task start time for next task
         setTaskStartTime(null);
         
-        setTimeout(() => {
-          setBanner(null);
-          if (taskIdx < step.tasks.length-1) {
-            setTaskIdx(taskIdx+1);
-            setTaskStartTime(Date.now()); // Set start time for new task
-          } else if (stepIdx < CURRICULUM.length-1) { 
-            setStepIdx(stepIdx+1); 
-            setTaskIdx(0);
-            setTaskStartTime(Date.now()); // Set start time for new task
-          }
-        }, 2200);
+        setTimeout(() => setBanner(null), 2200);
       }
     } catch (e) {
       const err = [...displayMsgs, { role: "assistant", content: "Connection issue — try again." }];
@@ -724,7 +714,24 @@ export default function Home() {
     setLoading(false); scroll();
   }
 
-  function handleSend() { if (!input.trim() || loading) return; const t = input.trim(); setInput(""); callMentor(t, false); }
+  function goToNextTask() {
+    if (!step || !task) return;
+    if (taskIdx < step.tasks.length-1) {
+      setTaskIdx(taskIdx+1);
+      setTaskStartTime(Date.now());
+    } else if (stepIdx < CURRICULUM.length-1) {
+      setStepIdx(stepIdx+1);
+      setTaskIdx(0);
+      setTaskStartTime(Date.now());
+    }
+  }
+
+  function handleSend() {
+    if (!input.trim() || loading || activeTaskIsComplete) return;
+    const t = input.trim();
+    setInput("");
+    callMentor(t, false);
+  }
 
   function handleSimulationComplete(deliverableText) {
     updateProject(activeId, p => {
@@ -1155,7 +1162,7 @@ export default function Home() {
         <div style={{ padding:"8px 32px 24px", flexShrink:0 }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
             {/* Quick reply pills */}
-            {!input.trim() && messages.length > 0 && !loading && (() => {
+            {!activeTaskIsComplete && !input.trim() && messages.length > 0 && !loading && (() => {
               const suggestions = getQuickReplies(task, messages);
               return suggestions.length > 0 ? (
                 <div style={{ display:"flex", gap:7, marginBottom:10, flexWrap:"wrap" }}>
@@ -1169,24 +1176,35 @@ export default function Home() {
               ) : null;
             })()}
 
-            {/* Input box — editorial style */}
-            <div style={{ display:"flex", alignItems:"flex-end", gap:10, padding:"14px 16px 14px 18px", borderRadius:16, border:"1px solid rgba(255,255,255,.1)", background:"rgba(255,255,255,.035)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" }}>
-              <textarea
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => { if (e.key==="Enter" && (e.metaKey||e.ctrlKey)) { e.preventDefault(); handleSend(); } }}
-                placeholder={loading ? "Mentor is thinking…" : "Share what you found, or ask a question…"}
-                rows={2}
-                style={{ flex:1, background:"transparent", border:"none", color:"var(--edai-text)", fontSize:14.5, lineHeight:1.7, resize:"none", outline:"none", fontFamily:"var(--ff-body)" }}
-              />
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, flexShrink:0 }}>
-                <button onClick={handleSend} disabled={!input.trim()||loading} className="ff-btn-accent"
-                  style={{ width:40, height:40, borderRadius:11, border:"none", background:input.trim()&&!loading?"var(--ff-accent-grad)":"rgba(255,255,255,.05)", color:input.trim()&&!loading?"#fff":"rgba(255,255,255,.2)", cursor:input.trim()&&!loading?"pointer":"not-allowed", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
-                  ↑
-                </button>
-                <span style={{ fontSize:9, color:"rgba(255,255,255,.14)", fontFamily:"var(--ff-body)", whiteSpace:"nowrap" }}>⌘↵</span>
-              </div>
-            </div>
+            {activeTaskIsComplete ? (
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, padding:"14px 16px", borderRadius:16, border:`1px solid ${step.color}26`, background:`${step.color}0B` }}>
+                  <div>
+                    <div style={{ fontSize:10.5, fontWeight:800, letterSpacing:".12em", color:step.color, fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:3 }}>Task locked</div>
+                    <div style={{ fontSize:13, color:"rgba(255,255,255,.55)", fontFamily:"var(--ff-body)" }}>This work is saved. Review the card above or continue when you’re ready.</div>
+                  </div>
+                  <button onClick={goToNextTask} style={{ border:"none", borderRadius:11, padding:"10px 14px", background:"var(--ff-accent-grad)", color:"#fff", fontSize:12.5, fontWeight:800, fontFamily:"var(--ff-body)", cursor:"pointer", whiteSpace:"nowrap" }}>
+                    {activeTaskHasNext ? "Next task →" : "Done"}
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display:"flex", alignItems:"flex-end", gap:10, padding:"14px 16px 14px 18px", borderRadius:16, border:"1px solid rgba(255,255,255,.1)", background:"rgba(255,255,255,.035)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" }}>
+                  <textarea
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => { if (e.key==="Enter" && (e.metaKey||e.ctrlKey)) { e.preventDefault(); handleSend(); } }}
+                    placeholder={loading ? "Mentor is thinking…" : "Share what you found, or ask a question…"}
+                    rows={2}
+                    style={{ flex:1, background:"transparent", border:"none", color:"var(--edai-text)", fontSize:14.5, lineHeight:1.7, resize:"none", outline:"none", fontFamily:"var(--ff-body)" }}
+                  />
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, flexShrink:0 }}>
+                    <button onClick={handleSend} disabled={!input.trim()||loading} className="ff-btn-accent"
+                      style={{ width:40, height:40, borderRadius:11, border:"none", background:input.trim()&&!loading?"var(--ff-accent-grad)":"rgba(255,255,255,.05)", color:input.trim()&&!loading?"#fff":"rgba(255,255,255,.2)", cursor:input.trim()&&!loading?"pointer":"not-allowed", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
+                      ↑
+                    </button>
+                    <span style={{ fontSize:9, color:"rgba(255,255,255,.14)", fontFamily:"var(--ff-body)", whiteSpace:"nowrap" }}>⌘↵</span>
+                  </div>
+                </div>
+              )}
           </div>
         </div>
       </div>
