@@ -5,6 +5,20 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 const CARD_COLORS = { concept: "#6366f1", list: "#10b981", debate: "#ec4899", question: "#f59e0b", feedback: "#3b82f6" };
 const CARD_BG = { concept: "rgba(99,102,241,.10)", list: "rgba(16,185,129,.10)", debate: "rgba(236,72,153,.10)", question: "rgba(245,158,11,.10)", feedback: "rgba(59,130,246,.10)" };
+const CARD_LABELS = { concept: "Spark", list: "Pattern", debate: "Tension", question: "Doorway", feedback: "Field Note" };
+
+function formatProblemSpark(problem) {
+  if (!problem) return "";
+  const lines = [
+    problem.title ? `Spark: ${problem.title}` : null,
+    problem.whoFeelsIt ? `Who feels it: ${problem.whoFeelsIt}` : null,
+    problem.description ? `What hurts: ${problem.description}` : null,
+    problem.currentWorkaround ? `Current workaround: ${problem.currentWorkaround}` : null,
+    problem.whyNow ? `Why now: ${problem.whyNow}` : null,
+    problem.startupAngle ? `Founder angle: ${problem.startupAngle}` : null,
+  ].filter(Boolean);
+  return lines.join("\n");
+}
 
 function LearningCard({ card }) {
   const accent = CARD_COLORS[card.type] || "#6366f1";
@@ -12,7 +26,10 @@ function LearningCard({ card }) {
 
   return (
     <div style={{ background: bg, border: `1.5px solid ${accent}22`, borderLeft: `3px solid ${accent}`, borderRadius: 10, padding: "12px 14px", marginBottom: 10 }}>
-      {card.title && <div style={{ fontWeight: 700, fontSize: 13, color: accent, marginBottom: 5 }}>{card.title}</div>}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: card.title ? 5 : 0 }}>
+        <span style={{ fontWeight: 800, fontSize: 10, color: accent, textTransform: "uppercase", letterSpacing: ".08em" }}>{CARD_LABELS[card.type] || "Spark"}</span>
+        {card.title && <span style={{ fontWeight: 700, fontSize: 13, color: "var(--edai-text)" }}>{card.title}</span>}
+      </div>
 
       {card.type === "debate" && card.sides ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -36,7 +53,7 @@ function LearningCard({ card }) {
           ))}
         </div>
       ) : (
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,.72)", lineHeight: 1.6, fontStyle: card.type === "question" ? "italic" : "normal" }}>{card.body}</div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,.72)", lineHeight: 1.55, fontStyle: card.type === "question" ? "italic" : "normal" }}>{card.body}</div>
       )}
     </div>
   );
@@ -118,13 +135,13 @@ function GuidedLearningPanel({ video, onProblemCaptured }) {
     return (
       <div style={{ flex: 1, overflow: "auto", padding: "20px 18px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
         <div style={{ fontSize: 36, marginBottom: 12 }}>🎓</div>
-        <div style={{ fontWeight: 700, fontSize: 16, color: "var(--edai-text)", marginBottom: 8 }}>Session complete!</div>
-        <div style={{ color: "var(--edai-muted)", fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>You've explored the key problems in this space. Capture the one that resonates most.</div>
+        <div style={{ fontWeight: 700, fontSize: 16, color: "var(--edai-text)", marginBottom: 8 }}>You found a live wire.</div>
+        <div style={{ color: "var(--edai-muted)", fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>Save the spark that made you lean in.</div>
         <button
           onClick={() => onProblemCaptured && onProblemCaptured()}
           style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)" }}
         >
-          💡 Capture a Problem
+          💡 Save a Spark
         </button>
       </div>
     );
@@ -179,7 +196,7 @@ function GuidedLearningPanel({ video, onProblemCaptured }) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
-          placeholder="Your thoughts…"
+          placeholder="What have you noticed?"
           style={{ flex: 1, border: "1px solid var(--edai-border)", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontFamily: "var(--ff-body)", outline: "none", background: "var(--edai-surface-2)", color: "var(--edai-text)" }}
         />
         <button
@@ -207,6 +224,145 @@ function Avatar({ name, size = 32 }) {
 
 // ─── Domain Browser ───────────────────────────────────────────────────────────
 
+function IdeaEntry({ onHaveIdea, onExploreWorlds, onNoIdeaYet, portfolioCount }) {
+  const paths = [
+    {
+      icon: "⚡",
+      title: "I have an idea",
+      body: "Turn it into a sharp first bet.",
+      action: onHaveIdea,
+      cta: "Shape the idea",
+    },
+    {
+      icon: "🌍",
+      title: "I have a world",
+      body: "Explore videos, signals, and real pain.",
+      action: onExploreWorlds,
+      cta: "Choose a world",
+    },
+    {
+      icon: "✨",
+      title: "No idea yet",
+      body: "Start with taste, friction, and a field note.",
+      action: onNoIdeaYet,
+      cta: "Find a spark",
+    },
+  ];
+
+  return (
+    <div style={{ maxWidth: 940, margin: "0 auto", padding: "44px 24px" }}>
+      <div style={{ textAlign: "center", marginBottom: 34 }}>
+        <div style={{ fontSize: 42, marginBottom: 12 }}>🔎</div>
+        <h2 style={{ fontFamily: "var(--ff-heading)", fontSize: 30, fontWeight: 800, color: "var(--edai-text)", margin: "0 0 10px" }}>
+          Start with what you notice.
+        </h2>
+        <p style={{ color: "var(--edai-muted)", fontSize: 16, maxWidth: 560, margin: "0 auto", lineHeight: 1.55 }}>
+          Great startup ideas often begin as a tiny frustration you can finally see clearly.
+        </p>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 16 }}>
+        {paths.map((path) => (
+          <button
+            key={path.title}
+            onClick={path.action}
+            style={{ background: "var(--edai-surface)", border: "1px solid var(--edai-border)", borderRadius: 16, padding: "22px 20px", textAlign: "left", cursor: "pointer", fontFamily: "var(--ff-body)", minHeight: 190, transition: "all .15s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(99,102,241,.14)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--edai-border)"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}
+          >
+            <div style={{ fontSize: 32, marginBottom: 18 }}>{path.icon}</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--edai-text)", marginBottom: 8 }}>{path.title}</div>
+            <div style={{ color: "var(--edai-muted)", fontSize: 13.5, lineHeight: 1.5, marginBottom: 20 }}>{path.body}</div>
+            <div style={{ color: "#A5B4FC", fontWeight: 800, fontSize: 13 }}>{path.cta} →</div>
+          </button>
+        ))}
+      </div>
+
+      {portfolioCount > 0 && (
+        <div style={{ textAlign: "center", marginTop: 24, color: "var(--edai-muted)", fontSize: 13 }}>
+          You already have {portfolioCount} saved spark{portfolioCount === 1 ? "" : "s"} waiting.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IdeaFinder({ onSaveSpark, saving, onExploreWorlds }) {
+  const [world, setWorld] = useState("");
+  const [friction, setFriction] = useState("");
+  const [audience, setAudience] = useState("");
+  const [workaround, setWorkaround] = useState("");
+  const [cost, setCost] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const spark = [
+    audience ? `Who feels it: ${audience}` : null,
+    friction ? `What hurts: ${friction}` : null,
+    workaround ? `Current workaround: ${workaround}` : null,
+    cost ? `Why it matters: ${cost}` : null,
+  ].filter(Boolean).join("\n");
+  const canSave = audience.trim() && friction.trim() && workaround.trim() && cost.trim();
+
+  const fields = [
+    { label: "World", value: world, setter: setWorld, placeholder: "Where do you have taste? Healthcare, campus life, restaurants…" },
+    { label: "Friction", value: friction, setter: setFriction, placeholder: "What feels slow, expensive, confusing, manual, or risky?" },
+    { label: "Who", value: audience, setter: setAudience, placeholder: "Who gets visibly frustrated by this?" },
+    { label: "Workaround", value: workaround, setter: setWorkaround, placeholder: "What ugly workaround do they use today?" },
+    { label: "Cost", value: cost, setter: setCost, placeholder: "What does it cost them in time, money, stress, or missed revenue?" },
+  ];
+
+  return (
+    <div style={{ maxWidth: 860, margin: "0 auto", padding: "32px 24px" }}>
+      <div style={{ marginBottom: 26 }}>
+        <button onClick={onExploreWorlds} style={{ background: "none", border: "none", cursor: "pointer", color: "#A5B4FC", fontSize: 14, padding: 0, fontFamily: "var(--ff-body)", marginBottom: 18 }}>← Explore worlds instead</button>
+        <h2 style={{ fontFamily: "var(--ff-heading)", fontSize: 28, fontWeight: 800, color: "var(--edai-text)", margin: "0 0 8px" }}>Find your first spark.</h2>
+        <p style={{ color: "var(--edai-muted)", fontSize: 15, margin: 0, lineHeight: 1.55 }}>No pressure to sound like a founder. Just notice the broken thing and who is already working around it.</p>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.2fr) minmax(260px, .8fr)", gap: 18 }}>
+        <div>
+          {fields.map((field) => (
+            <label key={field.label} style={{ display: "block", marginBottom: 12 }}>
+              <div style={{ color: "rgba(255,255,255,.62)", fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 6 }}>{field.label}</div>
+              <input
+                value={field.value}
+                onChange={(e) => field.setter(e.target.value)}
+                placeholder={field.placeholder}
+                style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--edai-border)", borderRadius: 10, padding: "11px 12px", fontSize: 14, fontFamily: "var(--ff-body)", outline: "none", background: "var(--edai-surface-2)", color: "var(--edai-text)" }}
+              />
+            </label>
+          ))}
+          <label style={{ display: "block", marginBottom: 12 }}>
+            <div style={{ color: "rgba(255,255,255,.62)", fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 6 }}>Founder fit</div>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Why might this be yours? You lived it, know the people, can reach buyers, or care deeply."
+              rows={3}
+              style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--edai-border)", borderRadius: 10, padding: "11px 12px", fontSize: 14, fontFamily: "var(--ff-body)", outline: "none", background: "var(--edai-surface-2)", color: "var(--edai-text)", resize: "vertical" }}
+            />
+          </label>
+        </div>
+
+        <div style={{ background: "linear-gradient(180deg, rgba(99,102,241,.16), rgba(16,185,129,.10))", border: "1px solid rgba(165,180,252,.25)", borderRadius: 16, padding: 18, alignSelf: "start" }}>
+          <div style={{ color: "#A5B4FC", fontWeight: 900, fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 10 }}>Problem Spark</div>
+          <div style={{ whiteSpace: "pre-wrap", color: "var(--edai-text)", fontSize: 14, lineHeight: 1.6, minHeight: 140 }}>
+            {spark || "Your spark will appear here as you name the pain."}
+          </div>
+          {world && <div style={{ marginTop: 14, color: "var(--edai-muted)", fontSize: 12 }}>World: {world}</div>}
+          <button
+            disabled={!canSave || saving}
+            onClick={() => onSaveSpark(spark, notes || (world ? `World: ${world}` : ""))}
+            style={{ width: "100%", marginTop: 18, background: "#10b981", color: "#fff", border: "none", borderRadius: 10, padding: "11px 0", fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)", opacity: (!canSave || saving) ? .55 : 1 }}
+          >
+            {saving ? "Saving…" : "Save this Spark"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DomainBrowser({ onSelect }) {
   const [domains, setDomains] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -225,10 +381,10 @@ function DomainBrowser({ onSelect }) {
       <div style={{ textAlign: "center", marginBottom: 40 }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
         <h2 style={{ fontFamily: "var(--ff-heading)", fontSize: 28, fontWeight: 700, color: "var(--edai-text)", margin: "0 0 12px" }}>
-          Find Your Problem Space
+          Choose a world.
         </h2>
         <p style={{ color: "var(--edai-muted)", fontSize: 16, maxWidth: 520, margin: "0 auto" }}>
-          Pick a domain to explore. Watch curated videos, see real pain points, and capture the problems that resonate with you.
+          We’ll look for the tiny frustrations that become big companies.
         </p>
       </div>
 
@@ -285,7 +441,7 @@ function VideoFeed({ domain, onSelectVideo, onBack }) {
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 24px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
         <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: "#6366f1", fontSize: 15, padding: 0, fontFamily: "var(--ff-body)" }}>
-          ← All domains
+          ← All worlds
         </button>
         <span style={{ color: "rgba(255,255,255,.2)" }}>|</span>
         <span style={{ fontSize: 22 }}>{domain.icon}</span>
@@ -293,15 +449,15 @@ function VideoFeed({ domain, onSelectVideo, onBack }) {
         <button
           onClick={() => loadVideos(true)}
           disabled={refreshing}
-          title="Search YouTube for more videos"
+              title="Search YouTube for more field studies"
           style={{ marginLeft: "auto", background: "none", border: "1px solid var(--edai-border)", borderRadius: 8, padding: "5px 12px", fontSize: 12, color: "var(--edai-muted)", cursor: "pointer", fontFamily: "var(--ff-body)", opacity: refreshing ? 0.5 : 1 }}
         >
-          {refreshing ? "Searching…" : "↻ Refresh videos"}
+          {refreshing ? "Searching…" : "↻ Refresh field studies"}
         </button>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: "center", padding: 48, color: "rgba(255,255,255,.4)" }}>Loading videos…</div>
+        <div style={{ textAlign: "center", padding: 48, color: "rgba(255,255,255,.4)" }}>Loading field studies…</div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 18 }}>
           {(data?.videos || []).map((v) => (
@@ -422,14 +578,14 @@ function VideoPlayer({ video, domain, onBack, onProblemCaptured }) {
             <button
               onClick={() => setSidebarMode("scout")}
               style={{ flex: 1, background: sidebarMode === "scout" ? "#6366f1" : "var(--edai-surface-2)", color: sidebarMode === "scout" ? "#fff" : "rgba(255,255,255,.65)", border: "none", borderRadius: 7, padding: "7px 0", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "var(--ff-body)" }}
-            >🤖 Problem Scout</button>
+            >🤖 Signal Scout</button>
             <button
               onClick={() => setSidebarMode("learn")}
               style={{ flex: 1, background: sidebarMode === "learn" ? "#6366f1" : "var(--edai-surface-2)", color: sidebarMode === "learn" ? "#fff" : "rgba(255,255,255,.65)", border: "none", borderRadius: 7, padding: "7px 0", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "var(--ff-body)" }}
-            >📚 Guided Learning</button>
+            >📚 Field Guide</button>
           </div>
           <div style={{ color: "rgba(255,255,255,.4)", fontSize: 11, marginTop: 6, textAlign: "center" }}>
-            {sidebarMode === "scout" ? "Scan for problems worth solving" : "Socratic deep dive into this space"}
+            {sidebarMode === "scout" ? "Spot human pain worth saving" : "A sharper walk through this world"}
           </div>
         </div>
 
@@ -441,11 +597,11 @@ function VideoPlayer({ video, domain, onBack, onProblemCaptured }) {
               {analyzing ? (
                 <div style={{ textAlign: "center", padding: "32px 0", color: "rgba(255,255,255,.4)" }}>
                   <div style={{ fontSize: 28, marginBottom: 10 }}>⏳</div>
-                  <div style={{ fontSize: 14 }}>Analyzing transcript…</div>
+                  <div style={{ fontSize: 14 }}>Looking for live wires…</div>
                 </div>
               ) : !analysis || analysis.error ? (
                 <div style={{ color: "rgba(255,255,255,.4)", fontSize: 14, textAlign: "center", paddingTop: 24 }}>
-                  Could not analyze this video. Try watching and using the capture button below.
+                  Could not scan this study. Watch for friction and save a spark below.
                 </div>
               ) : (
                 <>
@@ -456,22 +612,31 @@ function VideoPlayer({ video, domain, onBack, onProblemCaptured }) {
                   )}
                   {(analysis.problems || []).length > 0 && (
                     <div style={{ marginBottom: 20 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,.72)", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>Problems Surfaced</div>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,.72)", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>Problem Sparks</div>
                       {analysis.problems.map((p, i) => (
-                        <div key={i} style={{ background: "var(--edai-surface)", border: "1px solid var(--edai-border)", borderRadius: 8, padding: "10px 12px", marginBottom: 8 }}>
-                          <div style={{ fontWeight: 600, fontSize: 13, color: "var(--edai-text)", marginBottom: 3 }}>{p.title}</div>
+                        <div key={i} style={{ background: "var(--edai-surface)", border: "1px solid var(--edai-border)", borderRadius: 10, padding: "12px 13px", marginBottom: 10 }}>
+                          <div style={{ color: "#A5B4FC", fontWeight: 800, fontSize: 10, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 4 }}>Spark {i + 1}</div>
+                          <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--edai-text)", marginBottom: 5 }}>{p.title}</div>
+                          {p.humanMoment && <div style={{ fontSize: 12.5, color: "#F0C674", lineHeight: 1.45, marginBottom: 7 }}>“{p.humanMoment}”</div>}
                           <div style={{ fontSize: 12, color: "var(--edai-muted)", lineHeight: 1.5, marginBottom: 8 }}>{p.description}</div>
+                          {(p.whoFeelsIt || p.currentWorkaround || p.whyNow) && (
+                            <div style={{ display: "grid", gap: 4, marginBottom: 10 }}>
+                              {p.whoFeelsIt && <div style={{ fontSize: 11.5, color: "rgba(255,255,255,.58)" }}><strong style={{ color: "rgba(255,255,255,.76)" }}>Who:</strong> {p.whoFeelsIt}</div>}
+                              {p.currentWorkaround && <div style={{ fontSize: 11.5, color: "rgba(255,255,255,.58)" }}><strong style={{ color: "rgba(255,255,255,.76)" }}>Workaround:</strong> {p.currentWorkaround}</div>}
+                              {p.whyNow && <div style={{ fontSize: 11.5, color: "rgba(255,255,255,.58)" }}><strong style={{ color: "rgba(255,255,255,.76)" }}>Why now:</strong> {p.whyNow}</div>}
+                            </div>
+                          )}
                           <button
-                            onClick={() => openCapture(p.title + ": " + p.description)}
+                            onClick={() => openCapture(formatProblemSpark(p))}
                             style={{ background: "rgba(99,102,241,.14)", color: "#A5B4FC", border: "none", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "var(--ff-body)" }}
-                          >💡 Capture this</button>
+                          >💡 Save this Spark</button>
                         </div>
                       ))}
                     </div>
                   )}
                   {(analysis.questions || []).length > 0 && (
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,.72)", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>Reflect</div>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,.72)", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>Field Questions</div>
                       {analysis.questions.map((q, i) => (
                         <div key={i} style={{ background: "rgba(245,184,75,.10)", border: "1px solid rgba(245,184,75,.3)", borderRadius: 8, padding: "10px 12px", marginBottom: 8, fontSize: 13, color: "#F0C674", lineHeight: 1.5 }}>
                           {q}
@@ -486,7 +651,7 @@ function VideoPlayer({ video, domain, onBack, onProblemCaptured }) {
               <button
                 onClick={() => openCapture("")}
                 style={{ width: "100%", background: "#6366f1", color: "#fff", border: "none", borderRadius: 8, padding: "10px 0", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)" }}
-              >💡 I see a problem here</button>
+              >💡 I see a Spark</button>
             </div>
           </>
         )}
@@ -496,26 +661,26 @@ function VideoPlayer({ video, domain, onBack, onProblemCaptured }) {
       {captureOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(3,8,7,.72)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setCaptureOpen(false)}>
           <div style={{ background: "var(--edai-surface)", borderRadius: 16, padding: 28, width: 480, maxWidth: "92vw" }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ fontFamily: "var(--ff-heading)", fontSize: 18, fontWeight: 700, color: "var(--edai-text)", margin: "0 0 6px" }}>Capture a Problem</h3>
-            <p style={{ color: "var(--edai-muted)", fontSize: 13, margin: "0 0 18px" }}>Describe the pain point you see. Be as specific as possible about who feels it and why it matters.</p>
+            <h3 style={{ fontFamily: "var(--ff-heading)", fontSize: 18, fontWeight: 700, color: "var(--edai-text)", margin: "0 0 6px" }}>Save a Problem Spark</h3>
+            <p style={{ color: "var(--edai-muted)", fontSize: 13, margin: "0 0 18px" }}>Name the pain, the person who feels it, and the workaround already in motion.</p>
             <textarea
               value={captureText}
               onChange={(e) => setCaptureText(e.target.value)}
-              placeholder="e.g. Small clinic owners spend 2+ hours daily on manual insurance pre-authorization calls, delaying patient care and burning out staff…"
+              placeholder="Who feels it: Small clinic owners&#10;What hurts: 2+ hours daily on insurance calls&#10;Current workaround: spreadsheets, phone trees, sticky notes"
               rows={4}
               style={{ width: "100%", border: "1px solid var(--edai-border)", borderRadius: 8, padding: "10px 12px", fontSize: 14, fontFamily: "var(--ff-body)", resize: "vertical", boxSizing: "border-box", outline: "none", background: "var(--edai-surface-2)", color: "var(--edai-text)" }}
             />
             <textarea
               value={captureNotes}
               onChange={(e) => setCaptureNotes(e.target.value)}
-              placeholder="Personal notes (optional): Have you seen this? Who do you know that faces this?"
+              placeholder="Founder fit (optional): Have you seen this? Who can you reach?"
               rows={2}
               style={{ width: "100%", border: "1px solid var(--edai-border)", borderRadius: 8, padding: "10px 12px", fontSize: 13, fontFamily: "var(--ff-body)", resize: "vertical", boxSizing: "border-box", outline: "none", marginTop: 10, color: "var(--edai-muted)", background: "var(--edai-surface-2)" }}
             />
             <div style={{ display: "flex", gap: 10, marginTop: 18, justifyContent: "flex-end" }}>
               <button onClick={() => setCaptureOpen(false)} style={{ background: "var(--edai-surface-2)", color: "rgba(255,255,255,.72)", border: "none", borderRadius: 8, padding: "9px 18px", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)" }}>Cancel</button>
               <button onClick={saveCapture} disabled={saving || captureText.trim().length < 10} style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: 8, padding: "9px 18px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)", opacity: saving ? .6 : 1 }}>
-                {saving ? "Saving…" : "Save Problem"}
+                {saving ? "Saving…" : "Save Spark"}
               </button>
             </div>
           </div>
@@ -534,10 +699,10 @@ function ProblemPortfolio({ problems, onGraduate, graduating, onBack }) {
   if (problems.length === 0) {
     return (
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "64px 24px", textAlign: "center" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
-        <h3 style={{ fontFamily: "var(--ff-heading)", fontSize: 22, fontWeight: 700, color: "var(--edai-text)", margin: "0 0 10px" }}>No problems captured yet</h3>
-        <p style={{ color: "var(--edai-muted)", fontSize: 15, margin: "0 0 24px" }}>Explore domains and watch videos. When you see a problem that resonates, capture it here.</p>
-        <button onClick={onBack} style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)" }}>Explore Domains →</button>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>✨</div>
+        <h3 style={{ fontFamily: "var(--ff-heading)", fontSize: 22, fontWeight: 700, color: "var(--edai-text)", margin: "0 0 10px" }}>No sparks saved yet</h3>
+        <p style={{ color: "var(--edai-muted)", fontSize: 15, margin: "0 0 24px" }}>Explore worlds or use the idea finder. Save the friction that makes you lean in.</p>
+        <button onClick={onBack} style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "var(--ff-body)" }}>Find a Spark →</button>
       </div>
     );
   }
@@ -545,13 +710,13 @@ function ProblemPortfolio({ problems, onGraduate, graduating, onBack }) {
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "24px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-        <h2 style={{ fontFamily: "var(--ff-heading)", fontSize: 22, fontWeight: 700, color: "var(--edai-text)", margin: 0 }}>Your Problem Portfolio</h2>
-        <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: "#6366f1", fontSize: 14, fontFamily: "var(--ff-body)" }}>← Back to Domains</button>
+        <h2 style={{ fontFamily: "var(--ff-heading)", fontSize: 22, fontWeight: 700, color: "var(--edai-text)", margin: 0 }}>Your Sparks</h2>
+        <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: "#6366f1", fontSize: 14, fontFamily: "var(--ff-body)" }}>← Back to Discovery</button>
       </div>
 
       {ungraduated.length > 0 && (
         <div style={{ marginBottom: 32 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,.72)", marginBottom: 12, textTransform: "uppercase", letterSpacing: ".05em" }}>Captured Problems ({ungraduated.length})</div>
+          <div style={{ fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,.72)", marginBottom: 12, textTransform: "uppercase", letterSpacing: ".05em" }}>Saved Sparks ({ungraduated.length})</div>
           {ungraduated.map((p) => (
             <div key={p.id} style={{ background: "var(--edai-surface)", border: "1px solid var(--edai-border)", borderRadius: 12, padding: "16px 18px", marginBottom: 12 }}>
               <div style={{ fontSize: 15, color: "var(--edai-text)", fontWeight: 600, lineHeight: 1.5, marginBottom: p.notes ? 8 : 12 }}>{p.problemText}</div>
@@ -566,7 +731,7 @@ function ProblemPortfolio({ problems, onGraduate, graduating, onBack }) {
                 disabled={graduating === p.id}
                 style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "var(--ff-body)", opacity: graduating === p.id ? .6 : 1 }}
               >
-                {graduating === p.id ? "Starting…" : "🚀 Start Building This"}
+                {graduating === p.id ? "Starting…" : "🚀 Turn into First Bet"}
               </button>
             </div>
           ))}
@@ -579,7 +744,7 @@ function ProblemPortfolio({ problems, onGraduate, graduating, onBack }) {
           {graduated.map((p) => (
             <div key={p.id} style={{ background: "var(--ff-accent-soft)", border: "1px solid var(--ff-accent-border)", borderRadius: 12, padding: "14px 18px", marginBottom: 10 }}>
               <div style={{ fontSize: 14, color: "rgba(210,255,235,.9)", fontWeight: 600, lineHeight: 1.5 }}>{p.problemText}</div>
-              <div style={{ fontSize: 12, color: "var(--ff-accent)", marginTop: 6 }}>✓ Project created — building in FounderForge</div>
+              <div style={{ fontSize: 12, color: "var(--ff-accent)", marginTop: 6 }}>✓ Project created — ready for Task 1.1</div>
             </div>
           ))}
         </div>
@@ -591,11 +756,12 @@ function ProblemPortfolio({ problems, onGraduate, graduating, onBack }) {
 // ─── Discovery Module (top-level) ─────────────────────────────────────────────
 
 export default function DiscoveryModule({ onGraduate }) {
-  const [view, setView] = useState("domains"); // domains | videos | player | portfolio
+  const [view, setView] = useState("entry"); // entry | finder | domains | videos | player | portfolio
   const [selectedDomain, setSelectedDomain] = useState(null);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [problems, setProblems] = useState([]);
   const [graduating, setGraduating] = useState(null);
+  const [savingSpark, setSavingSpark] = useState(false);
 
   // Load existing problems on mount
   useEffect(() => {
@@ -618,6 +784,28 @@ export default function DiscoveryModule({ onGraduate }) {
 
   function handleProblemCaptured(problem) {
     setProblems((prev) => [problem, ...prev]);
+  }
+
+  async function handleSaveSpark(problemText, notes) {
+    if (!problemText?.trim()) return;
+    setSavingSpark(true);
+    try {
+      const res = await fetch("/api/discovery/problems", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          problemText: problemText.trim(),
+          notes: notes?.trim() || undefined,
+        }),
+      });
+      if (res.ok) {
+        const problem = await res.json();
+        handleProblemCaptured(problem);
+        setView("portfolio");
+      }
+    } finally {
+      setSavingSpark(false);
+    }
   }
 
   async function handleGraduate(problemId) {
@@ -648,20 +836,20 @@ export default function DiscoveryModule({ onGraduate }) {
       <div style={{ background: "var(--edai-surface)", borderBottom: "1px solid var(--edai-border)", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
         <div>
           <span style={{ fontFamily: "var(--ff-heading)", fontSize: 18, fontWeight: 700, color: "var(--edai-text)" }}>🔍 Idea Discovery</span>
-          <span style={{ color: "rgba(255,255,255,.4)", fontSize: 13, marginLeft: 12 }}>Find your problem space through video</span>
+          <span style={{ color: "rgba(255,255,255,.4)", fontSize: 13, marginLeft: 12 }}>Find the friction worth chasing</span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button
-            onClick={() => setView("domains")}
-            style={{ background: view === "domains" ? "#6366f1" : "var(--edai-surface-2)", color: view === "domains" ? "#fff" : "rgba(255,255,255,.65)", border: "none", borderRadius: 8, padding: "7px 14px", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "var(--ff-body)" }}
+            onClick={() => setView("entry")}
+            style={{ background: ["entry", "finder", "domains", "videos", "player"].includes(view) ? "#6366f1" : "var(--edai-surface-2)", color: ["entry", "finder", "domains", "videos", "player"].includes(view) ? "#fff" : "rgba(255,255,255,.65)", border: "none", borderRadius: 8, padding: "7px 14px", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "var(--ff-body)" }}
           >
-            Domains
+            Discover
           </button>
           <button
             onClick={() => setView("portfolio")}
             style={{ background: view === "portfolio" ? "#6366f1" : "var(--edai-surface-2)", color: view === "portfolio" ? "#fff" : "rgba(255,255,255,.65)", border: "none", borderRadius: 8, padding: "7px 14px", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "var(--ff-body)", position: "relative" }}
           >
-            My Problems
+            My Sparks
             {portfolioCount > 0 && (
               <span style={{ marginLeft: 6, background: "#ef4444", color: "#fff", borderRadius: 99, padding: "1px 6px", fontSize: 11, fontWeight: 700 }}>{portfolioCount}</span>
             )}
@@ -671,6 +859,21 @@ export default function DiscoveryModule({ onGraduate }) {
 
       {/* Body */}
       <div style={{ flex: 1, overflow: "auto" }}>
+        {view === "entry" && (
+          <IdeaEntry
+            portfolioCount={portfolioCount}
+            onHaveIdea={() => setView("finder")}
+            onExploreWorlds={() => setView("domains")}
+            onNoIdeaYet={() => setView("finder")}
+          />
+        )}
+        {view === "finder" && (
+          <IdeaFinder
+            saving={savingSpark}
+            onSaveSpark={handleSaveSpark}
+            onExploreWorlds={() => setView("domains")}
+          />
+        )}
         {view === "domains" && (
           <DomainBrowser onSelect={handleSelectDomain} />
         )}
@@ -694,7 +897,7 @@ export default function DiscoveryModule({ onGraduate }) {
             problems={problems}
             onGraduate={handleGraduate}
             graduating={graduating}
-            onBack={() => setView("domains")}
+            onBack={() => setView("entry")}
           />
         )}
       </div>

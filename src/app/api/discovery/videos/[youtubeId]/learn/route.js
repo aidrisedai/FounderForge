@@ -23,14 +23,18 @@ Respond ONLY with valid JSON:
   ]
 }
 Rules:
-- "concept": use body. 2-3 sentences max.
-- "list": use items (3-5). No body needed.
+- Return 1 card by default. Return 2 only when one is feedback and one is the next question.
+- Keep body text to 12-25 words unless a final synthesis truly needs more.
+- No paragraphs. No lectures. No startup jargon unless the user already used it.
+- Ask exactly one question per turn.
+- Open with vivid human scenes: a person, a moment, a broken workaround.
+- "concept": use body. One sharp idea only.
+- "list": use items (2-3). No body needed.
 - "debate": use sides only. No body.
 - "question": use body as the Socratic prompt. Italicised for the user.
-- "feedback": use body to validate/correct the student's last answer.
+- "feedback": use body to validate/correct the student's last answer in one warm sentence.
 - replies: 2-3 short clickable responses. Optional but preferred on question cards.
 - advance: set true ONLY when this topic phase is complete and the student should move on.
-- Return 1-3 cards per response. Start with a question or concept, not a wall of text.
 - Be Socratic: ask before lecturing. Pull insight from the student first.
 `;
 
@@ -52,13 +56,14 @@ REFLECTION QUESTIONS:
 ${(analysis.questions || []).map((q, i) => `${i + 1}. ${q}`).join("\n")}
 
 YOUR TEACHING APPROACH:
-- Use Socratic method. Ask before lecturing.
-- One idea at a time. Never dump everything at once.
-- Connect abstract concepts to real founder situations.
+- Be a design-minded startup guide, not a classroom lecturer.
+- Help the founder notice pain, name patterns, and turn curiosity into a sharp problem.
+- One idea at a time. One question at a time.
+- Use concrete nouns and human moments over frameworks.
 - When a student's answer reveals a gap, correct gently with a feedback card.
 - Move toward helping the founder see which problem THEY could solve.
-- Use debate cards for genuine expert disagreements in this space.
-- Use list cards for frameworks or step-by-step thinking.
+- Use debate cards only for genuine expert disagreements.
+- Use list cards sparingly for 2-3 crisp options.
 
 ${CARD_FORMAT}`;
 }
@@ -67,17 +72,17 @@ function buildPhasePrompt(phase, analysis) {
   const problems = analysis.problems || [];
 
   if (phase === "orientation") {
-    return `Start the session. Give a brief concept card setting up the domain (1-2 sentences), then immediately ask a Socratic question to find out if the student has personal experience with this space. Use replies with 2-3 options. Do NOT advance yet.`;
+    return `Open with one vivid human moment from this world, then ask where the founder has seen similar friction. One card under 25 words. Use replies with 2-3 options. Do NOT advance yet.`;
   }
 
   const problemIndex = parseInt(phase.replace("problem-", ""), 10);
   if (!isNaN(problemIndex) && problems[problemIndex]) {
     const p = problems[problemIndex];
-    return `Now explore this specific problem with the student: "${p.title}". Start by presenting a real scenario or asking if they've experienced this pain. Then go deeper — who suffers most, what workarounds exist, what a solution might look like. After the student has engaged meaningfully (2-3 exchanges), set advance:true on the last card.`;
+    return `Explore this specific problem with the founder: "${p.title}". Start from this scene if available: "${p.humanMoment || p.description}". Ask what they have personally seen. Then uncover who suffers most, the ugly workaround, and why now. After 2-3 meaningful exchanges, set advance:true on the last card.`;
   }
 
   if (phase === "synthesis") {
-    return `This is the final phase. Ask the student which of the ${problems.length} problems we explored resonates most with them personally — and why. Then ask what kind of solution they might imagine. Give a final feedback card affirming their thinking and pointing toward next steps in FounderForge. Set advance:true on the last card.`;
+    return `Final phase. Help the founder choose the one live wire: which problem made them lean in, and why it might be theirs to chase. Ask one question first. Then give a concise feedback card pointing them toward saving a Problem Spark. Set advance:true on the last card.`;
   }
 
   return `Continue the Socratic conversation based on the student's last message. When the current topic is fully explored, set advance:true.`;

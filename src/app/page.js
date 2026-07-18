@@ -127,6 +127,44 @@ function ChatBubble({ role, content }) {
   );
 }
 
+function CompletedDeliverableCard({ step, task, deliverable, isDraft = false }) {
+  if (!step || !task || !deliverable) return null;
+
+  return (
+    <div style={{ margin:"0 0 18px", padding:"18px 20px", borderRadius:18, background:`linear-gradient(135deg, ${step.color}14, rgba(255,255,255,.035))`, border:`1px solid ${step.color}30`, boxShadow:`0 14px 38px ${step.color}10` }}>
+      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:14, marginBottom:14 }}>
+        <div>
+          <div style={{ display:"inline-flex", alignItems:"center", gap:7, padding:"4px 10px", borderRadius:99, background:`${step.color}18`, border:`1px solid ${step.color}35`, marginBottom:10 }}>
+            <span style={{ fontSize:12 }}>{isDraft ? "✍️" : "✅"}</span>
+            <span style={{ fontSize:10, fontWeight:800, letterSpacing:".12em", color:step.color, fontFamily:"var(--ff-body)", textTransform:"uppercase" }}>{isDraft ? "Draft saved" : "Completed card"}</span>
+          </div>
+          <h3 style={{ fontSize:17, fontFamily:"var(--ff-display)", fontWeight:750, color:"rgba(255,255,255,.94)", margin:"0 0 4px", letterSpacing:"-.02em" }}>{task.title}</h3>
+          <p style={{ fontSize:12.5, lineHeight:1.6, color:"rgba(255,255,255,.5)", fontFamily:"var(--ff-body)", margin:0 }}>{task.goal}</p>
+        </div>
+        <div style={{ width:40, height:40, borderRadius:12, background:`${step.color}18`, border:`1px solid ${step.color}35`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{step.icon}</div>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))", gap:10, marginBottom:12 }}>
+        <div style={{ padding:"11px 12px", borderRadius:12, background:"rgba(0,0,0,.16)", border:"1px solid rgba(255,255,255,.06)" }}>
+          <div style={{ fontSize:9.5, fontWeight:800, letterSpacing:".14em", color:"rgba(255,255,255,.32)", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:5 }}>What was done</div>
+          <div style={{ fontSize:12.5, lineHeight:1.55, color:"rgba(255,255,255,.68)", fontFamily:"var(--ff-body)" }}>{task.title}</div>
+        </div>
+        <div style={{ padding:"11px 12px", borderRadius:12, background:"rgba(0,0,0,.16)", border:"1px solid rgba(255,255,255,.06)" }}>
+          <div style={{ fontSize:9.5, fontWeight:800, letterSpacing:".14em", color:"rgba(255,255,255,.32)", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:5 }}>Outcome</div>
+          <div style={{ fontSize:12.5, lineHeight:1.55, color:"rgba(255,255,255,.68)", fontFamily:"var(--ff-body)" }}>{task.output}</div>
+        </div>
+      </div>
+
+      <details open={isDraft} style={{ borderRadius:12, background:"rgba(255,255,255,.035)", border:"1px solid rgba(255,255,255,.07)", overflow:"hidden" }}>
+        <summary style={{ padding:"11px 13px", cursor:"pointer", color:"rgba(255,255,255,.75)", fontSize:12, fontWeight:800, letterSpacing:".08em", textTransform:"uppercase", fontFamily:"var(--ff-body)" }}>
+          View deliverable
+        </summary>
+        <div style={{ padding:"0 13px 13px", whiteSpace:"pre-wrap", color:"rgba(255,255,255,.72)", fontSize:13, lineHeight:1.7, fontFamily:"var(--ff-body)" }}>{deliverable}</div>
+      </details>
+    </div>
+  );
+}
+
 function Timeline({ steps, project, activeStepId, activeTaskIdx, onNav }) {
   const ct = project.completedTasks || {};
   const done = Object.values(ct).reduce((a,v) => a+v, 0);
@@ -719,6 +757,8 @@ export default function Home() {
   if (!dataLoaded) return <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}><TypingDots /></div>;
 
   const isRevisiting = project && task && (project.completedTasks?.[step?.id]||0) > taskIdx;
+  const activeDeliverable = project && task ? (project.deliverables || {})[task.id] : null;
+  const activeDeliverableIsDraft = Boolean(activeDeliverable && !isRevisiting);
 
   // Show personality assessment for first-time users (no personality and checked)
   if (!project && personalityChecked && !personality && !showPersonality) {
@@ -1088,6 +1128,14 @@ export default function Home() {
         {/* ── Messages ── */}
         <div style={{ flex:1, overflowY:"auto", padding:"20px 32px 8px" }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
+            {activeDeliverable && (
+              <CompletedDeliverableCard
+                step={step}
+                task={task}
+                deliverable={activeDeliverable}
+                isDraft={activeDeliverableIsDraft}
+              />
+            )}
             {messages.map((m,i) => <ChatBubble key={i} role={m.role} content={m.content} />)}
             {loading && <TypingDots />}
             {banner && (

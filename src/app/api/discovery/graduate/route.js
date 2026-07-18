@@ -19,13 +19,21 @@ export async function POST(req) {
       return NextResponse.json({ error: "Already graduated", projectId: problem.projectId }, { status: 409 });
     }
 
-    // Create a new project from the problem
+    const firstBet = [
+      "Problem Spark from Idea Discovery:",
+      problem.problemText,
+      problem.notes ? `Founder notes: ${problem.notes}` : null,
+      "Next step: turn this spark into a fully evidence-backed Problem Hypothesis in Task 1.1.",
+    ].filter(Boolean).join("\n\n");
+
+    // Create a new project from the problem and bridge it into the first curriculum task.
+    // We prefill Task 1.1 as draft context, but do not mark it complete.
     const project = await prisma.project.create({
       data: {
         userId: session.user.id,
         name: problem.problemText.slice(0, 100),
         completedTasks: {},
-        deliverables: {},
+        deliverables: { "1.1": firstBet },
       },
     });
 
