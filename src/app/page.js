@@ -127,7 +127,7 @@ function ChatBubble({ role, content }) {
   );
 }
 
-function CompletedDeliverableCard({ step, task, deliverable, reflection, isDraft = false, onContinue, hasNext = true }) {
+function CompletedDeliverableCard({ step, task, deliverable, isDraft = false }) {
   if (!step || !task || !deliverable) return null;
 
   return (
@@ -155,28 +155,12 @@ function CompletedDeliverableCard({ step, task, deliverable, reflection, isDraft
         </div>
       </div>
 
-      {reflection && !isDraft && (
-        <div style={{ padding:"12px 13px", borderRadius:12, background:"rgba(91,163,232,.08)", border:"1px solid rgba(91,163,232,.18)", marginBottom:12 }}>
-          <div style={{ fontSize:9.5, fontWeight:800, letterSpacing:".14em", color:"#5BA3E8", fontFamily:"var(--ff-body)", textTransform:"uppercase", marginBottom:6 }}>Mentor observed</div>
-          <div style={{ fontSize:12.8, lineHeight:1.65, color:"rgba(218,236,255,.76)", fontFamily:"var(--ff-body)", whiteSpace:"pre-wrap" }}>{reflection}</div>
-        </div>
-      )}
-
       <details open={isDraft} style={{ borderRadius:12, background:"rgba(255,255,255,.035)", border:"1px solid rgba(255,255,255,.07)", overflow:"hidden" }}>
         <summary style={{ padding:"11px 13px", cursor:"pointer", color:"rgba(255,255,255,.75)", fontSize:12, fontWeight:800, letterSpacing:".08em", textTransform:"uppercase", fontFamily:"var(--ff-body)" }}>
           View deliverable
         </summary>
         <div style={{ padding:"0 13px 13px", whiteSpace:"pre-wrap", color:"rgba(255,255,255,.72)", fontSize:13, lineHeight:1.7, fontFamily:"var(--ff-body)" }}>{deliverable}</div>
       </details>
-
-      {!isDraft && onContinue && (
-        <button
-          onClick={onContinue}
-          style={{ marginTop:12, width:"100%", border:"none", borderRadius:12, padding:"11px 14px", background:"var(--ff-accent-grad)", color:"#fff", fontSize:13, fontWeight:800, fontFamily:"var(--ff-body)", cursor:"pointer", boxShadow:"0 8px 24px rgba(31,166,122,.18)" }}
-        >
-          {hasNext ? "Continue to next task →" : "Review final journey →"}
-        </button>
-      )}
     </div>
   );
 }
@@ -782,11 +766,6 @@ export default function Home() {
   const isRevisiting = project && task && (project.completedTasks?.[step?.id]||0) > taskIdx;
   const activeDeliverable = project && task ? (project.deliverables || {})[task.id] : null;
   const activeDeliverableIsDraft = Boolean(activeDeliverable && !isRevisiting);
-  const activeTaskIsComplete = Boolean(project && step && (project.completedTasks?.[step.id] || 0) > taskIdx);
-  const activeReflection = activeTaskIsComplete
-    ? [...messages].reverse().find((m) => m.role === "assistant" && m.content?.trim())?.content
-    : null;
-  const activeTaskHasNext = Boolean(step && (taskIdx < step.tasks.length - 1 || stepIdx < CURRICULUM.length - 1));
 
   // Show personality assessment for first-time users (no personality and checked)
   if (!project && personalityChecked && !personality && !showPersonality) {
@@ -1161,10 +1140,7 @@ export default function Home() {
                 step={step}
                 task={task}
                 deliverable={activeDeliverable}
-                reflection={activeReflection}
                 isDraft={activeDeliverableIsDraft}
-                onContinue={activeTaskIsComplete ? goToNextTask : null}
-                hasNext={activeTaskHasNext}
               />
             )}
             {messages.map((m,i) => <ChatBubble key={i} role={m.role} content={m.content} />)}
