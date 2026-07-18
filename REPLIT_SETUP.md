@@ -24,8 +24,10 @@ Replit provides PostgreSQL database automatically. In your Repl:
 GOOGLE_CLIENT_ID = your-google-client-id
 GOOGLE_CLIENT_SECRET = your-google-client-secret
 NEXTAUTH_SECRET = your-random-secret-here
-NEXTAUTH_URL = https://your-repl-name.repl.co
+NEXTAUTH_URL = https://your-repl-or-production-url
+DATABASE_URL = auto-provided-by-replit-postgresql
 ANTHROPIC_API_KEY = your-anthropic-api-key
+YOUTUBE_API_KEY = your-youtube-api-key
 ```
 
 ### Getting the Required Keys:
@@ -37,7 +39,7 @@ ANTHROPIC_API_KEY = your-anthropic-api-key
 4. Go to "Credentials" → "Create Credentials" → "OAuth Client ID"
 5. Choose "Web application"
 6. Add authorized redirect URI: 
-   - `https://your-repl-name.repl.co/api/auth/callback/google`
+   - `https://your-repl-or-production-url/api/auth/callback/google`
 7. Copy Client ID and Client Secret
 
 #### NextAuth Secret:
@@ -67,9 +69,21 @@ npm run migrate-db
 npm run setup-admin
 ```
 
-## Step 5: Configure Replit
+## Step 5: Confirm Replit Configuration
 
-1. Create a `.replit` file in the root with:
+This repository already includes a `.replit` file configured for Replit Node.js, web hosting, PostgreSQL, port `5000`, and autoscale deployment. Keep the committed file unless you intentionally change the Replit deployment model.
+
+Current configuration highlights:
+
+```
+modules = ["nodejs-20", "web", "postgresql-16"]
+PORT = "5000"
+HOSTNAME = "0.0.0.0"
+runButton = "Project"
+deploymentTarget = "autoscale"
+```
+
+For reference, older manual Replit configuration looked like:
 
 ```
 run = "npm run start"
@@ -79,7 +93,7 @@ entrypoint = "src/app/page.js"
 NODE_ENV = "production"
 
 [[ports]]
-localPort = 3000
+localPort = 5000
 externalPort = 80
 
 [nix]
@@ -87,10 +101,10 @@ channel = "stable-24_05"
 
 [deployment]
 run = ["sh", "-c", "npm run start"]
-deploymentTarget = "cloudrun"
+deploymentTarget = "autoscale"
 ```
 
-2. Create a `replit.nix` file:
+A separate `replit.nix` file is not required for the current committed `.replit` module setup. If you intentionally switch to a Nix file, use:
 
 ```nix
 {pkgs}: {
@@ -140,9 +154,9 @@ npm run build
 ```
 
 ### Port Issues
-If port 3000 is busy, modify `package.json`:
+This app is configured for port 5000 on Replit. If the port is busy, use the existing `npm run dev` script, which clears stale Next.js processes before starting. Do not switch Replit to port 3000. For reference, the production start script should remain similar to:
 ```json
-"start": "next start -p $PORT || 3000"
+"start": "next start -p 5000 -H 0.0.0.0"
 ```
 
 ## File Structure
@@ -176,8 +190,9 @@ npx prisma migrate reset
 
 ## Deployment Checklist
 
-- [ ] All environment variables set in Secrets
-- [ ] Database migrated successfully
+- [ ] All environment variables set in Secrets, including `DATABASE_URL` and `YOUTUBE_API_KEY`
+- [ ] `psql $DATABASE_URL -c "SELECT 1"` succeeds
+- [ ] Database migrated successfully with `npx prisma migrate deploy`
 - [ ] Google OAuth configured with correct redirect URL
 - [ ] Admin user created (optional)
 - [ ] Test user login works
