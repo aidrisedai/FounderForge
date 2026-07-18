@@ -34,15 +34,23 @@ Based on the above, extract insights for a founder exploring this space. Respond
 
 {
   "problems": [
-    { "title": "short problem title", "description": "1-2 sentence explanation of the pain point and who feels it" }
+    {
+      "title": "short vivid problem title",
+      "description": "1 sentence explaining the pain point",
+      "humanMoment": "a concrete scene showing a real person feeling the pain",
+      "whoFeelsIt": "specific audience that feels this most",
+      "currentWorkaround": "what they do today instead of having a real solution",
+      "whyNow": "why this pain is becoming more urgent now",
+      "startupAngle": "a concise possible direction a founder could explore"
+    }
   ],
   "questions": [
     "Question to prompt the founder to reflect on whether they've experienced this"
   ],
-  "domainContext": "2-sentence summary of what this space is about and why it matters now"
+  "domainContext": "1 vivid sentence about this world and why it matters now"
 }
 
-Include 3-5 problems and 3 questions. Focus on real, specific pain points — not vague trends.`;
+Include 3-5 problems and 3 questions. Focus on real, specific pain points — not vague trends. Make every problem feel observable, human, and concrete.`;
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
